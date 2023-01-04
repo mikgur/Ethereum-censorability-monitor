@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "ethereum-censorability-monitor"
+version = "0.1.0"
+description = ""
+authors = ["Mikhail Gurevich <gurevich3004@gmail.com>"]
+readme = "README.md"
+packages = [{include = "ethereum_censorability_monitor"}]
+
+[tool.poetry.dependencies]
+python = "3.10.*"
+pandas = "^1.5.2"
+web3 = "^5.31.3"
+pymongo = "^4.3.3"
+PyYAML = "^6.0"
+tqdm = "^4.64.1"
+matplotlib = "^3.6.2"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "^6.0.0"
+jupyterlab = "^3.5.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
