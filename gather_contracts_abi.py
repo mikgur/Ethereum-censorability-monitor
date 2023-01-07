@@ -80,7 +80,7 @@ async def main():
                         contracts_abi[batch[j]] = abi
                 except json.decoder.JSONDecodeError:
                     contracts_abi[batch[j]] = 'JSONDecodeError'
-                    logger.info(f'JSONDecodeError: {contract_address} {result}')
+                    logger.info(f'JSONkDecodeErr: {contract_address} {result}')
             # у Etherscan есть ограничение на 5 запросов в секунду
             if time.time() - t1 < 1:
                 await asyncio.sleep(1)
