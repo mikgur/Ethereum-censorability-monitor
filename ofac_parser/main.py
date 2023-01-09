@@ -62,7 +62,7 @@ def get_banned_wallets(ofac_list_url: str) -> List[str]:
     return banned_wallets
 
 
-def list_to_json(banned_wallets: List[str]) -> List[Dict]:
+def list_to_json(banned_wallets: List[str]) -> Dict:
     '''
     Transform list of addresses to json object
 
