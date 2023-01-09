@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "ofac parser"
+version = "0.1.0"
+description = ""
+authors = ["PetrovitchSharp <korchagin_official@yahoo.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+mongo = "^0.2.0"
+pymongo = "^4.3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
