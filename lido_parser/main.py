@@ -94,8 +94,10 @@ def get_difference(table: Database, validators_wallets: List[str]) -> Tuple[List
     active_wallets_in_table = cursor.distinct('eth_wallet_address')
 
     # Find difference between lists
-    wallets_to_drop = list(set(active_wallets_in_table) - set(validators_wallets))
-    wallets_to_add = list(set(validators_wallets) - set(active_wallets_in_table))
+    wallets_to_drop = list(
+        set(active_wallets_in_table) - set(validators_wallets))
+    wallets_to_add = list(set(validators_wallets) -
+                          set(active_wallets_in_table))
 
     return wallets_to_drop, wallets_to_add
 
@@ -113,15 +115,16 @@ def make_inactive(table: Database, wallets_to_drop: List[str]) -> int:
     '''
     cursor = table.find({})
     deleted_count = 0
-    
-    for wallet in wallets_to_drop:
-        wallet_id = cursor.where(f'this.delition_date == null && this.eth_wallet_address == {wallet}').distinct('_id')
-        table.update_one({'_id' : wallet_id}, {'$set': {'delition_date': datetime.now()}})   
-        
-        deleted_count += 1     
-        
-    return(deleted_count)
 
+    for wallet in wallets_to_drop:
+        wallet_id = cursor.where(
+            f'this.delition_date == null && this.eth_wallet_address == {wallet}').distinct('_id')
+        table.update_one({'_id': wallet_id}, {
+                         '$set': {'delition_date': datetime.now()}})
+
+        deleted_count += 1
+
+    return(deleted_count)
 
 
 if __name__ == '__main__':
