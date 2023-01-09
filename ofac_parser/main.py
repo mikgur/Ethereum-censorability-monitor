@@ -1,6 +1,7 @@
 import urllib.request as req
 import re
 from typing import List, Dict, Tuple
+from datetime import datetime
 
 from pymongo import MongoClient, Database
 
@@ -78,7 +79,11 @@ def list_to_json(banned_wallets: List[str]) -> List[Dict]:
         Returns:
             Wrapped address
         '''
-        return {'eth_wallet_address': wallet}
+        return {
+            'eth_wallet_address': wallet,
+            'addition_date': datetime.now(),
+            'delition_date': None
+        }
 
     return list(map(wrapper, banned_wallets))
 
@@ -94,25 +99,50 @@ def get_difference(table: Database, banned_wallets: List[str]) -> Tuple[List[str
     Returns:
         Lists of wallets addressed to drop from table and to add to it
     '''
-    # Get all records from table
-    cursor = table.find({})
-    wallets_in_table = cursor.distinct('eth_wallet_address')
+    # Get all active records from table
+    cursor = table.find({}).where('this.delition_date == null')
+    active_wallets_in_table = cursor.distinct('eth_wallet_address')
 
     # Find difference between lists
-    wallets_to_drop = list(set(banned_wallets) - set(wallets_in_table))
-    wallets_to_add = list(set(wallets_in_table) - set(banned_wallets))
+    wallets_to_drop = list(
+        set(active_wallets_in_table) - set(banned_wallets))
+    wallets_to_add = list(set(banned_wallets) -
+                          set(active_wallets_in_table))
 
     return wallets_to_drop, wallets_to_add
 
+def make_inactive(table: Database, wallets_to_drop: List[str]) -> int:
+    '''
+    Make wallet inactive
+
+    Args:
+        table:              Instance of db table
+        wallets_to_drop:    List of banned validators' ETH wallets addresses to make inactive
+
+    Returns:
+        Count of wallets were made inactive
+    '''
+    cursor = table.find({})
+    deleted_count = 0
+
+    for wallet in wallets_to_drop:
+        wallet_id = cursor.where(
+            f'this.delition_date == null && this.eth_wallet_address == {wallet}').distinct('_id')
+        table.update_one({'_id': wallet_id}, {
+                         '$set': {'delition_date': datetime.now()}})
+
+        deleted_count += 1
+
+    return(deleted_count)
 
 if __name__ == '__main__':
     connection, table = get_mongo_table(CONNECTION_STRING, TABLE_NAME)
     banned_wallets = get_banned_wallets(OFAC_LIST_URL)
     wallets_to_drop, wallets_to_add = get_difference(table, banned_wallets)
-    drop_res = table.delete_many(list_to_json(wallets_to_drop))
+    drop_res = make_inactive(wallets_to_drop)
     add_res = table.insert_many(list_to_json(wallets_to_add))
 
-    print(f'Deleted {drop_res.deleted_count} wallets to db')
-    print(f'Added {len(add_res.inserted_ids)} wallets to db')
+    print(f'{drop_res} wallets were made inactive')
+    print(f'Added {len(add_res.inserted_ids)} active wallets to db')
 
     connection.close()
