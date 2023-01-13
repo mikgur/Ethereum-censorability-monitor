@@ -74,7 +74,7 @@ def list_to_json(banned_wallets: List[str]) -> Dict:
     '''
 
     return {
-        'dt': datetime.utcnow,
+        'dt': datetime.utcnow(),
         'banned_wallets': banned_wallets
     }
 
