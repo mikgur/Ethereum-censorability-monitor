@@ -64,7 +64,7 @@ def list_to_json(validators_wallets: List[str]) -> Dict:
     '''
 
     return {
-        'dt': datetime.utcnow,
+        'dt': datetime.utcnow(),
         'lido_validators': validators_wallets
     }
 
