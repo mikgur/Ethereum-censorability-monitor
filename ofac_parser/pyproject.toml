@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.8"
 mongo = "^0.2.0"
 pymongo = "^4.3.3"
+pandas = "^1.5.2"
 
 
 [build-system]

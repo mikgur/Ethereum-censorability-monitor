@@ -4,6 +4,7 @@ from typing import List, Dict, Tuple
 from datetime import datetime
 
 from pymongo import MongoClient, Database
+import pandas as pd
 
 from cfg import CONNECTION_STRING, TABLE_NAME, OFAC_LIST_URL
 
@@ -26,63 +27,66 @@ def get_mongo_table(
     return client, client[f'{table_name}']
 
 
-def get_banned_wallets(ofac_list_url: str) -> List[str]:
+def get_banned_wallets(ofac_list_url: str) -> List[Dict[str, str]]:
     '''
-    Get list of ETH wallets banned by OFAC
+    Get list of cryptowallets banned by OFAC
 
     Args:
         ofac_list_url: URL of complete OFAC SDN list
 
     Returns:
-        List of ETH wallets addresses
+        List of cryptowallets addresses
     '''
-    def truncate_address(address: str) -> str:
+    def truncate_address(address: str) -> Dict[str, str]:
         '''
-        Truncate ETH wallets addresses
+        Truncate cryptowallets addresses
 
         Args:
-            address: ETH wallet address in format ETH 0x...;
+            address: Cryptowallet address in format Digital Currency Address - ...;
 
         Returns:
-            ETH wallet address in format 0x...
+            Cryptowallet address in format {prefix : address}
         '''
-        return address[4:-1]
+        splitted = address.split(' ')
+        prefix = splitted[-2]
+        address_ = splitted[-1][:-1]
+        return {prefix: address_}
 
     # Read txt file from OFAC website
     res = req.urlopen(ofac_list_url)
-    banlist = res.read().decode('utf-8')
+    banlist = str(res.read().decode('utf-8'))
+    banlist = banlist.replace('\n', ' ')
 
-    # Regexp to find ETH wallets addresses
-    pattern = re.compile('ETH 0x.{40};')
+    # Regexp to find cryptowallets addresses
+    pattern = re.compile('Digital Currency Address - .{20,60};')
 
-    # Find all ETH wallets addresses in document and truncate them
+    # Find all cryptowallets addresses in document and truncate them
     banned_wallets = re.findall(pattern, banlist)
     banned_wallets = list(map(truncate_address, banned_wallets))
 
     return banned_wallets
 
-
-def list_to_json(banned_wallets: List[str]) -> Dict:
+def get_grouped_by_prefixes(banned_wallets: List[Dict[str, str]]) -> Dict:
     '''
-    Transform list of addresses to json object
-
+    Group all wallets by address prefix
+    
     Args:
-        banned_wallets: List of banned ETH wallets addresses
+        banned_wallets: List of cryptowallets addresses in format {prefix:address}
 
     Returns:
-        JSON with list of banned wallets
+        Dict in format {prefix : list of addresses}
     '''
-
-    return {
-        'dt': datetime.utcnow(),
-        'banned_wallets': banned_wallets
-    }
-
+    wallets = pd.DataFrame(banned_wallets, columns=['Prefix', 'Wallet'])
+    grouped_wallets = wallets.groupby('Prefix')['Wallet'].apply(list)
+    grouped_wallets = grouped_wallets.to_dict()
+    grouped_wallets['dt'] = str(datetime.utcnow())
+    
+    return grouped_wallets
 
 if __name__ == '__main__':
     connection, table = get_mongo_table(CONNECTION_STRING, TABLE_NAME)
     banned_wallets = get_banned_wallets(OFAC_LIST_URL)
-    add_res = table.insert_one(list_to_json(banned_wallets))
+    add_res = table.insert_one(get_grouped_by_prefixes(banned_wallets))
 
     print(f'{datetime.utcnow}: Added list of {len(banned_wallets)} banned wallets to db')
 
