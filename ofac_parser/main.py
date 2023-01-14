@@ -1,7 +1,8 @@
 import urllib.request as req
 import re
 from typing import List, Dict, Tuple
-from datetime import datetime
+from time import time
+import datetime
 
 from pymongo import MongoClient, Database
 import pandas as pd
@@ -74,20 +75,23 @@ def get_grouped_by_prefixes(banned_wallets: List[Dict[str, str]]) -> Dict:
         banned_wallets: List of cryptowallets addresses in format {prefix:address}
 
     Returns:
-        Dict in format {prefix : list of addresses}
+        Dict in format {wallets: {prefix : list of addresses}, dt: time}
     '''
     wallets = pd.DataFrame(banned_wallets, columns=['Prefix', 'Wallet'])
     grouped_wallets = wallets.groupby('Prefix')['Wallet'].apply(list)
     grouped_wallets = grouped_wallets.to_dict()
-    grouped_wallets['dt'] = str(datetime.utcnow())
     
-    return grouped_wallets
+    entity = {}
+    entity['wallets'] = grouped_wallets
+    entity['dt'] = int(time())
+    
+    return entity
 
 if __name__ == '__main__':
     connection, table = get_mongo_table(CONNECTION_STRING, TABLE_NAME)
     banned_wallets = get_banned_wallets(OFAC_LIST_URL)
     add_res = table.insert_one(get_grouped_by_prefixes(banned_wallets))
 
-    print(f'{datetime.utcnow}: Added list of {len(banned_wallets)} banned wallets to db')
+    print(f'{datetime.utcnow()}: Added list of {len(banned_wallets)} banned wallets to db')
 
     connection.close()
