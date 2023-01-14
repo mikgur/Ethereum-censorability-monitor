@@ -1,5 +1,6 @@
 from typing import List, Dict, Tuple
 from datetime import datetime
+from time import time
 
 from pymongo import MongoClient, Database
 from web3 import Web3
@@ -64,7 +65,7 @@ def list_to_json(validators_wallets: List[str]) -> Dict:
     '''
 
     return {
-        'dt': datetime.utcnow(),
+        'dt': time(),
         'lido_validators': validators_wallets
     }
 
@@ -74,6 +75,6 @@ if __name__ == '__main__':
     validators_wallets = get_lido_validators(NODE_CONNECTION_STRING)
     table.insert_one(list_to_json(validators_wallets))
 
-    print(f'{datetime.utcnow}: Added list of {len(validators_wallets)} LIDO validators wallets to db')
+    print(f'{datetime.utcnow()}: Added list of {len(validators_wallets)} LIDO validators wallets to db')
 
     connection.close()
