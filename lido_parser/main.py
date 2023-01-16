@@ -3,7 +3,7 @@ from time import time, sleep
 import logging
 import sys
 
-from pymongo import MongoClient, Database
+from pymongo import MongoClient, Collection
 from pymongo.errors import ConnectionError, OperationFailure, PyMongoError
 from web3 import Web3
 from web3.exceptions import Web3Exception
@@ -27,7 +27,7 @@ def get_mongo_table(
     connection_string: str,
     table_name: str,
     collection_name: str
-) -> Tuple[MongoClient, Database, bool]:
+) -> Tuple[MongoClient, Collection, bool]:
     '''
     Get MongoDB connection and table
 
