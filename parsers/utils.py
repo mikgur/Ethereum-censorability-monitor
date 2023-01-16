@@ -42,6 +42,7 @@ def get_mongo_collection(
 
     return client, collection, is_successful
 
+
 def get_lido_validators(node_connection_string: str, logger: Logger) -> Tuple[List[str], bool]:
     '''
     Get list of LIDO validators wallets
@@ -94,7 +95,8 @@ def list_to_json(validators_wallets: List[str]) -> Dict:
         'dt': time(),
         'lido_validators': validators_wallets
     }
-    
+
+
 def get_banned_wallets(ofac_list_url: str, logger: Logger) -> Tuple[List[Dict[str, str]], bool]:
     '''
     Get list of cryptowallets banned by OFAC
