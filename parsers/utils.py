@@ -1,33 +1,23 @@
+from typing import List, Dict, Tuple
+from logging import Logger
+from time import time
 import urllib.request as req
 from urllib.error import URLError
 import re
-from typing import List, Dict, Tuple
-from time import time, sleep
-import logging
-import sys
 
+from pymongo.errors import ConnectionError
+from web3 import Web3
+from web3.exceptions import Web3Exception
+from lido_sdk import Lido, LidoException
 from pymongo import MongoClient, Collection
-from pymongo.errors import ConnectionError, OperationFailure, PyMongoError
 import pandas as pd
 
-from cfg import CONNECTION_STRING, TABLE_NAME, COLLECTION_NAME, OFAC_LIST_URL
 
-
-logger = logging.getLogger()
-fileHandler = logging.FileHandler('logs/ofac_parser_logs.log')
-fileHandler.setFormatter(logging.Formatter(
-    fmt='[%(asctime)s: %(levelname)s] %(message)s'))
-logger.addHandler(fileHandler)
-streamHandler = logging.StreamHandler(stream=sys.stdout)
-streamHandler.setFormatter(logging.Formatter(
-    fmt='[%(asctime)s: %(levelname)s] %(message)s'))
-logger.addHandler(streamHandler)
-
-
-def get_mongo_table(
+def get_mongo_collection(
     connection_string: str,
     table_name: str,
-    collection_name: str
+    collection_name: str,
+    logger: Logger
 ) -> Tuple[MongoClient, Collection, bool]:
     '''
     Get MongoDB connection and table
@@ -45,20 +35,73 @@ def get_mongo_table(
     try:
         client = MongoClient(connection_string)
         collection = client[f'{table_name}'][f'{collection_name}']
-        logging.info('DB connection has opened successfully')
+        logger.info('DB connection has opened successfully')
     except ConnectionError as e:
         is_successful = False
-        logging.error(f'Connection error: {e}')
+        logger.error(f'Connection error: {e}')
 
     return client, collection, is_successful
 
+def get_lido_validators(node_connection_string: str, logger: Logger) -> Tuple[List[str], bool]:
+    '''
+    Get list of LIDO validators wallets
 
-def get_banned_wallets(ofac_list_url: str) -> Tuple[List[Dict[str, str]], bool]:
+    Args:
+        node_connection_string: Connection string of ETH node
+        logger:                 Logger 
+
+    Returns:
+        List of LIDO validators' ETH wallets addresses
+    '''
+    wallets, is_successful = None, True
+
+    try:
+        # Connect to ETH Node
+        w3 = Web3(Web3.HTTPProvider(
+            f'{node_connection_string}'))
+        try:
+            lido = Lido(w3)
+            # Get list of indexes of LIDO validators
+            indexes = lido.get_operators_indexes()
+            # Get validators data
+            validators_data = lido.get_operators_data(indexes)
+
+            wallets = [validator['rewardAddress']
+                       for validator in validators_data]
+        except LidoException as le:
+            is_successful = False
+            logger.error(f'LIDO exception: {le}')
+
+    except Web3Exception as w3e:
+        is_successful = False
+        logger.error(f'Web3 exception: {w3e}')
+
+    return wallets, is_successful
+
+
+def list_to_json(validators_wallets: List[str]) -> Dict:
+    '''
+    Transform list of addresses to json object
+
+    Args:
+        validators_wallets: List of LIDO validators' ETH wallets addresses
+
+    Returns:
+        JSON with list of LIDO validators' ETH wallets addresses
+    '''
+
+    return {
+        'dt': time(),
+        'lido_validators': validators_wallets
+    }
+    
+def get_banned_wallets(ofac_list_url: str, logger: Logger) -> Tuple[List[Dict[str, str]], bool]:
     '''
     Get list of cryptowallets banned by OFAC
 
     Args:
-        ofac_list_url: URL of complete OFAC SDN list
+        ofac_list_url:  URL of complete OFAC SDN list
+        logger:         Logger
 
     Returns:
         List of cryptowallets addresses
@@ -118,46 +161,3 @@ def get_grouped_by_prefixes(banned_wallets: List[Dict[str, str]]) -> Dict:
     entity['dt'] = int(time())
 
     return entity
-
-
-if __name__ == '__main__':
-    is_successful = False
-
-    while not is_successful:
-        logging.info('OFAC list parsing has started')
-
-        connection, collection, is_successful = get_mongo_table(
-            CONNECTION_STRING, TABLE_NAME, COLLECTION_NAME)
-        if not is_successful:
-            logging.warning('Parsing has failed. Restart in 1 minute')
-            sleep(60)
-            continue
-
-        banned_wallets, is_successful = get_banned_wallets(
-            OFAC_LIST_URL)
-        if not is_successful:
-            logging.warning('Parsing has failed. Restart in 1 minute')
-            sleep(60)
-            continue
-
-        try:
-            collection.insert_one(get_grouped_by_prefixes(banned_wallets))
-        except OperationFailure as ope:
-            logging.error(f'Insertion error: {ope}')
-            logging.warning('Parsing has failed. Restart in 1 minute')
-            sleep(60)
-            continue
-        except PyMongoError as e:
-            logging.error(f'PyMongo error: {e}')
-            logging.warning('Parsing has failed. Restart in 1 minute')
-            sleep(60)
-            continue
-
-        logging.info(
-            f'Added list of {len(banned_wallets)} banned wallets to db')
-        logging.info('OFAC parsing has successfully completed')
-
-        connection.close()
-        logging.info('DB connection has closed')
-
-        is_successful = True
