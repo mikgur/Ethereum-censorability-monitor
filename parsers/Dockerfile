@@ -23,4 +23,4 @@ WORKDIR /parsers
 RUN poetry install
 
 RUN chmod +x ./start_autoupdate.sh
-#RUN sh start_autoupdate.sh
+ENTRYPOINT sh start_autoupdate.sh
