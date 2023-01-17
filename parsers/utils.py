@@ -1,15 +1,13 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 from logging import Logger
 from time import time
 import urllib.request as req
 from urllib.error import URLError
 import re
 
-from pymongo.errors import ConnectionError
 from web3 import Web3
-from web3.exceptions import Web3Exception
-from lido_sdk import Lido, LidoException
-from pymongo import MongoClient, Collection
+from lido_sdk import Lido
+from pymongo import MongoClient
 import pandas as pd
 
 
@@ -18,7 +16,7 @@ def get_mongo_collection(
     table_name: str,
     collection_name: str,
     logger: Logger
-) -> Tuple[MongoClient, Collection, bool]:
+) -> Tuple[MongoClient, Any, bool]:
     '''
     Get MongoDB connection and table
 
@@ -36,7 +34,7 @@ def get_mongo_collection(
         client = MongoClient(connection_string)
         collection = client[f'{table_name}'][f'{collection_name}']
         logger.info('DB connection has opened successfully')
-    except ConnectionError as e:
+    except Exception as e:
         is_successful = False
         logger.error(f'Connection error: {e}')
 
@@ -69,11 +67,11 @@ def get_lido_validators(node_connection_string: str, logger: Logger) -> Tuple[Li
 
             wallets = [validator['rewardAddress']
                        for validator in validators_data]
-        except LidoException as le:
+        except Exception as le:
             is_successful = False
             logger.error(f'LIDO exception: {le}')
 
-    except Web3Exception as w3e:
+    except Exception as w3e:
         is_successful = False
         logger.error(f'Web3 exception: {w3e}')
 
