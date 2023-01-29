@@ -114,12 +114,12 @@ def get_banned_wallets(ofac_list_url: str, logger: Logger) -> Tuple[List[Dict[st
             address: Cryptowallet address in format Digital Currency Address - ...;
 
         Returns:
-            Cryptowallet address in format {prefix : address}
+            Cryptowallet address
         '''
         splitted = address.split(' ')
         prefix = splitted[-2]
         address_ = splitted[-1][:-1]
-        return {prefix: address_}
+        return {'prefix': prefix, 'wallet': address_}
 
     is_successful = True
 
@@ -147,13 +147,13 @@ def get_grouped_by_prefixes(banned_wallets: List[Dict[str, str]]) -> Dict:
     Group all wallets by address prefix
 
     Args:
-        banned_wallets: List of cryptowallets addresses in format {prefix:address}
+        banned_wallets: List of cryptowallets addresses
 
     Returns:
         Dict in format {wallets: {prefix : list of addresses}, dt: time}
     '''
-    wallets = pd.DataFrame(banned_wallets, columns=['Prefix', 'Wallet'])
-    grouped_wallets = wallets.groupby('Prefix')['Wallet'].apply(list)
+    wallets = pd.DataFrame(banned_wallets, columns=['prefix', 'wallet'])
+    grouped_wallets = wallets.groupby('prefix')['wallet'].apply(list)
     grouped_wallets = grouped_wallets.to_dict()
 
     entity = {}
