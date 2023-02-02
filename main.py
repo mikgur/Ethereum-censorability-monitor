@@ -29,6 +29,7 @@ client = MongoClient(mongo_url)
 db = client['ethereum_mempool']
 first_seen = db['first_seen']
 details = db['details']
+accounts = db['account_n_transactions']
 
 not_found_transactions = set()
 
@@ -60,12 +61,12 @@ async def log_loop(event_filter, poll_interval):
         hashes_in_db = [d['hash'] for d in found_in_db]
         new_hashes = [h for h in new_transactions if h not in hashes_in_db]
         # Prepare data for insertion
-        new_transactions_data = [{'hash': h, 'timestamp': current_time}
-                                 for h in new_hashes]
+        new_transactions_first_seen = [{'hash': h, 'timestamp': current_time}
+                                       for h in new_hashes]
         # Insert new transactions
-        if new_transactions_data:
-            first_seen.insert_many(new_transactions_data)
-        fs_inserted = len(new_transactions_data)
+        if new_transactions_first_seen:
+            first_seen.insert_many(new_transactions_first_seen)
+        fs_inserted = len(new_transactions_first_seen)
 
         # Insert details
         # Find new transactions
@@ -74,6 +75,7 @@ async def log_loop(event_filter, poll_interval):
         new_hashes = [h for h in new_transactions if h not in hashes_in_db]
         # Prepare data for insertion
         new_transactions_data = []
+        accounts_n_transactions = []
         for h in new_hashes:
             try:
                 transaction = web3.eth.get_transaction(h)
@@ -81,6 +83,13 @@ async def log_loop(event_filter, poll_interval):
                 if 'value' in transaction_dict:
                     transaction_dict['value'] = str(transaction_dict['value'])
                 new_transactions_data.append(transaction_dict)
+                # Add account current n transactions:
+                acc_n_transactions = web3.eth.get_transaction_count(
+                    transaction['from'])
+                accounts_n_transactions.append(
+                    {'hash': h,
+                     'account': transaction_dict['from'],
+                     'n_transactions': acc_n_transactions})
             except TransactionNotFound:
                 not_found_transactions.add((h, current_time))
             except Exception as err:
@@ -90,8 +99,14 @@ async def log_loop(event_filter, poll_interval):
             details.insert_many(new_transactions_data)
         d_inserted = len(new_transactions_data)
 
+        # Insert account n transactions
+        if accounts_n_transactions:
+            accounts.insert_many(accounts_n_transactions)
+        # n_accounts_inserted = len(accounts_n_transactions)
+
         # Try to fetch details for not found transactions
         new_transactions_data = []
+        accounts_n_transactions = []
         remove_from_not_found_list = set()
         for h, t in not_found_transactions:
             try:
@@ -101,6 +116,15 @@ async def log_loop(event_filter, poll_interval):
                     transaction_dict['value'] = str(transaction_dict['value'])
                 new_transactions_data.append(transaction_dict)
                 remove_from_not_found_list.add((h, t))
+
+                # Add account current n transactions:
+                acc_n_transactions = web3.eth.get_transaction_count(
+                    transaction['from'])
+                accounts_n_transactions.append(
+                    {'hash': h,
+                     'account': transaction_dict['from'],
+                     'n_transactions': acc_n_transactions})
+
             except TransactionNotFound:
                 pass
             except Exception as err:
@@ -112,6 +136,12 @@ async def log_loop(event_filter, poll_interval):
         if new_transactions_data:
             details.insert_many(new_transactions_data)
         nf_inserted = len(new_transactions_data)
+
+        # Insert account n transactions
+        if accounts_n_transactions:
+            accounts.insert_many(accounts_n_transactions)
+        # nf_accounts_inserted = len(accounts_n_transactions)
+
         # Remove from not found list
         not_found_transactions.difference_update(remove_from_not_found_list)
         n_old = len(remove_from_not_found_list) - nf_inserted
@@ -132,7 +162,7 @@ def main():
     try:
         loop.run_until_complete(
             asyncio.gather(
-                log_loop(tx_filter, 1)))
+                log_loop(tx_filter, 0.5)))
     finally:
         loop.close()
 
