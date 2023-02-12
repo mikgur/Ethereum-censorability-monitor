@@ -5,3 +5,4 @@ __pycache__
 *.log
 block_addresses_details/
 block_adresses_details_old/
+.env
