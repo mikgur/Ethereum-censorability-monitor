@@ -27,12 +27,14 @@ def main():
                 mongo_url=mongo_url,
                 web3_type=web3_connection_type,
                 web3_url=web3_url,
-                interval=0.5)
+                interval=0.5,
+                verbose=False)
     block_collector = BlockCollector(
                 mongo_url=mongo_url,
                 web3_type=web3_connection_type,
                 web3_url=web3_url,
-                interval=3)
+                interval=3,
+                verbose=True)
     collectors = [mempool_collecotr, block_collector]
 
     data_collector = CollectorManager(collectors)
