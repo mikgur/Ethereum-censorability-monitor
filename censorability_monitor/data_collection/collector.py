@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -6,6 +7,7 @@ from multiprocessing import current_process
 from typing import List
 
 from pymongo import MongoClient, UpdateOne
+from pymongo.errors import BulkWriteError
 from web3.auto import Web3
 from web3.exceptions import ContractLogicError, TransactionNotFound
 
@@ -74,6 +76,7 @@ class MempoolCollector(DataCollector):
         first_seen_collection.create_index('hash', unique=True)
         tx_details_collection.create_index('hash', unique=True)
         tx_filter = w3.eth.filter('pending')
+        i = 0
         while True:
             t1 = time.time()
             new_transactions = tx_filter.get_new_entries()
@@ -120,12 +123,20 @@ class MempoolCollector(DataCollector):
                              f'txs from {n} total'))
             # Insert details
             if new_transactions_details:
-                tx_details_collection.insert_many(new_transactions_details)
-
+                try:
+                    tx_details_collection.insert_many(
+                        new_transactions_details, ordered=False)
+                except BulkWriteError as bwe:
+                    for err_details in bwe.details['writeErrors']:
+                        if err_details['code'] != 11000:
+                            raise bwe
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
                 logger.warning(f'Slow collector: {current_process().name}')
+            i += 1
+            if i % 20 == 0:
+                logger.info('Mempool collector alive!')
             await asyncio.sleep(max(time_left, 0))
 
 
@@ -163,50 +174,67 @@ def split_on_chunks(a: List, chunk_size: int):
         yield a[i:i + chunk_size]
 
 
-def estimate_transaction_gas(tx_hash, block_number, w3):
-    logger = logging.getLogger('estimate_transaction_gas')
-    try:
-        ''' Prepare transaction to gas estimation.'''
-        attempt = 0
-        found = False
-        while not found and attempt < 5:
-            try:
-                tx_for_estimate = w3.eth.get_transaction(tx_hash)
-                found = True
-            except TransactionNotFound:
-                # Транзакция не найдена - эта и все остальны транзакции
-                # не могут быть включены в блок
-                attempt += 1
-        if not found:
-            return 'tx_not_found'
-        tx_for_estimate = dict(**tx_for_estimate)
-        if 'value' in tx_for_estimate:
-            tx_for_estimate['value'] = str(tx_for_estimate['value'])
-        del tx_for_estimate['hash']
-        del tx_for_estimate['blockHash']
-        del tx_for_estimate['blockNumber']
-        del tx_for_estimate['r']
-        del tx_for_estimate['s']
-        if 'accessList' in tx_for_estimate:
-            del tx_for_estimate['accessList']
-        if 'maxFeePerGas' in tx_for_estimate:
-            del tx_for_estimate['gasPrice']
-        # tx_json = Web3.toJSON(tx_for_estimate)
-        est_gas = w3.eth.estimate_gas(
-            tx_for_estimate, block_number)
-        return est_gas
-    except ContractLogicError:
-        # Ошибка в логике контракта - эта и все остальны транзакции
-        # не могут быть включены в блок
-        return 'contract_logic_error'
-    except ValueError as e:
-        # Не хватает газа для транзакции - эта и все остальны транзакции
-        # не могут быть включены в блок
-        return f'{e.args[0]["message"]}'
-    except Exception as e:
-        logger.error(f'Unexpected error: {tx_for_estimate}')
-        logger.error(f'{type(e)} {e.args}')
-        return 'error'
+class GasEstimator:
+    def __init__(self, web3_type: str, web3_url: str):
+        self.logger = logging.getLogger('GasEstimator')
+        self.web3_type = web3_type
+        self.web3_url = web3_url
+
+    def get_web3_client(self):
+        if self.web3_type == 'ipc':
+            w3 = Web3(Web3.IPCProvider(self.web3_url))
+            return w3
+        else:
+            msg = f'Unexpected web3 connection type: {self.web3_type}'
+            self.logger.error(msg)
+            raise Exception(msg)
+
+    def estimate_chunk_gas(self, chunk, block_number):
+        w3 = self.get_web3_client()
+        gas_estimates = {}
+        for tx_details in chunk:
+            tx_hash = tx_details['hash']
+            result = self.estimate_tx_gas(tx_details, block_number, w3)
+            gas_estimates[tx_hash] = result
+        return gas_estimates
+
+    def estimate_tx_gas(self, tx_details, block_number, w3):
+        try:
+            tx_data = tx_details.copy()
+            del tx_data['_id']
+            del tx_data['hash']
+            del tx_data['blockHash']
+            del tx_data['blockNumber']
+            del tx_data['r']
+            del tx_data['s']
+            if 'gasPrice' in tx_data and 'maxFeePerGas' in tx_data:
+                del tx_data['gasPrice']
+            json_tx = w3.toJSON(tx_data)
+            json_tx = json.loads(json_tx)
+            est_gas = w3.eth.estimate_gas(
+                json_tx, block_number)
+            return est_gas
+        except ContractLogicError:
+            return 'contract_logic_error'
+        except ValueError as e:
+            if e.args[0]['message'].startswith(
+                    'err: max fee per gas less than block base fee'):
+                return 'low maxFeePerGass'
+            elif e.args[0]['message'] == 'insufficient funds for transfer':
+                return 'not enough eth'
+            elif e.args[0]['message'].startswith(
+                    'invalid opcode'):
+                return 'invalid opcode'
+            elif e.args[0]['message'].startswith(
+                    'gas required exceeds allowance'):
+                return 'low gas limit'
+            elif e.args[0]['message'].startswith(
+                    'invalid jump destination'):
+                return 'invalid jump'
+            elif e.args[0]['message'].startswith(
+                    'contract creation code storage out of gas'):
+                return 'contract creation error'
+            return 'unknown value error'
 
 
 class BlockCollector(DataCollector):
@@ -217,6 +245,10 @@ class BlockCollector(DataCollector):
         self.max_workers = 256
         self.address_data_collectors = [
             AddressDataCollector(web3_type, web3_url)
+            for _ in range(self.max_workers)
+        ]
+        self.gas_estimators = [
+            GasEstimator(web3_type, web3_url)
             for _ in range(self.max_workers)
         ]
 
@@ -307,9 +339,48 @@ class BlockCollector(DataCollector):
 
         # Put found details to db
         if found_details:
-            tx_details_collection.insert_many(found_details)
+            try:
+                tx_details_collection.insert_many(
+                    found_details, ordered=False)
+            except BulkWriteError as bwe:
+                for err_details in bwe.details['writeErrors']:
+                    if err_details['code'] != 11000:
+                        raise bwe
         n_removed = len(remove_from_mempool)
         logger.info(f'Will estimate gas for {len(txs_for_gas_estimate)} txs')
+
+        # Estimate gas for txs
+        transactions_details = tx_details_collection.find(
+            {'hash': {'$in': list(txs_for_gas_estimate)}}
+        )
+        transactions_details = [d for d in transactions_details]
+        t4 = time.time()
+        batch_size = 1000
+        num_workers = min(len(transactions_details) // batch_size + 1,
+                          self.max_workers)
+        process_executor = ProcessPoolExecutor(max_workers=num_workers)
+        event_loop = asyncio.get_event_loop()
+        chunks = list(split_on_chunks(list(transactions_details), batch_size))
+        estimated_gas = {}
+        for i in range(0, len(chunks), num_workers):
+            current_chunks = chunks[i:i + num_workers]
+            collection_tasks = [
+                event_loop.run_in_executor(
+                    process_executor,
+                    estimator.estimate_chunk_gas,
+                    chunk,
+                    block_number - 1
+                )
+                for estimator, chunk in zip(self.gas_estimators,
+                                            current_chunks)
+            ]
+            data = await asyncio.gather(*collection_tasks)
+            for d in data:
+                estimated_gas.update(d)
+        t5 = time.time()
+        logger.info((f'Gas estimation took {int(t5 - t4)} '
+                     f'seconds - got {len(estimated_gas)}'))
+        # TODO Save gas estimation to Mongo DB
 
         # Remove old enough txs without details
         first_seen_collection.delete_many(
