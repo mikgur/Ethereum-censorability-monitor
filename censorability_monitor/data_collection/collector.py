@@ -5,10 +5,9 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import current_process
 from typing import List
 
-from pymongo import MongoClient
-from pymongo import UpdateOne
+from pymongo import MongoClient, UpdateOne
 from web3.auto import Web3
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import ContractLogicError, TransactionNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +70,9 @@ class MempoolCollector(DataCollector):
         # Get the collections
         db = mongo_client['ethereum_mempool']
         first_seen_collection = db['tx_first_seen_ts']
+        tx_details_collection = db['tx_details']
+        first_seen_collection.create_index('hash', unique=True)
+        tx_details_collection.create_index('hash', unique=True)
         tx_filter = w3.eth.filter('pending')
         while True:
             t1 = time.time()
@@ -80,13 +82,14 @@ class MempoolCollector(DataCollector):
             found_in_db = first_seen_collection.find(
                 {"hash": {"$in": new_transactions}})
             existing_hashes = [d['hash'] for d in found_in_db]
-            new_hashes = [h for h in new_transactions
-                          if h not in existing_hashes]
+            new_hashes = set([h for h in new_transactions
+                              if h not in existing_hashes])
             # Prepare data for insertion
             new_transactions_first_seen = [{'hash': h, 'timestamp': int(t1)}
                                            for h in new_hashes]
             # Add details to new transactions
             details_not_found = 0
+            new_transactions_details = []
             for tx in new_transactions_first_seen:
                 try:
                     tx_data = w3.eth.getTransaction(tx['hash'])
@@ -96,6 +99,11 @@ class MempoolCollector(DataCollector):
                         tx['maxFeePerGas'] = tx_data['maxFeePerGas']
                     else:
                         tx['maxFeePerGas'] = tx_data['gasPrice']
+                    # Collect all details in the tx_details collection
+                    transaction_dict = dict(**tx_data)
+                    if 'value' in transaction_dict:
+                        transaction_dict['value'] = str(transaction_dict['value']) # noqa E501
+                    new_transactions_details.append(transaction_dict)
                 except TransactionNotFound:
                     details_not_found += 1
                     continue
@@ -110,6 +118,10 @@ class MempoolCollector(DataCollector):
                 logger.info((f'Inserted {n_inserted} new txs, '
                              f'found {details_found}/{n_new_txs}'
                              f'txs from {n} total'))
+            # Insert details
+            if new_transactions_details:
+                tx_details_collection.insert_many(new_transactions_details)
+
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
@@ -151,6 +163,52 @@ def split_on_chunks(a: List, chunk_size: int):
         yield a[i:i + chunk_size]
 
 
+def estimate_transaction_gas(tx_hash, block_number, w3):
+    logger = logging.getLogger('estimate_transaction_gas')
+    try:
+        ''' Prepare transaction to gas estimation.'''
+        attempt = 0
+        found = False
+        while not found and attempt < 5:
+            try:
+                tx_for_estimate = w3.eth.get_transaction(tx_hash)
+                found = True
+            except TransactionNotFound:
+                # Транзакция не найдена - эта и все остальны транзакции
+                # не могут быть включены в блок
+                attempt += 1
+        if not found:
+            return 'tx_not_found'
+        tx_for_estimate = dict(**tx_for_estimate)
+        if 'value' in tx_for_estimate:
+            tx_for_estimate['value'] = str(tx_for_estimate['value'])
+        del tx_for_estimate['hash']
+        del tx_for_estimate['blockHash']
+        del tx_for_estimate['blockNumber']
+        del tx_for_estimate['r']
+        del tx_for_estimate['s']
+        if 'accessList' in tx_for_estimate:
+            del tx_for_estimate['accessList']
+        if 'maxFeePerGas' in tx_for_estimate:
+            del tx_for_estimate['gasPrice']
+        # tx_json = Web3.toJSON(tx_for_estimate)
+        est_gas = w3.eth.estimate_gas(
+            tx_for_estimate, block_number)
+        return est_gas
+    except ContractLogicError:
+        # Ошибка в логике контракта - эта и все остальны транзакции
+        # не могут быть включены в блок
+        return 'contract_logic_error'
+    except ValueError as e:
+        # Не хватает газа для транзакции - эта и все остальны транзакции
+        # не могут быть включены в блок
+        return f'{e.args[0]["message"]}'
+    except Exception as e:
+        logger.error(f'Unexpected error: {tx_for_estimate}')
+        logger.error(f'{type(e)} {e.args}')
+        return 'error'
+
+
 class BlockCollector(DataCollector):
     def __init__(self, mongo_url: str, web3_type: str, web3_url: str,
                  interval: float = 3, verbose: bool = True):
@@ -185,10 +243,12 @@ class BlockCollector(DataCollector):
 
     async def process_block_data(self, block_number: int,
                                  w3: Web3, mongo_client: MongoClient):
+        t1 = time.time()
         logger = logging.getLogger(self.name)
-        logger.info(f'Processing block {block_number}')
+        logger.info(f'Start processing block {block_number}')
         db = mongo_client['ethereum_mempool']
         first_seen_collection = db['tx_first_seen_ts']
+        tx_details_collection = db['tx_details']
         block = w3.eth.getBlock(block_number)
         block_ts = block['timestamp']
         # Get transactions from mempool that are not in the blocks
@@ -206,6 +266,8 @@ class BlockCollector(DataCollector):
         # Remove old txs without details
         # Try to find deails for txs without details
         # Get list of addresses with txs with enough gas price
+        txs_for_gas_estimate = set()
+        found_details = []
         for tx in transactions:
             n_mempool_txs += 1
             if 'from' not in tx:
@@ -221,6 +283,11 @@ class BlockCollector(DataCollector):
                     first_seen_collection.update_one(
                         {'hash': tx['hash']},
                         {'$set': found_tx})
+                    # Save all details
+                    transaction_dict = dict(**tx_data)
+                    if 'value' in transaction_dict:
+                        transaction_dict['value'] = str(transaction_dict['value']) # noqa E501
+                    found_details.append(transaction_dict)
                     old_txs_found += 1
                 except TransactionNotFound:
                     no_details += 1
@@ -233,9 +300,17 @@ class BlockCollector(DataCollector):
                     and tx['maxFeePerGas'] < block['baseFeePerGas']):
                 low_fee_txs += 1
                 continue
+            # Put into list for gas estimation
+            txs_for_gas_estimate.add(tx['hash'])
             mempool_accounts.add(tx['from'])
         logger.info(f'Found {old_txs_found} old transactions')
+
+        # Put found details to db
+        if found_details:
+            tx_details_collection.insert_many(found_details)
         n_removed = len(remove_from_mempool)
+        logger.info(f'Will estimate gas for {len(txs_for_gas_estimate)} txs')
+
         # Remove old enough txs without details
         first_seen_collection.delete_many(
             {'hash': {'$in': remove_from_mempool}})
@@ -244,7 +319,7 @@ class BlockCollector(DataCollector):
         logger.info(f'Interesting accs in mempool: {len(mempool_accounts)}')
 
         # Update accounts info:
-        t1 = time.time()
+        t2 = time.time()
         batch_size = 1000
         num_workers = min(len(mempool_accounts) // batch_size + 1,
                           self.max_workers)
@@ -300,7 +375,8 @@ class BlockCollector(DataCollector):
         logger.info((f'Updated {result.modified_count} transactions of '
                      f'{len(block["transactions"])} in block'))
         logger.info((f'Processing with {num_workers} workers addresses '
-                     f'took {int(time.time() - t1)} s'))
+                     f'took {int(time.time() - t2)} s'))
+        logger.info(f'Block processing took {int(time.time() - t1)} s')
 
 
 class CollectorManager:
