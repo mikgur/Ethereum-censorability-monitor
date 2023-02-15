@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 
 from censorability_monitor.data_collection import (BlockCollector,
                                                    CollectorManager,
-                                                   MempoolCollector)
+                                                   MempoolCollector,
+                                                   MemPoolGasEstimator)
 
 load_dotenv()
 
@@ -35,7 +36,13 @@ def main():
                 web3_url=web3_url,
                 interval=3,
                 verbose=True)
-    collectors = [mempool_collecotr, block_collector]
+    mempool_gas_estimator = MemPoolGasEstimator(
+                mongo_url=mongo_url,
+                web3_type=web3_connection_type,
+                web3_url=web3_url,
+                interval=3,
+                verbose=True)
+    collectors = [mempool_collecotr, block_collector, mempool_gas_estimator]
 
     data_collector = CollectorManager(collectors)
     asyncio.run(data_collector.start())

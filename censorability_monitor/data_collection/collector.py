@@ -195,7 +195,8 @@ class GasEstimator:
         for tx_details in chunk:
             tx_hash = tx_details['hash']
             result = self.estimate_tx_gas(tx_details, block_number, w3)
-            gas_estimates[tx_hash] = result
+            gas_estimates[tx_hash] = {'block_number': block_number,
+                                      'gas': result}
         return gas_estimates
 
     def estimate_tx_gas(self, tx_details, block_number, w3):
@@ -298,7 +299,6 @@ class BlockCollector(DataCollector):
         # Remove old txs without details
         # Try to find deails for txs without details
         # Get list of addresses with txs with enough gas price
-        txs_for_gas_estimate = set()
         found_details = []
         for tx in transactions:
             n_mempool_txs += 1
@@ -332,8 +332,6 @@ class BlockCollector(DataCollector):
                     and tx['maxFeePerGas'] < block['baseFeePerGas']):
                 low_fee_txs += 1
                 continue
-            # Put into list for gas estimation
-            txs_for_gas_estimate.add(tx['hash'])
             mempool_accounts.add(tx['from'])
         logger.info(f'Found {old_txs_found} old transactions')
 
@@ -347,40 +345,6 @@ class BlockCollector(DataCollector):
                     if err_details['code'] != 11000:
                         raise bwe
         n_removed = len(remove_from_mempool)
-        logger.info(f'Will estimate gas for {len(txs_for_gas_estimate)} txs')
-
-        # Estimate gas for txs
-        transactions_details = tx_details_collection.find(
-            {'hash': {'$in': list(txs_for_gas_estimate)}}
-        )
-        transactions_details = [d for d in transactions_details]
-        t4 = time.time()
-        batch_size = 1000
-        num_workers = min(len(transactions_details) // batch_size + 1,
-                          self.max_workers)
-        process_executor = ProcessPoolExecutor(max_workers=num_workers)
-        event_loop = asyncio.get_event_loop()
-        chunks = list(split_on_chunks(list(transactions_details), batch_size))
-        estimated_gas = {}
-        for i in range(0, len(chunks), num_workers):
-            current_chunks = chunks[i:i + num_workers]
-            collection_tasks = [
-                event_loop.run_in_executor(
-                    process_executor,
-                    estimator.estimate_chunk_gas,
-                    chunk,
-                    block_number - 1
-                )
-                for estimator, chunk in zip(self.gas_estimators,
-                                            current_chunks)
-            ]
-            data = await asyncio.gather(*collection_tasks)
-            for d in data:
-                estimated_gas.update(d)
-        t5 = time.time()
-        logger.info((f'Gas estimation took {int(t5 - t4)} '
-                     f'seconds - got {len(estimated_gas)}'))
-        # TODO Save gas estimation to Mongo DB
 
         # Remove old enough txs without details
         first_seen_collection.delete_many(
@@ -448,6 +412,149 @@ class BlockCollector(DataCollector):
         logger.info((f'Processing with {num_workers} workers addresses '
                      f'took {int(time.time() - t2)} s'))
         logger.info(f'Block processing took {int(time.time() - t1)} s')
+
+        # Add blocknumber to processed blocks
+        processed_blocks_collection = db['processed_blocks']
+        processed_blocks_collection.insert_one(
+            {'block_info_saved': block_number})
+
+
+class MemPoolGasEstimator(DataCollector):
+    def __init__(self, mongo_url: str, web3_type: str, web3_url: str,
+                 interval: float = 3, verbose: bool = True):
+        super().__init__(mongo_url, web3_type, web3_url,
+                         interval, verbose, 'MemPoolGasEstimator')
+        self.max_workers = 256
+        self.gas_estimators = [
+            GasEstimator(web3_type, web3_url)
+            for _ in range(self.max_workers)
+        ]
+
+    async def collect(self):
+        logger = logging.getLogger(self.name)
+        mongo_client = self.get_mongo_client()
+        w3 = self.get_web3_client()
+        db = mongo_client['ethereum_mempool']
+        processed_blocks = db['processed_blocks']
+
+        # Wait for the first block to be processed
+        logger.info('Waiting for processed blocks')
+        total_blocks_prepared = processed_blocks.count_documents(
+                {'block_info_saved': {'$exists': True}})
+        while total_blocks_prepared == 0:
+            total_blocks_prepared = processed_blocks.count_documents(
+                {'block_info_saved': {'$exists': True}})
+            await asyncio.sleep(1)
+        logger.info('Waiting for recent (not older 128) processed block')
+        last_block_info_prepared_query = processed_blocks.find().sort(
+                'block_info_saved', -1).limit(1)
+        last_block_info_prepared = next(last_block_info_prepared_query)
+        last_block_saved = last_block_info_prepared['block_info_saved']
+        last_eth_block = w3.eth.blockNumber
+        while last_eth_block - last_block_saved > 128:
+            last_block_info_prepared_query = processed_blocks.find().sort(
+                'block_info_saved', -1).limit(1)
+            last_block_info_prepared = next(last_block_info_prepared_query)
+            last_block_saved = last_block_info_prepared['block_info_saved']
+            last_eth_block = w3.eth.blockNumber
+            await asyncio.sleep(1)
+        logger.info(f'Starting gas estimation from block {last_block_saved}')
+        current_block = last_block_saved
+        last_gas_est_block = current_block - 1
+        while True:
+            t1 = time.time()
+            if current_block > last_gas_est_block:
+                for block_number in range(last_gas_est_block + 1,
+                                          current_block + 1):
+                    await self.estimate_gas_for_mempool(
+                        block_number, w3, mongo_client)
+                    processed_blocks.insert_one(
+                        {'block_gas_estimated': block_number})
+                last_gas_est_block = current_block
+            t2 = time.time()
+            time_left = self.interval - (t2 - t1)
+            if time_left < 0:
+                logger.warning(f'Slow collector: {current_process().name}')
+            await asyncio.sleep(max(time_left, 0))
+
+            # Get last processed block
+            last_block_info_prepared_query = processed_blocks.find().sort(
+                'block_info_saved', -1).limit(1)
+            last_block_info_prepared = next(last_block_info_prepared_query)
+            current_block = last_block_info_prepared['block_info_saved']
+
+    async def estimate_gas_for_mempool(self, block_number: int,
+                                       w3: Web3, mongo_client: MongoClient):
+        t1 = time.time()
+        logger = logging.getLogger(self.name)
+        logger.info(f'Start gasestimation {block_number}')
+        db = mongo_client['ethereum_mempool']
+        first_seen_collection = db['tx_first_seen_ts']
+        tx_details_collection = db['tx_details']
+        block = w3.eth.getBlock(block_number)
+        block_ts = block['timestamp']
+        # Get transactions from mempool that are not in the blocks
+        # and update their from accounts data
+        transactions = first_seen_collection.find(
+            {'timestamp': {'$lte': block_ts},
+             'block_number': {'$exists': False}})
+        # Get mempool accounts and remove old txs without details
+        n_mempool_txs = 0
+        # Get list of interesting transactions
+        txs_for_gas_estimate = set()
+        for tx in transactions:
+            n_mempool_txs += 1
+            if 'from' not in tx:
+                continue
+            # check that tx maxGasPrice is higher than blocks BaseFeePerGas
+            if ('maxFeePerGas' in tx
+                    and tx['maxFeePerGas'] < block['baseFeePerGas']):
+                continue
+            # Put into list for gas estimation
+            txs_for_gas_estimate.add(tx['hash'])
+
+        logger.info(f'Will estimate gas for {len(txs_for_gas_estimate)} txs')
+
+        # Estimate gas for txs
+        transactions_details = tx_details_collection.find(
+            {'hash': {'$in': list(txs_for_gas_estimate)}}
+        )
+        transactions_details = [d for d in transactions_details]
+        batch_size = 1000
+        num_workers = min(len(transactions_details) // batch_size + 1,
+                          self.max_workers)
+        process_executor = ProcessPoolExecutor(max_workers=num_workers)
+        event_loop = asyncio.get_event_loop()
+        chunks = list(split_on_chunks(list(transactions_details), batch_size))
+        estimated_gas = {}
+        for i in range(0, len(chunks), num_workers):
+            current_chunks = chunks[i:i + num_workers]
+            collection_tasks = [
+                event_loop.run_in_executor(
+                    process_executor,
+                    estimator.estimate_chunk_gas,
+                    chunk,
+                    block_number - 1
+                )
+                for estimator, chunk in zip(self.gas_estimators,
+                                            current_chunks)
+            ]
+            data = await asyncio.gather(*collection_tasks)
+            for d in data:
+                estimated_gas.update(d)
+        # TODO Save gas estimation to Mongo DB
+        tx_gas_collection = db['tx_estimated_gas']
+        updates = []
+        for tx_hash, gas in estimated_gas.items():
+            updates.append(UpdateOne(
+                {'hash': tx_hash},
+                {'$set': {str(gas['block_number']): gas['gas']}},
+                upsert=True
+            ))
+        if len(updates) > 0:
+            tx_gas_collection.bulk_write(updates)
+        logger.info((f'Gas estimation took {int(time.time() - t1)} '
+                     f'seconds - got {len(estimated_gas)}'))
 
 
 class CollectorManager:
