@@ -102,12 +102,34 @@ def get_overall_ratios():
 
 @app.get('/data/latency')
 def get_mean_latency():
-    return{
-        'mean_latency': 31,
-        'mean_latency_with_full_censorship': 34,
-        'mean_latency_without_censorship': 28
-    }
-    
+    return[{
+        'period': 'last_week',
+        'mean_non_ofac_waiting': 9,
+        'mean_ofac_latency': 31,
+        'mean_ofac_latency_with_full_lido_censorship': 34,
+        'mean_ofac_latency_without_lido_censorship': 28
+    }, 
+    {
+        'period': 'last_month',
+        'mean_non_ofac_waiting': 8,
+        'mean_ofac_latency': 30,
+        'mean_ofac_latency_with_full_lido_censorship': 35,
+        'mean_ofac_latency_without_lido_censorship': 26
+    }]
+   
+@app.get('/data/censorship_percentage')
+def get_censorship_percentage():
+    return [{
+        'period': 'last_week',
+        'overall_censorship': 0.001,
+        'ofac_censorship': 0.4187
+    },
+    {
+        'period': 'last_month',
+        'overall_censorship': 0.0012,
+        'ofac_censorship': 0.4411
+    }]
+     
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
     
