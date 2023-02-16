@@ -541,6 +541,7 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
             if row['nonce'] > n_txs:
                 block_txs = True
                 break
+            n_txs += 1
         if block_txs:
             nonce_blocked = transactions_from_addr['hash'].values[i:]
             all_nonce_blocked.update(nonce_blocked)
