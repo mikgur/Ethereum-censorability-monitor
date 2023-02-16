@@ -6,6 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import current_process
 from typing import List
 
+import pandas as pd
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import BulkWriteError
 from web3.auto import Web3
@@ -79,7 +80,7 @@ class MempoolCollector(DataCollector):
         i = 0
         while True:
             t1 = time.time()
-            new_transactions = tx_filter.get_new_entries()
+            new_transactions = [tx.hex() for tx in tx_filter.get_new_entries()]
             n = len(new_transactions)
             # Find new transactions
             found_in_db = first_seen_collection.find(
@@ -106,6 +107,7 @@ class MempoolCollector(DataCollector):
                     transaction_dict = dict(**tx_data)
                     if 'value' in transaction_dict:
                         transaction_dict['value'] = str(transaction_dict['value']) # noqa E501
+                    transaction_dict['hash'] = transaction_dict['hash'].hex()
                     new_transactions_details.append(transaction_dict)
                 except TransactionNotFound:
                     details_not_found += 1
@@ -319,6 +321,7 @@ class BlockCollector(DataCollector):
                     transaction_dict = dict(**tx_data)
                     if 'value' in transaction_dict:
                         transaction_dict['value'] = str(transaction_dict['value']) # noqa E501
+                    transaction_dict['hash'] = transaction_dict['hash'].hex()
                     found_details.append(transaction_dict)
                     old_txs_found += 1
                 except TransactionNotFound:
@@ -404,8 +407,9 @@ class BlockCollector(DataCollector):
             accounts_collection.bulk_write(update_documents)
 
         # Add block number to transactions included in the current block
+        block_hashes = [h.hex() for h in block['transactions']]
         result = first_seen_collection.update_many(
-            {'hash': {'$in': block['transactions']}},
+            {'hash': {'$in': block_hashes}},
             {'$set': {'block_number': block_number}})
         logger.info((f'Updated {result.modified_count} transactions of '
                      f'{len(block["transactions"])} in block'))
@@ -413,10 +417,153 @@ class BlockCollector(DataCollector):
                      f'took {int(time.time() - t2)} s'))
         logger.info(f'Block processing took {int(time.time() - t1)} s')
 
+        # Remove reverted transactions from future queries
+        # We will set block_number -1 for them
+
+        transactions = first_seen_collection.find(
+            {'timestamp': {'$lte': block_ts},
+             'block_number': {'$exists': False}})
+        # Get list of interesting transactions
+        tx_details = []
+        for tx in transactions:
+            if 'from' not in tx:
+                continue
+            tx_details.append(tx)
+        records = []
+        for tx in tx_details:
+            records.append({'hash': tx['hash'],
+                            'from': tx['from'],
+                            'nonce': tx['nonce']})
+        if len(records) > 0:
+            tx_df = pd.DataFrame.from_records(records)
+            tx_grouped = tx_df.groupby(
+                ['from', 'hash']).agg({'nonce': 'first'})
+            total_reverted = 0
+            reverted_tx_hashes = set()
+            for addr in tx_df['from'].unique():
+                if addr not in address_data:
+                    continue
+                n_txs = address_data[addr]['n_txs']
+                addr_txs = tx_grouped.loc[addr].sort_values(
+                    'nonce', ascending=True
+                    ).reset_index()
+                addr_txs['reverted'] = addr_txs['nonce'] < n_txs
+                reverted = addr_txs['reverted'].sum()
+                reverted_tx_hashes.update(
+                    addr_txs[addr_txs['reverted']]['hash'])
+                total_reverted += reverted
+            logger.info(f'Found {total_reverted} reverted txs')
+            # Save result to db
+            first_seen_collection.update_many(
+                {'hash': {'$in': list(reverted_tx_hashes)}},
+                {'$set': {'block_number': -1}}
+            )
+
         # Add blocknumber to processed blocks
         processed_blocks_collection = db['processed_blocks']
         processed_blocks_collection.insert_one(
             {'block_info_saved': block_number})
+
+
+def get_transactions_for_gas_estimation(db, block_number, w3):
+    first_seen_collection = db['tx_first_seen_ts']
+    tx_details_collection = db['tx_details']
+    block = w3.eth.getBlock(block_number)
+    block_ts = block['timestamp']
+    # Get transactions from mempool that are not in the blocks
+    # and update their from accounts data
+    transactions = first_seen_collection.find(
+        {'timestamp': {'$lte': block_ts},
+         '$or': [{'block_number': {'$exists': False}},
+                 {'block_number': {'$gte': block_number}}]
+         })
+    # Get mempool accounts and remove old txs without details
+    n_mempool_txs = 0
+    # Get list of interesting transactions
+    txs_for_gas_estimate = set()
+    for tx in transactions:
+        n_mempool_txs += 1
+        if 'from' not in tx:
+            continue
+        # check that tx maxGasPrice is higher than blocks BaseFeePerGas
+        if ('maxFeePerGas' in tx
+                and tx['maxFeePerGas'] < block['baseFeePerGas']):
+            continue
+        # Put into list for gas estimation
+        txs_for_gas_estimate.add(tx['hash'])
+
+    # Get details
+    tx_details_collection = db['tx_details']
+    tx_details_db = tx_details_collection.find(
+        {'hash': {'$in': list(txs_for_gas_estimate)}})
+    tx_details = {tx['hash']: tx for tx in tx_details_db}
+
+    # Fetch address info
+    addresses = set()
+    for _, tx in tx_details.items():
+        addresses.add(tx['from'])
+
+    accounts_collection = db['addresses_info']
+    accounts_details_db = accounts_collection.find(
+        {'address': {'$in': list(addresses)}})
+
+    block_accounts_info = {
+        a['address']: {
+                        'eth': a[str(block_number - 1)]['eth'],
+                        'n_txs': a[str(block_number - 1)]['n_txs']
+                       }
+        for a in accounts_details_db
+        if str(block_number - 1) in a}
+    # Make df for nonce analysis
+    records = []
+    for _, tx in tx_details.items():
+        records.append({'hash': tx['hash'],
+                        'from': tx['from'],
+                        'nonce': tx['nonce']})
+
+    tx_df = pd.DataFrame.from_records(records)
+    if len(records) == 0:
+        return []
+    tx_grouped = tx_df.groupby(['from', 'hash']).agg({'nonce': 'first'})
+
+    # Remove transactions that can't be included to block due to high nonce
+    all_nonce_blocked = set()
+
+    for addr in tx_df['from'].unique():
+        if addr not in block_accounts_info:
+            continue
+        block_txs = False
+        n_txs = block_accounts_info[addr]['n_txs']
+        transactions_from_addr = tx_grouped.loc[addr].sort_values(
+            'nonce', ascending=True
+        ).reset_index()
+        for i, row in transactions_from_addr.iterrows():
+            if row['nonce'] > n_txs:
+                block_txs = True
+                break
+        if block_txs:
+            nonce_blocked = transactions_from_addr['hash'].values[i:]
+            all_nonce_blocked.update(nonce_blocked)
+
+    non_blocked = tx_df[~tx_df['hash'].isin(all_nonce_blocked)]
+    non_blocked_hashes = non_blocked['hash'].values
+
+    # Remove transactions with not enough value to transfer
+    eligible_transactions = []
+    for tx_hash in non_blocked_hashes:
+        if tx_hash not in tx_details:
+            continue
+        details = tx_details[tx_hash]
+        addr = details['from']
+        if addr not in block_accounts_info:
+            eligible_transactions.append(tx_hash)
+            continue
+        if 'value' in details:
+            value = int(details['value']) / 10 ** 18
+            if value >= block_accounts_info[addr]['eth']:
+                continue
+        eligible_transactions.append(tx_hash)
+    return eligible_transactions
 
 
 class MemPoolGasEstimator(DataCollector):
@@ -475,6 +622,7 @@ class MemPoolGasEstimator(DataCollector):
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
                 logger.warning(f'Slow collector: {current_process().name}')
+            # logger.info(f'Will wait for {max(time_left, 0)}')
             await asyncio.sleep(max(time_left, 0))
 
             # Get last processed block
@@ -482,40 +630,21 @@ class MemPoolGasEstimator(DataCollector):
                 'block_info_saved', -1).limit(1)
             last_block_info_prepared = next(last_block_info_prepared_query)
             current_block = last_block_info_prepared['block_info_saved']
+            # logger.info(f'Got last saved block: {current_block}')
 
     async def estimate_gas_for_mempool(self, block_number: int,
                                        w3: Web3, mongo_client: MongoClient):
         t1 = time.time()
         logger = logging.getLogger(self.name)
-        logger.info(f'Start gasestimation {block_number}')
+        logger.info(f'Start gas estimation {block_number}')
         db = mongo_client['ethereum_mempool']
-        first_seen_collection = db['tx_first_seen_ts']
-        tx_details_collection = db['tx_details']
-        block = w3.eth.getBlock(block_number)
-        block_ts = block['timestamp']
-        # Get transactions from mempool that are not in the blocks
-        # and update their from accounts data
-        transactions = first_seen_collection.find(
-            {'timestamp': {'$lte': block_ts},
-             'block_number': {'$exists': False}})
-        # Get mempool accounts and remove old txs without details
-        n_mempool_txs = 0
-        # Get list of interesting transactions
-        txs_for_gas_estimate = set()
-        for tx in transactions:
-            n_mempool_txs += 1
-            if 'from' not in tx:
-                continue
-            # check that tx maxGasPrice is higher than blocks BaseFeePerGas
-            if ('maxFeePerGas' in tx
-                    and tx['maxFeePerGas'] < block['baseFeePerGas']):
-                continue
-            # Put into list for gas estimation
-            txs_for_gas_estimate.add(tx['hash'])
 
-        logger.info(f'Will estimate gas for {len(txs_for_gas_estimate)} txs')
+        txs_for_gas_estimate = get_transactions_for_gas_estimation(
+            db, block_number, w3
+        )
 
         # Estimate gas for txs
+        tx_details_collection = db['tx_details']
         transactions_details = tx_details_collection.find(
             {'hash': {'$in': list(txs_for_gas_estimate)}}
         )
@@ -542,7 +671,7 @@ class MemPoolGasEstimator(DataCollector):
             data = await asyncio.gather(*collection_tasks)
             for d in data:
                 estimated_gas.update(d)
-        # TODO Save gas estimation to Mongo DB
+        # Save gas estimation to Mongo DB
         tx_gas_collection = db['tx_estimated_gas']
         updates = []
         for tx_hash, gas in estimated_gas.items():
@@ -554,7 +683,8 @@ class MemPoolGasEstimator(DataCollector):
         if len(updates) > 0:
             tx_gas_collection.bulk_write(updates)
         logger.info((f'Gas estimation took {int(time.time() - t1)} '
-                     f'seconds - got {len(estimated_gas)}'))
+                     f'seconds - got {len(estimated_gas)} of '
+                     f'{len(txs_for_gas_estimate)}'))
 
 
 class CollectorManager:
