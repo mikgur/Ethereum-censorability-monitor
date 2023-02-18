@@ -86,6 +86,14 @@ class MempoolCollector(DataCollector):
             found_in_db = first_seen_collection.find(
                 {"hash": {"$in": new_transactions}})
             existing_hashes = [d['hash'] for d in found_in_db]
+
+            # Return dropped txes
+            first_seen_collection.update_many(
+                {'hash': {'$in': existing_hashes}},
+                {'$set': {'dropped': False},
+                 '$unset': {'block_number': ''}}
+            )
+
             new_hashes = set([h for h in new_transactions
                               if h not in existing_hashes])
             # Prepare data for insertion
@@ -415,7 +423,6 @@ class BlockCollector(DataCollector):
                      f'{len(block["transactions"])} in block'))
         logger.info((f'Processing with {num_workers} workers addresses '
                      f'took {int(time.time() - t2)} s'))
-        logger.info(f'Block processing took {int(time.time() - t1)} s')
 
         # Remove reverted transactions from future queries
         # We will set block_number -1 for them
@@ -459,10 +466,37 @@ class BlockCollector(DataCollector):
                 {'$set': {'block_number': -1}}
             )
 
+        # Drop transactions that are not in mempool currently
+        t_drop = time.time()
+        mempool = w3.geth.txpool.content()
+        mempool_hashes = []
+        for _, v in mempool['queued'].items():
+            for _, w in v.items():
+                mempool_hashes.append(w['hash'])
+        for _, v in mempool['pending'].items():
+            for _, w in v.items():
+                mempool_hashes.append(w['hash'])
+        # Transactions older than hour without block
+        transactions = first_seen_collection.find(
+            {'timestamp': {'$lte': time.time() - 3600},
+             'block_number': {'$exists': False}
+             })
+        transactions_to_drop = []
+        for tx in transactions:
+            if tx['hash'] not in mempool_hashes:
+                transactions_to_drop.append(tx['hash'])
+        first_seen_collection.update_many(
+            {'hash': {'$in': transactions_to_drop}},
+            {'$set': {'block_number': -2, 'dropped': True}}
+        )
+        logger.info(f'Dropping txes took {time.time() - t_drop:0.2f} sec')
+
         # Add blocknumber to processed blocks
         processed_blocks_collection = db['processed_blocks']
         processed_blocks_collection.insert_one(
             {'block_info_saved': block_number})
+
+        logger.info(f'Block processing took {int(time.time() - t1)} s')
 
 
 def get_transactions_for_gas_estimation(db, block_number, w3):
@@ -472,6 +506,7 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
     block_ts = block['timestamp']
     # Get transactions from mempool that are not in the blocks
     # and update their from accounts data
+    # t1 = time.time()
     transactions = first_seen_collection.find(
         {'timestamp': {'$lte': block_ts},
          '$or': [{'block_number': {'$exists': False}},
@@ -491,12 +526,16 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
             continue
         # Put into list for gas estimation
         txs_for_gas_estimate.add(tx['hash'])
+    # t2 = time.time()
+    # print(f'Interval 1: {t2 - t1:0.2f} - found {len(txs_for_gas_estimate)}')
 
     # Get details
     tx_details_collection = db['tx_details']
     tx_details_db = tx_details_collection.find(
         {'hash': {'$in': list(txs_for_gas_estimate)}})
     tx_details = {tx['hash']: tx for tx in tx_details_db}
+    # t3 = time.time()
+    # print(f'Interval 2: {t3 - t2:0.2f}')
 
     # Fetch address info
     addresses = set()
@@ -514,6 +553,10 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
                        }
         for a in accounts_details_db
         if str(block_number - 1) in a}
+    # print(f'Accounts: {len(block_accounts_info)}')
+    # t4 = time.time()
+    # print(f'Interval 3: {t4 - t3:0.2f}')
+
     # Make df for nonce analysis
     records = []
     for _, tx in tx_details.items():
@@ -525,6 +568,9 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
     if len(records) == 0:
         return []
     tx_grouped = tx_df.groupby(['from', 'hash']).agg({'nonce': 'first'})
+
+    # t5 = time.time()
+    # print(f'Interval 4: {t5 - t4:0.2f}')
 
     # Remove transactions that can't be included to block due to high nonce
     all_nonce_blocked = set()
@@ -549,6 +595,9 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
     non_blocked = tx_df[~tx_df['hash'].isin(all_nonce_blocked)]
     non_blocked_hashes = non_blocked['hash'].values
 
+    # t6 = time.time()
+    # print(f'Interval 5: {t6 - t5:0.2f}')
+
     # Remove transactions with not enough value to transfer
     eligible_transactions = []
     for tx_hash in non_blocked_hashes:
@@ -564,6 +613,8 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
             if value >= block_accounts_info[addr]['eth']:
                 continue
         eligible_transactions.append(tx_hash)
+    # t7 = time.time()
+    # print(f'Interval 6: {t7 - t6:0.2f}')
     return eligible_transactions
 
 
@@ -643,6 +694,7 @@ class MemPoolGasEstimator(DataCollector):
         txs_for_gas_estimate = get_transactions_for_gas_estimation(
             db, block_number, w3
         )
+        logger.info(f'Complete gathering list: {time.time() - t1:0.2f} sec')
 
         # Estimate gas for txs
         tx_details_collection = db['tx_details']
@@ -657,6 +709,7 @@ class MemPoolGasEstimator(DataCollector):
         event_loop = asyncio.get_event_loop()
         chunks = list(split_on_chunks(list(transactions_details), batch_size))
         estimated_gas = {}
+        t_2 = time.time()
         for i in range(0, len(chunks), num_workers):
             current_chunks = chunks[i:i + num_workers]
             collection_tasks = [
@@ -672,8 +725,10 @@ class MemPoolGasEstimator(DataCollector):
             data = await asyncio.gather(*collection_tasks)
             for d in data:
                 estimated_gas.update(d)
+        logger.info(f'Estimation: {time.time() - t_2:0.2f} sec')
         # Save gas estimation to Mongo DB
         tx_gas_collection = db['tx_estimated_gas']
+        tx_gas_collection.create_index('hash')
         updates = []
         for tx_hash, gas in estimated_gas.items():
             updates.append(UpdateOne(
