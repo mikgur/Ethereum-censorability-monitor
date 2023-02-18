@@ -153,7 +153,7 @@ def get_grouped_by_prefixes(banned_wallets: List[Dict[str, str]]) -> Dict:
         Dict in format {wallets: {prefix : list of addresses}, dt: time}
     '''
     wallets = pd.DataFrame(banned_wallets, columns=['prefix', 'wallet'])
-    grouped_wallets = wallets.groupby('prefix')['wallet'].apply(list)
+    grouped_wallets = wallets.groupby('prefix')['wallet'].apply(set)
     grouped_wallets = grouped_wallets.to_dict()
 
     entity = {}
