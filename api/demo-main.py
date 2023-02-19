@@ -205,24 +205,30 @@ def get_overall_ratios(period: str):
         
     return res
 
-@app.get('/data/latency/{period}')
-def get_mean_latency(period: str):
-    res = None
-    if period == 'last_week':
-        res = {
-            'mean_non_ofac_waiting': 9,
-            'mean_ofac_latency': 31,
-            'mean_ofac_latency_with_full_lido_censorship': 34,
-            'mean_ofac_latency_without_lido_censorship': 28
-        }
-    if period == 'last_month':
-        res = {
-            'period': 'last_month',
-            'mean_non_ofac_waiting': 8,
-            'mean_ofac_latency': 30,
-            'mean_ofac_latency_with_full_lido_censorship': 35,
-            'mean_ofac_latency_without_lido_censorship': 26
-        }
+@app.get('/data/latency')
+def get_mean_latency():
+    res = [{
+        'dt': '17-02-2023',
+        'mean_waiting': 7,
+        'mean_ofac_waiting': 12,
+        'mean_censorability_latency': 31,
+        'mean_censorability_latency_without_lido_censorship': 28
+    },
+    {
+        'dt': '18-02-2023',
+        'mean_waiting': 7,
+        'mean_ofac_waiting': 12,
+        'mean_censorability_latency': 31,
+        'mean_censorability_latency_without_lido_censorship': 28
+    },
+    {
+        'dt': '19-02-2023',
+        'mean_waiting': 7,
+        'mean_ofac_waiting': 12,
+        'mean_censorability_latency': 31,
+        'mean_censorability_latency_without_lido_censorship': 28
+    }]       
+
         
     return res
    
