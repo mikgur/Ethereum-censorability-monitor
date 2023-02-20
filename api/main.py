@@ -1,169 +1,97 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 import uvicorn
-import pandas as pd 
+from pymongo import MongoClient
 
+import os
+from typing import List, Union
+import json
+
+from metrics import get_lido_validators_metrics, get_lido_vs_rest
+import data
+
+MONGO_HOST = 'localhost'
+MONGO_PORT = 27017
+MONGO_USER = 'root'
+MONGO_PASSWORD = 'password'
+API_HOST = '127.0.0.1'
+API_PORT = 8000
+
+# API_HOST = os.environ['API_HOST']
+# API_PORT = os.environ['API_PORT']
+# MONGO_HOST = os.environ['MONGO_HOST']
+# MONGO_PORT = os.environ['MONGO_PORT']
+# MONGO_USER = os.environ['MONGO_USER']
+# MONGO_PASSWORD = os.environ['MONGO_PASSWORD']
 
 app = FastAPI()
 
-tr_data = pd.read_csv('../data/merged_221220_221231_with_contracts.csv')
+mongo_url = f'mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/'
+client = MongoClient(mongo_url)
 
-@app.get('/data/total_validators_share')
-def get_total_validators_share():
-    lido_tx = tr_data[tr_data['validator_type'] == 'Lido']
-    lido_validators_total_tx = lido_tx.groupby(['validator_name', 'is_ofac']).agg({'tx_hash': 'count'}).reset_index()
+db = client['censorred']
+validators = db['validators']
+validators_metrics = db['validator_metrics']
 
-    total_tx = len(tr_data)
-    total_ofac_tx = len(tr_data[tr_data['is_ofac']])
 
-    lido_validators_total_tx.loc[lido_validators_total_tx['is_ofac'] == 'OFAC', 'tx_hash'] /= total_ofac_tx
-    lido_validators_total_tx.loc[lido_validators_total_tx['is_ofac'] =='NON OFAC', 'tx_hash'] /= (total_tx - total_ofac_tx)
+@app.get("/metrics/lido_validators_share/{period}")
+async def get_lido_validators_share(period:str) -> str:  
+    return get_lido_validators_metrics(validators_metrics, period, False)
 
-    lido_validators_total_tx = lido_validators_total_tx[['is_ofac','tx_hash', 'validator_name']]
-    
-    validators_list = lido_validators_total_tx.validator_name.unique()
-    
-    records = []
-    
-    for val in validators_list:
-        rec = lido_validators_total_tx.query(f'validator_name == "{val}"')
-        try:
-            non_ofac_share = rec[~rec.is_ofac].tx_hash.values[0]
-        except: 
-            non_ofac_share = 0
-        
-        try:
-            ofac_share = rec[rec.is_ofac].tx_hash.values[0]
-        except:
-            ofac_share = 0
-            
-        records.append({
-            'validator': val,
-            'ofac_share': ofac_share,
-            'non_ofac_share': non_ofac_share
-        })
-        
-    return records
+@app.get('/metrics/lido_validators_ratio/{period}')
+async def get_lido_validators_ratio(period:str) -> str:
+    return get_lido_validators_metrics(validators_metrics, period, True)
 
-@app.get("/data/lido_validators_share")
-def get_lido_validators_share():
-    lido_tx = tr_data[tr_data['validator_type'] == 'Lido']
-    lido_validators_total_tx = lido_tx.groupby(['validator_name', 'is_ofac']).agg({'tx_hash': 'count'}).reset_index()
-    
-    lido_validators_total_tx.loc[lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    lido_validators_total_tx.loc[~lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[~lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    
-    lido_validators_total_tx = lido_validators_total_tx[['is_ofac','tx_hash', 'validator_name']]
-    
-    validators_list = lido_validators_total_tx.validator_name.unique()
-    
-    records = []
-    
-    for val in validators_list:
-        rec = lido_validators_total_tx.query(f'validator_name == "{val}"')
-        try:
-            non_ofac_share = rec[~rec.is_ofac].tx_hash.values[0]
-        except: 
-            non_ofac_share = 0
-        
-        try:
-            ofac_share = rec[rec.is_ofac].tx_hash.values[0]
-        except:
-            ofac_share = 0
-            
-        records.append({
-            'validator': val,
-            'ofac_share': ofac_share,
-            'non_ofac_share': non_ofac_share
-        })
-        
-    return records
+@app.get('/metrics/lido_vs_rest_share/{period}')
+async def get_total_validators_ratio(period:str) -> str:
+    return  get_lido_vs_rest(validators_metrics, period)
 
-@app.get('/data/lido_validators_ratio')
-def get_lido_validators_ratio():
-    lido_tx = tr_data[tr_data['validator_type'] == 'Lido']
-    lido_validators_total_tx = lido_tx.groupby(['validator_name', 'is_ofac']).agg({'tx_hash': 'count'}).reset_index()
-    
-    lido_validators_total_tx.loc[lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    lido_validators_total_tx.loc[~lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[~lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    
-    lido_validators_total_tx = lido_validators_total_tx[['is_ofac','tx_hash', 'validator_name']]
-    
-    validators_list = lido_validators_total_tx.validator_name.unique()
-    
-    records = []
-    
-    for val in validators_list:
-        rec = lido_validators_total_tx.query(f'validator_name == "{val}"')
-        try:
-            non_ofac_share = rec[~rec.is_ofac].tx_hash.values[0]
-        except: 
-            non_ofac_share = 0
-        
-        try:
-            ofac_share = rec[rec.is_ofac].tx_hash.values[0]
-        except:
-            ofac_share = 0.5
-            
-        records.append({
-            'validator': val,
-            'ratio': ofac_share / non_ofac_share
-        })
-        
-    return records
+@app.get('/data/validators')
+async def get_validators() -> str:
+    cursor = validators.find({}, {'_id': 0})
 
-@app.get('/data/total_validators_ratio')
-def get_total_validators_ratio():
-    lido_tx = tr_data[tr_data['validator_type'] == 'Lido']
-    lido_validators_total_tx = lido_tx.groupby(['validator_name', 'is_ofac']).agg({'tx_hash': 'count'}).reset_index()
-    
-    lido_validators_total_tx.loc[lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    lido_validators_total_tx.loc[~lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[~lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    
-    lido_validators_total_tx = lido_validators_total_tx[['is_ofac','tx_hash', 'validator_name']]
-    
-    validators_list = lido_validators_total_tx.validator_name.unique()
-    
-    records = []
-    
-    for val in validators_list:
-        rec = lido_validators_total_tx.query(f'validator_name == "{val}"')
-        try:
-            non_ofac_share = rec[~rec.is_ofac].tx_hash.values[0]
-        except: 
-            non_ofac_share = 0
-        
-        try:
-            ofac_share = rec[rec.is_ofac].tx_hash.values[0]
-        except:
-            ofac_share = 0
-            
-        records.append({
-            'validator': val,
-            'ratio': ofac_share / non_ofac_share
-        })
-        
-    lido_tx = tr_data[tr_data['validator_type'] == 'Lido']
-    lido_validators_total_tx = lido_tx\
-        .groupby(['validator_name', 'is_ofac'])\
-            .agg({'tx_hash': 'count'})\
-                .groupby('is_ofac')\
-                    .agg({'tx_hash': 'sum'})\
-                        .reset_index()
-    
-    lido_validators_total_tx.loc[lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-    lido_validators_total_tx.loc[~lido_validators_total_tx['is_ofac'], 'tx_hash'] /= lido_validators_total_tx[~lido_validators_total_tx['is_ofac']]['tx_hash'].sum()
-        
-    overall_non_ofac_share = lido_validators_total_tx[~lido_validators_total_tx.is_ofac].tx_hash.values[0]
-    overall_ofac_share = lido_validators_total_tx[lido_validators_total_tx.is_ofac].tx_hash.values[0]
-    
-    records.append({
-        'validator': 'LIDO overall',
-        'ratio': overall_non_ofac_share / overall_ofac_share
-    })    
-    
-    return records
+    return json.dumps(list(cursor))
 
+@app.get('/data/metrics_by_day')
+async def get_metrics_by_date(date: str) -> str:
+    metrics = data.get_metrics_by_day(validators_metrics, date)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_validator')
+async def get_metrics_by_validator(name: str) -> str:
+    metrics = data.get_metrics_by_validator(validators_metrics, name)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_validators')
+#TODO: fix
+async def get_metrics_by_validators(names: Union[List[str], None] = Query(default=None)) -> str:
+    metrics = data.get_metrics_by_validators(validators_metrics, names)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_daterange')
+async def get_metrics_by_daterange(start_date: str, end_date: str) -> str:
+    metrics = data.get_metrics_by_daterange(validators_metrics, start_date, end_date)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_validator_by_day')
+async def get_metrics_by_validator_by_day(name: str, date: str) -> str:
+    metrics = data.get_metrics_by_validator_by_day(validators_metrics, name, date)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_validator_by_daterange')
+async def get_metrics_by_validator_by_daterange(name: str, start_date: str, end_date: str) -> str:
+    metrics = data.get_metrics_by_validator_by_daterange(validators_metrics, name, start_date, end_date)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_validators_by_day')
+async def get_metrics_by_validators_by_day(date: str, names: Union[List[str], None] = Query(default=None)) -> str:
+    metrics = data.get_metrics_by_validators_by_day(validators_metrics, names, date)
+    return json.dumps(metrics)
+
+@app.get('/data/metrics_by_validators_by_daterange')
+async def get_metrics_by_validators_by_daterange(start_date: str, end_date: str, names: Union[List[str], None] = Query(default=None)) -> str:
+    metrics = data.get_metrics_by_validators_by_daterange(validators_metrics, names, start_date, end_date)
+    return json.dumps(metrics)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    uvicorn.run(app, host=API_HOST, port=API_PORT)
     
