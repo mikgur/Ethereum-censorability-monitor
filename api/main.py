@@ -12,7 +12,7 @@ import data
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 MONGO_USER = 'root'
-MONGO_PASSWORD = '3akFUZ8x'
+MONGO_PASSWORD = 'password'
 API_HOST = '127.0.0.1'
 API_PORT = 8000
 
