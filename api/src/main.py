@@ -6,13 +6,13 @@ import os
 from typing import List, Union
 import json
 
-from metrics import get_lido_validators_metrics, get_lido_vs_rest
+from metrics import get_lido_validators_metrics, get_lido_vs_rest, get_latency
 import data
 
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 MONGO_USER = 'root'
-MONGO_PASSWORD = 'password'
+MONGO_PASSWORD = 'test_pass'
 API_HOST = '127.0.0.1'
 API_PORT = 8000
 
@@ -31,6 +31,7 @@ client = MongoClient(mongo_url)
 db = client['censorred']
 validators = db['validators']
 validators_metrics = db['validator_metrics']
+censored_txs = db['censored_txs']
 
 
 @app.get("/metrics/lido_validators_share/{period}")
@@ -62,7 +63,6 @@ async def get_metrics_by_validator(name: str) -> str:
     return json.dumps(metrics)
 
 @app.get('/data/metrics_by_validators')
-#TODO: fix
 async def get_metrics_by_validators(names: Union[List[str], None] = Query(default=None)) -> str:
     metrics = data.get_metrics_by_validators(validators_metrics, names)
     return json.dumps(metrics)
@@ -90,6 +90,11 @@ async def get_metrics_by_validators_by_day(date: str, names: Union[List[str], No
 @app.get('/data/metrics_by_validators_by_daterange')
 async def get_metrics_by_validators_by_daterange(start_date: str, end_date: str, names: Union[List[str], None] = Query(default=None)) -> str:
     metrics = data.get_metrics_by_validators_by_daterange(validators_metrics, names, start_date, end_date)
+    return json.dumps(metrics)
+
+@app.get('/data/latency')
+async def get_latencies() -> str:
+    metrics = get_latency(censored_txs, validators)
     return json.dumps(metrics)
 
 if __name__ == "__main__":
