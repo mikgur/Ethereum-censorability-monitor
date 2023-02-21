@@ -124,7 +124,7 @@ def get_lido_validators_metrics(collection: Collection, period: str, calc_share:
 
     metrics_df = metrics_df[metrics_df.name != 'Other']
 
-    return metrics_df.to_json(orient='records')
+    return metrics_df.to_dict(orient='records')
 
 def get_lido_vs_rest(collection: Collection, period: str) -> str:
     if period == 'last_week':
@@ -159,7 +159,7 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
         'ratio': other_ratio
     }]
 
-    return json.dumps(lido_vs_rest)
+    return lido_vs_rest
 
 def get_latency(txs_collection: Collection, validators_collection: Collection) -> List[dict]:
     pipeline = [
