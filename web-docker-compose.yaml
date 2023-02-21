@@ -1,0 +1,27 @@
+version: '3.1'
+
+services:  
+  api:
+    build: api
+    restart: always
+    environment:
+      MONGO_HOST: localhost
+      MONGO_PORT: 27017
+      MONGO_USER: root
+      MONGO_PASSWORD: test_pass
+      API_HOST: localhost
+      API_PORT: 8000
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: frontend
+    restart: always
+    environment:
+      API_HOST: localhost
+      API_PORT: 8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+  
