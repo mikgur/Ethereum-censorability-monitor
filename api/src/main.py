@@ -34,6 +34,8 @@ censored_txs = db["censored_txs"]
 
 @app.get("/metrics/lido_validators_share/{period}")
 async def get_lido_validators_share(period: str) -> JSONResponse:
+    # Query examples: /metrics/lido_validators_share/last_week
+    # Query examples: /metrics/lido_validators_share/last_month
     metrics = get_lido_validators_metrics(validators_metrics, period, False)
 
     res = jsonable_encoder(metrics)
@@ -42,6 +44,8 @@ async def get_lido_validators_share(period: str) -> JSONResponse:
 
 @app.get("/metrics/lido_validators_ratio/{period}")
 async def get_lido_validators_ratio(period: str) -> JSONResponse:
+    # Query examples: /metrics/get_lido_validators_ratio/last_week
+    # Query examples: /metrics/get_lido_validators_ratio/last_month
     metrics = get_lido_validators_metrics(validators_metrics, period, True)
 
     res = jsonable_encoder(metrics)
@@ -50,6 +54,8 @@ async def get_lido_validators_ratio(period: str) -> JSONResponse:
 
 @app.get("/metrics/lido_vs_rest_share/{period}")
 async def get_total_validators_ratio(period: str) -> JSONResponse:
+    # Query examples: /metrics/lido_vs_rest_share/last_week
+    # Query examples: /metrics/lido_vs_rest_share/last_month
     metrics = get_lido_vs_rest(validators_metrics, period)
 
     res = jsonable_encoder(metrics)
@@ -58,6 +64,7 @@ async def get_total_validators_ratio(period: str) -> JSONResponse:
 
 @app.get("/data/validators")
 async def get_validators() -> JSONResponse:
+    # Query example: /data/validators
     cursor = validators.find({}, {"_id": 0})
 
     res = jsonable_encoder(list(cursor))
@@ -66,6 +73,7 @@ async def get_validators() -> JSONResponse:
 
 @app.get("/data/metrics")
 async def get_metrics() -> JSONResponse:
+    # Query example: /data/metrics
     metrics = data.get_metrics(validators_metrics)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -73,6 +81,7 @@ async def get_metrics() -> JSONResponse:
 
 @app.get("/data/metrics_by_day")
 async def get_metrics_by_date(date: str) -> JSONResponse:
+    # Query example: /data/metrics_by_day?date=17-02-23
     metrics = data.get_metrics_by_day(validators_metrics, date)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -82,6 +91,7 @@ async def get_metrics_by_date(date: str) -> JSONResponse:
 async def get_metrics_by_validators(
     names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
+    # Query example: /data/metrics_by_validators?names=stakefish&names=Figment
     metrics = data.get_metrics_by_validators(validators_metrics, names)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -89,6 +99,7 @@ async def get_metrics_by_validators(
 
 @app.get("/data/metrics_by_daterange")
 async def get_metrics_by_daterange(start_date: str, end_date: str) -> JSONResponse:
+    # Query example: /data/metrics_by_daterange?start_date=15-02-23&end_date=17-02-23
     metrics = data.get_metrics_by_daterange(validators_metrics, start_date, end_date)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -98,6 +109,7 @@ async def get_metrics_by_daterange(start_date: str, end_date: str) -> JSONRespon
 async def get_metrics_by_validators_by_day(
     date: str, names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
+    # Query example: /data/metrics_by_validators_by_day?date=17-02-23&names=stakefish&names=Figment
     metrics = data.get_metrics_by_validators_by_day(validators_metrics, names, date)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -107,6 +119,7 @@ async def get_metrics_by_validators_by_day(
 async def get_metrics_by_validators_by_daterange(
     start_date: str, end_date: str, names: Union[List[str], None] = Query(default=None)
 ) -> str:
+    # Query example: /data/metrics_by_validators_by_daterange?start_date=17-02-23&end_date=19-02-23&names=stakefish&names=Figment
     metrics = data.get_metrics_by_validators_by_daterange(
         validators_metrics, names, start_date, end_date
     )
@@ -116,6 +129,7 @@ async def get_metrics_by_validators_by_daterange(
 
 @app.get("/metrics/latency")
 async def get_latencies() -> JSONResponse:
+    # Query example: /metrics/latency
     metrics = get_latency(censored_txs, validators)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -123,6 +137,7 @@ async def get_latencies() -> JSONResponse:
 
 @app.get("/data/censored_transactions")
 async def get_transactions() -> JSONResponse:
+    # Query example: /data/censored_transactions
     metrics = data.get_censored_transactions(censored_txs)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -130,6 +145,7 @@ async def get_transactions() -> JSONResponse:
 
 @app.get("/data/censored_transactions_by_day")
 async def get_transactions(date: str) -> JSONResponse:
+    # Query example: /data/censored_transactions_by_day?date=17-02-23
     metrics = data.get_censored_transactions_by_day(censored_txs, date)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -137,6 +153,7 @@ async def get_transactions(date: str) -> JSONResponse:
 
 @app.get("/data/censored_transactions_by_daterange")
 async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
+    # Query example: /data/censored_transactions_by_daterange?start_date=15-02-23&end_date=17-02-23
     metrics = data.get_censored_transactions_by_day(censored_txs, start_date, end_date)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
