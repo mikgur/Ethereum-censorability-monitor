@@ -16,6 +16,10 @@ tqdm = "^4.64.1"
 matplotlib = "^3.6.2"
 seaborn = "^0.12.2"
 aiohttp = "^3.8.3"
+evmdasm = "^0.1.10"
+catboost = "^1.1.1"
+scikit-learn = "^1.2.1"
+python-dotenv = "^0.21.1"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
