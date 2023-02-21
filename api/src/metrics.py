@@ -1,17 +1,10 @@
-from typing import List, Tuple
+from typing import List
 from pymongo.collection import Collection
 import pandas as pd
 
 import datetime
 
-from utils import str_date_repr
-
-
-def _get_last_dates(period_start: int, period_end: int) -> List[str]:
-    return [
-        str_date_repr(datetime.date.today() - datetime.timedelta(days=i))
-        for i in range(period_start, period_end)
-    ]
+from utils import get_last_dates, get_shifted_week, get_week
 
 
 def _get_validators_metrics(collection: Collection, dates: List[str]) -> pd.DataFrame:
@@ -106,41 +99,6 @@ def _prepare_ratio_df(share_df: pd.DataFrame) -> pd.DataFrame:
     return _df
 
 
-def _get_shifted_week(
-    monday: datetime.datetime, sunday: datetime.datetime, shift: int
-) -> Tuple[int, int, str, str]:
-    shifted_monday = monday + datetime.timedelta(days=shift * 7)
-    shifted_sunday = sunday + datetime.timedelta(days=shift * 7)
-
-    monday_ts = int(shifted_monday.timestamp())
-    sunday_ts = int(shifted_sunday.timestamp())
-    monday_dt = datetime.datetime.strftime(shifted_monday, "%d-%m-%y")
-    sunday_dt = datetime.datetime.strftime(shifted_sunday, "%d-%m-%y")
-
-    return monday_ts, sunday_ts, monday_dt, sunday_dt
-
-
-def _get_week(ts: int) -> Tuple[int, int]:
-    today = datetime.datetime.fromtimestamp(ts)
-    this_week_monday = today - datetime.timedelta(
-        days=today.weekday(),
-        seconds=today.second,
-        microseconds=today.microsecond,
-        minutes=today.minute,
-        hours=today.hour,
-    )
-    this_week_sunday = (
-        this_week_monday
-        + datetime.timedelta(days=7)
-        - datetime.timedelta(microseconds=1)
-    )
-
-    monday_ts = int(this_week_monday.timestamp())
-    sunday_ts = int(this_week_sunday.timestamp())
-
-    return monday_ts, sunday_ts
-
-
 def _calc_lido_latency(censored_blocks: List[dict], lido_vals: List[str]) -> int:
     latency = 0
     for censored_block in censored_blocks:
@@ -156,9 +114,9 @@ def get_lido_validators_metrics(
     collection: Collection, period: str, calc_share: bool
 ) -> str:
     if period == "last_week":
-        dates = _get_last_dates(0, 7)
+        dates = get_last_dates(0, 7)
     elif period == "last_month":
-        dates = _get_last_dates(0, 30)
+        dates = get_last_dates(0, 30)
 
     metrics_df = _get_validators_metrics(collection, dates)
     metrics_df = _prepare_share_df(metrics_df, dates)
@@ -177,9 +135,9 @@ def get_lido_validators_metrics(
 
 def get_lido_vs_rest(collection: Collection, period: str) -> str:
     if period == "last_week":
-        dates = _get_last_dates(0, 7)
+        dates = get_last_dates(0, 7)
     elif period == "last_month":
-        dates = _get_last_dates(0, 30)
+        dates = get_last_dates(0, 30)
 
     metrics_df = _get_validators_metrics(collection, dates)
     metrics_df = _prepare_share_df(metrics_df, dates)
@@ -236,8 +194,8 @@ def get_latency(
     min_ts = agg_res["minTS"]
     max_ts = agg_res["maxTS"]
 
-    first_monday_ts, first_sunday_ts = _get_week(min_ts)
-    _, last_monday_ts = _get_week(max_ts)
+    first_monday_ts, first_sunday_ts = get_week(min_ts)
+    _, last_monday_ts = get_week(max_ts)
 
     first_monday = datetime.datetime.fromtimestamp(first_monday_ts)
     first_sunday = datetime.datetime.fromtimestamp(first_sunday_ts)
@@ -250,7 +208,7 @@ def get_latency(
     lido_vals = validators_collection.distinct("name", {"pool_name": "Lido"})
 
     for shift in range(week_diff + 1):
-        monday_ts, sunday_ts, monday_dt, sunday_dt = _get_shifted_week(
+        monday_ts, sunday_ts, monday_dt, sunday_dt = get_shifted_week(
             first_monday, first_sunday, shift
         )
 

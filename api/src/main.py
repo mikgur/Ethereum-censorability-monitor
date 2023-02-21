@@ -12,19 +12,16 @@ from metrics import get_lido_validators_metrics, get_lido_vs_rest, get_latency
 import data
 
 
-API_HOST = os.environ['API_HOST']
-API_PORT = os.environ['API_PORT']
-MONGO_HOST = os.environ['MONGO_HOST']
-MONGO_PORT = os.environ['MONGO_PORT']
-MONGO_USER = os.environ['MONGO_USER']
-MONGO_PASSWORD = os.environ['MONGO_PASSWORD']
+API_HOST = os.environ["API_HOST"]
+API_PORT = os.environ["API_PORT"]
+MONGO_HOST = os.environ["MONGO_HOST"]
+MONGO_PORT = os.environ["MONGO_PORT"]
+MONGO_USER = os.environ["MONGO_USER"]
+MONGO_PASSWORD = os.environ["MONGO_PASSWORD"]
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['*']
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 mongo_url = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/"
 client = MongoClient(mongo_url)
@@ -64,6 +61,13 @@ async def get_validators() -> JSONResponse:
     cursor = validators.find({}, {"_id": 0})
 
     res = jsonable_encoder(list(cursor))
+    return JSONResponse(res)
+
+
+@app.get("/data/metrics")
+async def get_metrics() -> JSONResponse:
+    metrics = data.get_metrics(validators_metrics)
+    res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
 
@@ -113,6 +117,27 @@ async def get_metrics_by_validators_by_daterange(
 @app.get("/metrics/latency")
 async def get_latencies() -> JSONResponse:
     metrics = get_latency(censored_txs, validators)
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/data/censored_transactions")
+async def get_transactions() -> JSONResponse:
+    metrics = data.get_censored_transactions(censored_txs)
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/data/censored_transactions_by_day")
+async def get_transactions(date: str) -> JSONResponse:
+    metrics = data.get_censored_transactions_by_day(censored_txs, date)
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/data/censored_transactions_by_daterange")
+async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
+    metrics = data.get_censored_transactions_by_day(censored_txs, start_date, end_date)
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
