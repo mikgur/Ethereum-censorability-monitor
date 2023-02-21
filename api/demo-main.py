@@ -1,253 +1,223 @@
 from fastapi import FastAPI
 import uvicorn
-import pandas as pd 
+import pandas as pd
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 
 app = FastAPI()
 
-@app.get('/data/total_validators_share/{period}')
-def get_total_validators_share(period: str):
-    res = None 
-    if period == 'last_week':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ofac_share': 0.001 * 100,
-            'non_ofac_share': 0.0025 * 100
-        },
-        {
-            'validator': 'MishaEth.com',
-            'ofac_share': 0.0021 * 100,
-            'non_ofac_share': 0.001 * 100
-        },
-        {
-            'validator': 'CyberJenya',
-            'ofac_share': 0.0015 * 100,
-            'non_ofac_share': 0.0015 * 100
-        },
-        {
-            'validator': 'Random LIDO validator',
-            'ofac_share': 0.0009 * 100,
-            'non_ofac_share': 0.0008 * 100
-        }]
-    if period == 'last_month':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ofac_share': 0.001 * 100,
-            'non_ofac_share': 0.0025 * 100
-        },
-        {
-            'validator': 'MishaEth.com',
-            'ofac_share': 0.0021 * 100,
-            'non_ofac_share': 0.001 * 100
-        },
-        {
-            'validator': 'CyberJenya',
-            'ofac_share': 0.0015 * 100,
-            'non_ofac_share': 0.0015 * 100
-        },
-        {
-            'validator': 'Random LIDO validator',
-            'ofac_share': 0.0009 * 100,
-            'non_ofac_share': 0.0008 * 100
-        }]
-        
-    return res
 
-@app.get("/data/lido_validators_share/{period}")
-def get_lido_validators_share(period: str):
-    res = None 
-    if period == 'last_week':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ofac_share': 0.001 * 25 * 100,
-            'non_ofac_share': 0.0025 * 25 * 100
+@app.get("/metrics/lido_validators_share/{period}")
+async def get_lido_validators_share(period: str) -> JSONResponse:
+    metrics = [
+        {
+            "name": "SkillZ",
+            "ofac_compliant_share": 6.804227869744307,
+            "ofac_non_compliant_share": 16.666666666666668,
         },
         {
-            'validator': 'MishaEth.com',
-            'ofac_share': 0.0021 * 25 * 100,
-            'non_ofac_share': 0.001 * 25 * 100
+            "name": "Certus One",
+            "ofac_compliant_share": 0.761638299525919,
+            "ofac_non_compliant_share": 0.0,
         },
         {
-            'validator': 'CyberJenya',
-            'ofac_share': 0.0015 * 25 * 100,
-            'non_ofac_share': 0.0015 * 25 * 100
+            "name": "InfStones",
+            "ofac_compliant_share": 3.4312582575580945,
+            "ofac_non_compliant_share": 0.0,
         },
         {
-            'validator': 'Random LIDO validator',
-            'ofac_share': 0.0009 * 25 * 100,
-            'non_ofac_share': 0.0008 * 25 * 100
-        }]
-    if period == 'last_month':
-            res = [{
-            'validator': 'CryptoPetrovitch',
-            'ofac_share': 0.001 * 25 * 100,
-            'non_ofac_share': 0.0025 * 25 * 100
+            "name": "DSRV",
+            "ofac_compliant_share": 4.472682054869045,
+            "ofac_non_compliant_share": 0.0,
         },
         {
-            'validator': 'MishaEth.com',
-            'ofac_share': 0.0021 * 25 * 100,
-            'non_ofac_share': 0.001 * 25 * 100
+            "name": "Chorus One",
+            "ofac_compliant_share": 3.944198336830652,
+            "ofac_non_compliant_share": 0.0,
         },
         {
-            'validator': 'CyberJenya',
-            'ofac_share': 0.0015 * 25 * 100,
-            'non_ofac_share': 0.0015 * 25 * 100
+            "name": "Blockscape",
+            "ofac_compliant_share": 5.669542239838346,
+            "ofac_non_compliant_share": 0.0,
         },
         {
-            'validator': 'Random LIDO validator',
-            'ofac_share': 0.0009 * 25 * 100,
-            'non_ofac_share': 0.0008 * 25 * 100
-        }]
-        
-    return res
+            "name": "Figment",
+            "ofac_compliant_share": 9.13188777492811,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "RockX",
+            "ofac_compliant_share": 3.928654698064817,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Simply Staking",
+            "ofac_compliant_share": 7.282194761793736,
+            "ofac_non_compliant_share": 16.666666666666668,
+        },
+        {
+            "name": "Stakely",
+            "ofac_compliant_share": 2.4481231056190254,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Kukis Global",
+            "ofac_compliant_share": 2.1061630527706536,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "P2P.ORG - P2P Validator",
+            "ofac_compliant_share": 2.572472215745706,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Staking Facilities",
+            "ofac_compliant_share": 2.681277687106552,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Blockdaemon",
+            "ofac_compliant_share": 3.3651977928032952,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Anyblock Analytics",
+            "ofac_compliant_share": 3.6799564778114555,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "ChainLayer",
+            "ofac_compliant_share": 3.2097614051449446,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "stakefish",
+            "ofac_compliant_share": 4.659205720059066,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "BridgeTower",
+            "ofac_compliant_share": 4.659205720059066,
+            "ofac_non_compliant_share": 33.333333333333336,
+        },
+        {
+            "name": "Nethermind",
+            "ofac_compliant_share": 1.7525452708479055,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "CryptoManufaktur",
+            "ofac_compliant_share": 1.760317090230823,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Prysmatic Labs",
+            "ofac_compliant_share": 1.0336519779280329,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "HashQuark",
+            "ofac_compliant_share": 2.8056267972332325,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Stakin",
+            "ofac_compliant_share": 2.036216678324396,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Sigma Prime",
+            "ofac_compliant_share": 2.957177275200124,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "Allnodes",
+            "ofac_compliant_share": 5.230434444703505,
+            "ofac_non_compliant_share": 16.666666666666668,
+        },
+        {
+            "name": "Everstake",
+            "ofac_compliant_share": 3.5478355483018573,
+            "ofac_non_compliant_share": 16.666666666666668,
+        },
+        {
+            "name": "RockLogic GmbH",
+            "ofac_compliant_share": 2.895002720136784,
+            "ofac_non_compliant_share": 0.0,
+        },
+        {
+            "name": "ConsenSys Codefi",
+            "ofac_compliant_share": 1.1735447268205488,
+            "ofac_non_compliant_share": 0.0,
+        },
+    ]
 
-@app.get('/data/lido_validators_ratio/{period}')
-def get_lido_validators_ratio(period: str):
-    res = None 
-    if period == 'last_week':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ratio': 0.001 / 0.0025
-        },
-        {
-            'validator': 'MishaEth.com',
-            'ratio': 0.0021 / 0.001,
-        },
-        {
-            'validator': 'CyberJenya',
-            'ratio': 0.0015 / 0.0015
-        },
-        {
-            'validator': 'Random LIDO validator',
-            'ratio': 0.0009 / 0.0008
-        }]
-    if period == 'last_month':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ratio': 0.001 / 0.0025
-        },
-        {
-            'validator': 'MishaEth.com',
-            'ratio': 0.0021 / 0.001,
-        },
-        {
-            'validator': 'CyberJenya',
-            'ratio': 0.0015 / 0.0015
-        },
-        {
-            'validator': 'Random LIDO validator',
-            'ratio': 0.0009 / 0.0008
-        }]
-        
-    return res
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
 
-@app.get('/data/total_validators_ratio/{period}')
-def get_total_validators_ratio(period: str):
-    res = None 
-    if period == 'last_week':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ratio': 0.001 / 0.0025
-        },
-        {
-            'validator': 'MishaEth.com',
-            'ratio': 0.0021 / 0.001,
-        },
-        {
-            'validator': 'CyberJenya',
-            'ratio': 0.0015 / 0.0015
-        },
-        {
-            'validator': 'Random LIDO validator',
-            'ratio': 0.0009 / 0.0008
-        }]
-    if period == 'last_month':
-        res = [{
-            'validator': 'CryptoPetrovitch',
-            'ratio': 0.001 / 0.0025
-        },
-        {
-            'validator': 'MishaEth.com',
-            'ratio': 0.0021 / 0.001,
-        },
-        {
-            'validator': 'CyberJenya',
-            'ratio': 0.0015 / 0.0015
-        },
-        {
-            'validator': 'Random LIDO validator',
-            'ratio': 0.0009 / 0.0008
-        }]
-        
-    return res
 
-@app.get('/data/overall_ratios/{period}')
-def get_overall_ratios(period: str):
-    res = None 
-    if period == 'last_week':
-        res = [{
-            'pool': 'Lido',
-            'ratio': 0.001 / 0.0008
-        },
-        {
-            'pool': 'RocketPool',
-            'ratio': 0.0004 / 0.00036
-        }]
-    if period == 'last_month':
-        res = [{
-            'pool': 'Lido',
-            'ratio': 0.0011 / 0.00085
-        },
-        {
-            'pool': 'RocketPool',
-            'ratio': 0.00044 / 0.00034
-        }]
-        
-    return res
+@app.get("/metrics/lido_validators_ratio/{period}")
+async def get_lido_validators_ratio(period: str) -> JSONResponse:
+    metrics = [
+        {"name": "SkillZ", "ratio": 2.4494574528840665},
+        {"name": "Certus One", "ratio": 0.0},
+        {"name": "InfStones", "ratio": 0.0},
+        {"name": "DSRV", "ratio": 0.0},
+        {"name": "Chorus One", "ratio": 0.0},
+        {"name": "Blockscape", "ratio": 0.0},
+        {"name": "Figment", "ratio": 0.0},
+        {"name": "RockX", "ratio": 0.0},
+        {"name": "Simply Staking", "ratio": 2.2886872998932764},
+        {"name": "Stakely", "ratio": 0.0},
+        {"name": "Kukis Global", "ratio": 0.0},
+        {"name": "P2P.ORG - P2P Validator", "ratio": 0.0},
+        {"name": "Staking Facilities", "ratio": 0.0},
+        {"name": "Blockdaemon", "ratio": 0.0},
+        {"name": "Anyblock Analytics", "ratio": 0.0},
+        {"name": "ChainLayer", "ratio": 0.0},
+        {"name": "stakefish", "ratio": 0.0},
+        {"name": "BridgeTower", "ratio": 7.154295246038366},
+        {"name": "Nethermind", "ratio": 0.0},
+        {"name": "CryptoManufaktur", "ratio": 0.0},
+        {"name": "Prysmatic Labs", "ratio": 0.0},
+        {"name": "HashQuark", "ratio": 0.0},
+        {"name": "Stakin", "ratio": 0.0},
+        {"name": "Sigma Prime", "ratio": 0.0},
+        {"name": "Allnodes", "ratio": 3.186478454680535},
+        {"name": "Everstake", "ratio": 4.697699890470975},
+        {"name": "RockLogic GmbH", "ratio": 0.0},
+        {"name": "ConsenSys Codefi", "ratio": 0.0},
+    ]
 
-@app.get('/data/latency')
-def get_mean_latency():
-    res = [{
-        'dt': '17-02-2023',
-        'mean_waiting': 7,
-        'mean_ofac_waiting': 12,
-        'mean_censorability_latency': 31,
-        'mean_censorability_latency_without_lido_censorship': 28
-    },
-    {
-        'dt': '18-02-2023',
-        'mean_waiting': 7,
-        'mean_ofac_waiting': 12,
-        'mean_censorability_latency': 31,
-        'mean_censorability_latency_without_lido_censorship': 28
-    },
-    {
-        'dt': '19-02-2023',
-        'mean_waiting': 7,
-        'mean_ofac_waiting': 12,
-        'mean_censorability_latency': 31,
-        'mean_censorability_latency_without_lido_censorship': 28
-    }]       
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
 
-        
-    return res
-   
-@app.get('/data/censorship_percentage/{period}')
-def get_censorship_percentage(period: str):
-    res = None
-    if period == 'last_week':
-        res = {
-            'overall_censorship': 0.001,
-            'ofac_censorship': 0.4187
+
+@app.get("/metrics/lido_vs_rest_share/{period}")
+async def get_total_validators_ratio(period: str) -> JSONResponse:
+    metrics = [
+        {"pool": "lido", "ratio": 2.192818838890184},
+        {"pool": "other pools", "ratio": 0.47894281203849876},
+    ]
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/metrics/latency")
+async def get_latencies() -> JSONResponse:
+    metrics = [
+        {
+            "start_date": "13-02-23",
+            "end_date": "19-02-23",
+            "censorship_latency": 29.86046511627907,
+            "censorship_latency_without_lido_censorship": 15.348837209302326,
         }
-    if period == 'last_month':
-        res =  {
-            'overall_censorship': 0.0012,
-            'ofac_censorship': 0.4411
-        }
-        
-    return res
-     
+    ]
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
-    
