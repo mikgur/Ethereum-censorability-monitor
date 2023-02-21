@@ -7,3 +7,4 @@ block_addresses_details/
 block_adresses_details_old/
 .env
 classifier_dataset/
+notebooks/catboost_info
