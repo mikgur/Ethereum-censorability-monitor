@@ -7,15 +7,19 @@ from utils import str_date_repr
 
 
 def _get_daterange(start_date: str, end_date: str) -> List[str]:
-    format = '%d-%m-%y'
+    format = "%d-%m-%y"
     start_date = datetime.datetime.strptime(start_date, format)
     end_date = datetime.datetime.strptime(end_date, format)
 
     daydiff = (end_date - start_date).days + 1
 
-    daterange = [str_date_repr(start_date + datetime.timedelta(days=diff)) for diff in range(daydiff)]
+    daterange = [
+        str_date_repr(start_date + datetime.timedelta(days=diff))
+        for diff in range(daydiff)
+    ]
 
     return daterange
+
 
 def get_collection_keys(collection: Collection) -> List[str]:
     records = collection.find({})
@@ -26,42 +30,53 @@ def get_collection_keys(collection: Collection) -> List[str]:
 
     return list(keys)
 
+
 def get_metrics_by_day(collection: Collection, date: str) -> List[dict]:
     keys = get_collection_keys(collection)
-    cols_to_take = list(set([date]).intersection(set(keys))) + ['name']
-    cols = {col:(1 if col in cols_to_take else 0) for col in keys}
+    cols_to_take = list(set([date]).intersection(set(keys))) + ["name"]
+    cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
     cursor = collection.find({}, cols)
     return list(cursor)
+
 
 def get_metrics_by_validators(collection: Collection, names: List[str]) -> List[dict]:
-    cursor = collection.find({'name': {'$in': names}}, {'_id': 0})
+    cursor = collection.find({"name": {"$in": names}}, {"_id": 0})
     return list(cursor)
 
-def get_metrics_by_daterange(collection: Collection, start_date: str, end_date: str) -> List[dict]:
+
+def get_metrics_by_daterange(
+    collection: Collection, start_date: str, end_date: str
+) -> List[dict]:
     daterange = _get_daterange(start_date, end_date)
     keys = get_collection_keys(collection)
 
-    cols_to_take = list(set(keys).intersection(set(daterange))) + ['name']
-    cols = {col:(1 if col in cols_to_take else 0) for col in keys}
+    cols_to_take = list(set(keys).intersection(set(daterange))) + ["name"]
+    cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
     cursor = collection.find({}, cols)
     return list(cursor)
 
-def get_metrics_by_validators_by_day(collection: Collection, names: List[str], date: str) -> List[dict]:
-    keys = get_collection_keys(collection)
-    cols_to_take = list(set([date]).intersection(set(keys))) + ['name']
-    cols = {col:(1 if col in cols_to_take else 0) for col in keys}
 
-    cursor = collection.find({'name': {'$in': names}}, cols)
+def get_metrics_by_validators_by_day(
+    collection: Collection, names: List[str], date: str
+) -> List[dict]:
+    keys = get_collection_keys(collection)
+    cols_to_take = list(set([date]).intersection(set(keys))) + ["name"]
+    cols = {col: (1 if col in cols_to_take else 0) for col in keys}
+
+    cursor = collection.find({"name": {"$in": names}}, cols)
     return list(cursor)
 
-def get_metrics_by_validators_by_daterange(collection: Collection, names: List[str], start_date: str, end_date: str) -> List[dict]:
+
+def get_metrics_by_validators_by_daterange(
+    collection: Collection, names: List[str], start_date: str, end_date: str
+) -> List[dict]:
     daterange = _get_daterange(start_date, end_date)
     keys = get_collection_keys(collection)
 
-    cols_to_take = list(set(keys).intersection(set(daterange))) + ['name']
-    cols = {col:(1 if col in cols_to_take else 0) for col in keys}
+    cols_to_take = list(set(keys).intersection(set(daterange))) + ["name"]
+    cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
-    cursor = collection.find({'name': {'$in': names}}, cols)
+    cursor = collection.find({"name": {"$in": names}}, cols)
     return list(cursor)
