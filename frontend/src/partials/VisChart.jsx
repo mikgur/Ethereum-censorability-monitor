@@ -69,7 +69,7 @@ function VisChart() {
         
       </button>
       </div>
-      <h3>Share of all transactions (OFAC - NON OFAC transactions)</h3>
+      <h3>Share of all Lido transactions (OFAC compliant - NON OFAC compliant transactions)</h3>
     <VictoryChart
     height={900}
     width={700}
@@ -80,8 +80,8 @@ function VisChart() {
         gutter={10}
         style={{title: {fontSize: 5, fill: "#FFFFFF"  } }}
         data={[
-          { name: "OFAC", symbol: { fill: "#1e90ff" }, labels: { fill: "#FFFFFF" } },
-          { name: "NON OFAC", symbol: { fill: "#15bf6d" }, labels: { fill: "#FFFFFF" } },
+          { name: "OFAC COMPLIANT", symbol: { fill: "#1e90ff" }, labels: { fill: "#FFFFFF" } },
+          { name: "NON OFAC COMPLIANT", symbol: { fill: "#15bf6d" }, labels: { fill: "#FFFFFF" } },
         ]}
       />
       <VictoryGroup 
@@ -93,16 +93,16 @@ function VisChart() {
           barWidth = {8}
           alignment="middle"
           data={appState}
-          x = 'validator'
-          y = 'ofac_share'
+          x = 'name'
+          y = 'ofac_compliant_share'
       />
 
         <VictoryBar horizontal
           barWidth = {8}
           alignment="middle"
           data={appState}
-          x = 'validator'
-          y = 'non_ofac_share'
+          x = 'name'
+          y = 'ofac_non_compliant_share'
       />
         
       </VictoryGroup>
@@ -111,7 +111,7 @@ function VisChart() {
       tickFormat={(t) => `${t}%`}
       style={{ tickLabels: { fontSize: 12, fill: "#FFFFFF"  } }}
 
-      label = "Share of all ethereum transactions"
+      label = "Share of Lido ethereum transactions"
 
       axisLabelComponent={
         <VictoryLabel 
