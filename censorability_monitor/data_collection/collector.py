@@ -574,7 +574,6 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
 
     # Remove transactions that can't be included to block due to high nonce
     all_nonce_blocked = set()
-
     for addr in tx_df['from'].unique():
         if addr not in block_accounts_info:
             continue
