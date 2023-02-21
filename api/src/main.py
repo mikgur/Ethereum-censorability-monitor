@@ -3,6 +3,7 @@ import uvicorn
 from pymongo import MongoClient
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 import os
 from typing import List, Union
@@ -10,21 +11,20 @@ from typing import List, Union
 from metrics import get_lido_validators_metrics, get_lido_vs_rest, get_latency
 import data
 
-MONGO_HOST = "localhost"
-MONGO_PORT = 27017
-MONGO_USER = "root"
-MONGO_PASSWORD = "test_pass"
-API_HOST = "127.0.0.1"
-API_PORT = 8000
 
-# API_HOST = os.environ['API_HOST']
-# API_PORT = os.environ['API_PORT']
-# MONGO_HOST = os.environ['MONGO_HOST']
-# MONGO_PORT = os.environ['MONGO_PORT']
-# MONGO_USER = os.environ['MONGO_USER']
-# MONGO_PASSWORD = os.environ['MONGO_PASSWORD']
+API_HOST = os.environ['API_HOST']
+API_PORT = os.environ['API_PORT']
+MONGO_HOST = os.environ['MONGO_HOST']
+MONGO_PORT = os.environ['MONGO_PORT']
+MONGO_USER = os.environ['MONGO_USER']
+MONGO_PASSWORD = os.environ['MONGO_PASSWORD']
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*']
+)
 
 mongo_url = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/"
 client = MongoClient(mongo_url)
