@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -12,15 +12,14 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
     block = w3.eth.getBlock(block_number)
     block_ts = block['timestamp']
     # Get transactions from mempool that are not in the blocks
-    # and update their from accounts data
+    # and update them from accounts data
     transactions = first_seen_collection.find(
         {'timestamp': {'$lte': block_ts},
          '$or': [{'block_number': {'$exists': False}},
                  {'block_number': {'$gte': block_number}}]
          })
-    # Get mempool accounts and remove old txs without details
-    n_mempool_txs = 0
     # Get list of interesting transactions
+    n_mempool_txs = 0
     mempool_txs = set()
     for tx in transactions:
         n_mempool_txs += 1
@@ -28,7 +27,6 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
         if ('maxFeePerGas' in tx
                 and tx['maxFeePerGas'] < block['baseFeePerGas']):
             continue
-        # Put into list for gas estimation
         mempool_txs.add(tx['hash'])
 
     # Get details
@@ -48,7 +46,6 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
 
     # Берем информацию об аккаунте на предыдущий блок или
     # если недоступно, то на самый поздний из доступных
-
     block_accounts_info = {}
     for a in accounts_details_db:
         if str(block_number - 1) in a:
@@ -67,14 +64,6 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
                 'eth': a[str(max_key)]['eth'],
                 'n_txs': a[str(max_key)]['n_txs']
             }
-
-    # block_accounts_info = {
-    #     a['address']: {
-    #                     'eth': a[str(block_number - 1)]['eth'],
-    #                     'n_txs': a[str(block_number - 1)]['n_txs']
-    #                    }
-    #     for a in accounts_details_db
-    #     if str(block_number - 1) in a}
 
     # Make df for nonce analysis
     records = []
@@ -126,3 +115,25 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
                 continue
         eligible_transactions.append(tx_hash)
     return eligible_transactions
+
+
+def get_addresses_from_receipt(tx_receipt: Dict[str, Any]) -> set:
+    ''' Get addressess touched by transaction
+        from tx receip'''
+    addresses = set()
+    for log in tx_receipt['logs']:
+        if 'address' in log:
+            addresses.add(log['address'])
+        for el in log['topics']:
+            len_el = len(el)
+            if len_el == 20:
+                addresses.add(el)
+            elif len_el > 20:
+                prefix = el[:len_el - 20]
+                if len(prefix) == prefix.count(b'\x00'):
+                    addresses.add(el[len_el - 20:].hex())
+    addresses_list = [el.lower() for el in addresses]
+    receipt_possible_addresses = set(addresses_list)
+    receipt_possible_addresses.add(tx_receipt['from'])
+    receipt_possible_addresses.add(tx_receipt['to'])
+    return receipt_possible_addresses
