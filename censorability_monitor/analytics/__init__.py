@@ -137,7 +137,9 @@ class CensorshipMonitor:
     async def process_block(self, block_number: int):
         ''' Process block (catch exceptions) and save block_number to db'''
         logger = logging.getLogger(self.name)
-        logger.info(f'processing {block_number}')
+        w3 = self.get_web3_client()
+        n_behind = w3.eth.blockNumber - block_number
+        logger.info(f'processing {block_number}, {n_behind} behind ETH')
         # Save block_number to db
         await self.process_one_block(block_number)
         mongo_analytics_client = self.get_mongo_analytics_client()
@@ -283,6 +285,8 @@ class CensorshipMonitor:
                                         'validator': validator_name}}},
                 upsert=True
             )
+        logger.info((f'Found {len(suspicious_txs)} suspicious txs, '
+                     f'{n_non_compliant_txs} non compliant'))
 
         # logger.info(f'Censored: {suspicious_txs["hash"].values}')
         # if there are non compliant txes
@@ -317,6 +321,8 @@ class CensorshipMonitor:
                 # Add censored blocks information to validators
                 censored_tx = censored_collection.find_one(
                     {'hash': {'$eq': tx_hash}})
+                if 'censored' not in censored_tx:
+                    continue
                 for censored_block in censored_tx['censored']:
                     name = censored_block['validator']
                     n = censored_block['block_number']
@@ -330,10 +336,11 @@ class CensorshipMonitor:
 
         # compliant txs
         if n_compliant_txs > 0:
+            total_updates = 0
             compliant_txs = df_block_txs[df_block_txs['status'] == 1].copy() # noqa E501
             for _, row in compliant_txs.iterrows():
                 tx_hash = row['hash']
-                censored_collection.update_one(
+                update_result = censored_collection.update_one(
                     {'hash': {'$eq': tx_hash}},
                     {'$set': {'block_number': block_number,
                               'block_ts': block_ts,
@@ -344,6 +351,8 @@ class CensorshipMonitor:
                               'first_seen': block_ts - row['already_waiting']},
                      }
                 )
+                total_updates += update_result.modified_count
+            logger.info(f'Updated {total_updates} compliant suspicious txs')
 
     async def get_validator_name(self,
                                  block_number: int,
