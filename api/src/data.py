@@ -19,8 +19,14 @@ def _get_daterange(start_date: str, end_date: str) -> List[str]:
 
     """
     format = "%d-%m-%y"
-    start_date = datetime.datetime.strptime(start_date, format)
-    end_date = datetime.datetime.strptime(end_date, format)
+    try:
+        start_date = datetime.datetime.strptime(start_date, format)
+    except:
+        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+    try:
+        end_date = datetime.datetime.strptime(end_date, format)
+    except:
+        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
 
     daydiff = (end_date - start_date).days + 1
 
@@ -43,7 +49,10 @@ def get_collection_keys(collection: Collection) -> List[str]:
         List of collection keys
     """
     # TODO: there might be more efficient way to obtain a list of collection keys
-    records = collection.find({})
+    try:
+        records = collection.find({})
+    except:
+        raise Exception("Failed to fetch data from db")
     keys = set()
     for record in records:
         for key in record.keys():
@@ -62,7 +71,10 @@ def get_metrics(collection: Collection) -> List[dict]:
     Returns:
         List of all records in the metrics collection
     """
-    cursor = collection.find({}, {"_id": 0})
+    try:
+        cursor = collection.find({}, {"_id": 0})
+    except:
+        raise Exception("Failed to fetch metrics from db")
     return list(cursor)
 
 
@@ -82,7 +94,11 @@ def get_metrics_by_day(collection: Collection, date: str) -> List[dict]:
     cols_to_take = list(set([date]).intersection(set(keys))) + ["name"]
     cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
-    cursor = collection.find({}, cols)
+    try:
+        cursor = collection.find({}, cols)
+    except:
+        raise Exception("Failed to fetch metrics from db")
+
     return list(cursor)
 
 
@@ -97,7 +113,11 @@ def get_metrics_by_validators(collection: Collection, names: List[str]) -> List[
     Returns:
         List of all records in the metrics collection for the chosen validators
     """
-    cursor = collection.find({"name": {"$in": names}}, {"_id": 0})
+    try:
+        cursor = collection.find({"name": {"$in": names}}, {"_id": 0})
+    except:
+        raise Exception("Failed to fetch metrics from db")
+
     return list(cursor)
 
 
@@ -121,7 +141,10 @@ def get_metrics_by_daterange(
     cols_to_take = list(set(keys).intersection(set(daterange))) + ["name"]
     cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
-    cursor = collection.find({}, cols)
+    try:
+        cursor = collection.find({}, cols)
+    except:
+        raise Exception("Failed to fetch metrics from db")
     return list(cursor)
 
 
@@ -145,7 +168,11 @@ def get_metrics_by_validators_by_day(
     cols_to_take = list(set([date]).intersection(set(keys))) + ["name"]
     cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
-    cursor = collection.find({"name": {"$in": names}}, cols)
+    try:
+        cursor = collection.find({"name": {"$in": names}}, cols)
+    except:
+        raise Exception("Failed to fetch metrics from db")
+
     return list(cursor)
 
 
@@ -171,7 +198,11 @@ def get_metrics_by_validators_by_daterange(
     cols_to_take = list(set(keys).intersection(set(daterange))) + ["name"]
     cols = {col: (1 if col in cols_to_take else 0) for col in keys}
 
-    cursor = collection.find({"name": {"$in": names}}, cols)
+    try:
+        cursor = collection.find({"name": {"$in": names}}, cols)
+    except:
+        raise Exception("Failed to fetch metrics from db")
+
     return list(cursor)
 
 
@@ -185,7 +216,10 @@ def get_censored_transactions(collection: Collection) -> List[dict]:
     Returns:
         List of all records from in the censored transactions collection
     """
-    cursor = collection.find({}, {"_id": 0})
+    try:
+        cursor = collection.find({}, {"_id": 0})
+    except:
+        raise Exception("Failed to fetch transactions data from db")
     return list(cursor)
 
 
@@ -200,20 +234,27 @@ def get_censored_transactions_by_day(collection: Collection, date: str) -> List[
     Returns:
         List of all records from in the censored transactions collection for the chosen day
     """
-    start_dt = datetime.datetime.strptime(date, "%d-%m-%y")
+    try:
+        start_dt = datetime.datetime.strptime(date, "%d-%m-%y")
+    except:
+        raise ValueError("Date has wrong format. Required format is dd-mm-yy")
+
     end_dt = start_dt + datetime.timedelta(days=1)
 
     start_ts = int(start_dt.timestamp())
     end_ts = int(end_dt.timestamp())
     # Find all transactions with timestamp between
     # timestamps of the start of the day and it's end
-    cursor = collection.find(
-        {
-            "timestamp": {"$gte": start_ts, "$lt": end_ts},
-            "non_ofac_compliant": True,
-        },
-        {"_id": 0},
-    )
+    try:
+        cursor = collection.find(
+            {
+                "timestamp": {"$gte": start_ts, "$lt": end_ts},
+                "non_ofac_compliant": True,
+            },
+            {"_id": 0},
+        )
+    except:
+        raise Exception("Failed to fetch transactions data from db")
 
     return list(cursor)
 
@@ -232,22 +273,32 @@ def get_censored_transactions_by_daterange(
     Returns:
         List of all records from in the censored transactions collection for the date range
     """
-    start_dt = datetime.datetime.strptime(start_date, "%d-%m-%y")
-    end_dt = datetime.datetime.strptime(end_date, "%d-%m-%y") + datetime.timedelta(
-        days=1
-    )
+    try:
+        start_dt = datetime.datetime.strptime(start_date, "%d-%m-%y")
+    except:
+        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+
+    try:
+        end_dt = datetime.datetime.strptime(end_date, "%d-%m-%y") + datetime.timedelta(
+            days=1
+        )
+    except:
+        raise ValueError("End date has wrong format. Required format is dd-mm-yy")
 
     start_ts = int(start_dt.timestamp())
     end_ts = int(end_dt.timestamp())
     # Find all transactions with timestamp between
     # timestamps of the start of the first day
     # and the end of the last day of the date range
-    cursor = collection.find(
-        {
-            "timestamp": {"$gte": start_ts, "$lt": end_ts},
-            "non_ofac_compliant": True,
-        },
-        {"_id": 0},
-    )
+    try:
+        cursor = collection.find(
+            {
+                "timestamp": {"$gte": start_ts, "$lt": end_ts},
+                "non_ofac_compliant": True,
+            },
+            {"_id": 0},
+        )
+    except:
+        raise Exception("Failed to fetch transactions data from db")
 
     return list(cursor)

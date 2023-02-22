@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 import uvicorn
 from pymongo import MongoClient
 from fastapi.encoders import jsonable_encoder
@@ -36,7 +36,12 @@ censored_txs = db["censored_txs"]
 async def get_lido_validators_share(period: str) -> JSONResponse:
     # Query examples: /metrics/lido_validators_share/last_week
     # Query examples: /metrics/lido_validators_share/last_month
-    metrics = get_lido_validators_metrics(validators_metrics, period, False)
+    try:
+        metrics = get_lido_validators_metrics(validators_metrics, period, False)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -46,7 +51,12 @@ async def get_lido_validators_share(period: str) -> JSONResponse:
 async def get_lido_validators_ratio(period: str) -> JSONResponse:
     # Query examples: /metrics/get_lido_validators_ratio/last_week
     # Query examples: /metrics/get_lido_validators_ratio/last_month
-    metrics = get_lido_validators_metrics(validators_metrics, period, True)
+    try:
+        metrics = get_lido_validators_metrics(validators_metrics, period, True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -56,7 +66,12 @@ async def get_lido_validators_ratio(period: str) -> JSONResponse:
 async def get_total_validators_ratio(period: str) -> JSONResponse:
     # Query examples: /metrics/lido_vs_rest_share/last_week
     # Query examples: /metrics/lido_vs_rest_share/last_month
-    metrics = get_lido_vs_rest(validators_metrics, period)
+    try:
+        metrics = metrics = get_lido_vs_rest(validators_metrics, period)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
@@ -65,7 +80,12 @@ async def get_total_validators_ratio(period: str) -> JSONResponse:
 @app.get("/data/validators")
 async def get_validators() -> JSONResponse:
     # Query example: /data/validators
-    cursor = validators.find({}, {"_id": 0})
+    try:
+        cursor = validators.find({}, {"_id": 0})
+    except:
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch validators data from db"
+        )
 
     res = jsonable_encoder(list(cursor))
     return JSONResponse(res)
@@ -74,7 +94,11 @@ async def get_validators() -> JSONResponse:
 @app.get("/data/metrics")
 async def get_metrics() -> JSONResponse:
     # Query example: /data/metrics
-    metrics = data.get_metrics(validators_metrics)
+    try:
+        metrics = data.get_metrics(validators_metrics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -82,7 +106,13 @@ async def get_metrics() -> JSONResponse:
 @app.get("/data/metrics_by_day")
 async def get_metrics_by_date(date: str) -> JSONResponse:
     # Query example: /data/metrics_by_day?date=17-02-23
-    metrics = data.get_metrics_by_day(validators_metrics, date)
+    try:
+        metrics = data.get_metrics_by_day(validators_metrics, date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -92,7 +122,11 @@ async def get_metrics_by_validators(
     names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
     # Query example: /data/metrics_by_validators?names=stakefish&names=Figment
-    metrics = data.get_metrics_by_validators(validators_metrics, names)
+    try:
+        metrics = data.get_metrics_by_validators(validators_metrics, names)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -100,7 +134,15 @@ async def get_metrics_by_validators(
 @app.get("/data/metrics_by_daterange")
 async def get_metrics_by_daterange(start_date: str, end_date: str) -> JSONResponse:
     # Query example: /data/metrics_by_daterange?start_date=15-02-23&end_date=17-02-23
-    metrics = data.get_metrics_by_daterange(validators_metrics, start_date, end_date)
+    try:
+        metrics = data.get_metrics_by_daterange(
+            validators_metrics, start_date, end_date
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -110,7 +152,13 @@ async def get_metrics_by_validators_by_day(
     date: str, names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
     # Query example: /data/metrics_by_validators_by_day?date=17-02-23&names=stakefish&names=Figment
-    metrics = data.get_metrics_by_validators_by_day(validators_metrics, names, date)
+    try:
+        metrics = data.get_metrics_by_validators_by_day(validators_metrics, names, date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -120,9 +168,15 @@ async def get_metrics_by_validators_by_daterange(
     start_date: str, end_date: str, names: Union[List[str], None] = Query(default=None)
 ) -> str:
     # Query example: /data/metrics_by_validators_by_daterange?start_date=17-02-23&end_date=19-02-23&names=stakefish&names=Figment
-    metrics = data.get_metrics_by_validators_by_daterange(
-        validators_metrics, names, start_date, end_date
-    )
+    try:
+        metrics = data.get_metrics_by_validators_by_daterange(
+            validators_metrics, names, start_date, end_date
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -130,7 +184,11 @@ async def get_metrics_by_validators_by_daterange(
 @app.get("/metrics/latency")
 async def get_latencies() -> JSONResponse:
     # Query example: /metrics/latency
-    metrics = get_latency(censored_txs, validators)
+    try:
+        metrics = get_latency(censored_txs, validators)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -138,7 +196,11 @@ async def get_latencies() -> JSONResponse:
 @app.get("/data/censored_transactions")
 async def get_transactions() -> JSONResponse:
     # Query example: /data/censored_transactions
-    metrics = data.get_censored_transactions(censored_txs)
+    try:
+        metrics = data.get_censored_transactions(censored_txs)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -146,7 +208,13 @@ async def get_transactions() -> JSONResponse:
 @app.get("/data/censored_transactions_by_day")
 async def get_transactions(date: str) -> JSONResponse:
     # Query example: /data/censored_transactions_by_day?date=17-02-23
-    metrics = data.get_censored_transactions_by_day(censored_txs, date)
+    try:
+        metrics = data.get_censored_transactions_by_day(censored_txs, date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 
@@ -154,7 +222,15 @@ async def get_transactions(date: str) -> JSONResponse:
 @app.get("/data/censored_transactions_by_daterange")
 async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
     # Query example: /data/censored_transactions_by_daterange?start_date=15-02-23&end_date=17-02-23
-    metrics = data.get_censored_transactions_by_day(censored_txs, start_date, end_date)
+    try:
+        metrics = data.get_censored_transactions_by_day(
+            censored_txs, start_date, end_date
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     res = jsonable_encoder(metrics)
     return JSONResponse(res)
 

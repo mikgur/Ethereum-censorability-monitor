@@ -23,8 +23,11 @@ def _get_validators_metrics(collection: Collection, dates: List[str]) -> pd.Data
     fields_dict["_id"] = 0
     fields_dict["name"] = 1
 
-    cursor = collection.find({}, fields_dict)
-    records = list(cursor)
+    try:
+        cursor = collection.find({}, fields_dict)
+        records = list(cursor)
+    except:
+        raise Exception("Failed to fetch metrics data from db")
 
     return pd.DataFrame(records)
 
@@ -223,7 +226,7 @@ def get_lido_validators_metrics(
     elif period == "last_month":
         dates = get_last_dates(0, 30)
     else:
-        return {}
+        raise ValueError("Wrong period")
 
     metrics_df = _get_validators_metrics(collection, dates)
     metrics_df = _prepare_share_df(metrics_df, dates)
@@ -255,6 +258,8 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
+    else:
+        raise ValueError("Wrong period")
 
     # Prepare dataframe to calculate metrics for pools
     metrics_df = _get_validators_metrics(collection, dates)
@@ -309,19 +314,22 @@ def get_latency(
         List of censorship latency over all weeks
     """
     # Find min and max timestamps in censored transactions' mongo collection
-    pipeline = [
-        {
-            "$group": {
-                "_id": {},
-                "minTS": {"$min": "$timestamp"},
-                "maxTS": {"$max": "$timestamp"},
+    try:
+        pipeline = [
+            {
+                "$group": {
+                    "_id": {},
+                    "minTS": {"$min": "$timestamp"},
+                    "maxTS": {"$max": "$timestamp"},
+                }
             }
-        }
-    ]
-    agg_res = txs_collection.aggregate(pipeline).next()
+        ]
+        agg_res = txs_collection.aggregate(pipeline).next()
 
-    min_ts = agg_res["minTS"]
-    max_ts = agg_res["maxTS"]
+        min_ts = agg_res["minTS"]
+        max_ts = agg_res["maxTS"]
+    except Exception:
+        raise Exception("Failed to fetch transactions data from db")
 
     # Calculate corrensponding weeks for min and max timestamps
     first_monday_ts, first_sunday_ts = get_week(min_ts)
@@ -336,7 +344,10 @@ def get_latency(
 
     latency = []
     # List of Lido validators
-    lido_vals = validators_collection.distinct("name", {"pool_name": "Lido"})
+    try:
+        lido_vals = validators_collection.distinct("name", {"pool_name": "Lido"})
+    except:
+        raise Exception("Failed to fetch validators data from db")
 
     for shift in range(week_diff + 1):
         # For each available week find it's boundaries
