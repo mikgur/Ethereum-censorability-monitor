@@ -3,6 +3,7 @@ mongo_data/
 data/
 __pycache__
 *.log
+
 mongo_migrator/collections
 mongo_migrator/env
 api/env
