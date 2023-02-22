@@ -8,3 +8,7 @@ block_adresses_details_old/
 .env
 classifier_dataset/
 notebooks/catboost_info
+
+mongo_migrator/collections
+mongo_migrator/env
+api/env
