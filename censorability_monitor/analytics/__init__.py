@@ -47,7 +47,7 @@ class CensorshipMonitor:
         logger = logging.getLogger(self.name)
         if self.web3_type == 'ipc':
             w3 = Web3(Web3.IPCProvider(self.web3_url))
-            logger.info(f'Connected to ETH node: {w3.isConnected()}')
+            # logger.info(f'Connected to ETH node: {w3.isConnected()}')
             return w3
         else:
             msg = f'Unexpected web3 connection type: {self.web3_type}'
@@ -244,6 +244,8 @@ class CensorshipMonitor:
         # Calculate and save block metrics
         df_block_txs = df[df['included_into_next_block']].reset_index(
             drop=True).copy()
+        df_not_included_txs = df[~df['included_into_next_block']].reset_index(
+            drop=True).copy()
         if len(df_block_txs) != len(block['transactions']):
             logger.info((f'N block txes {len(df_block_txs)} is not equal to '
                          f'df block txes {len(block["transactions"])}'))
@@ -266,24 +268,82 @@ class CensorshipMonitor:
              },
             upsert=True)
 
+        # Suspicious txes
+        should_be_included = df_not_included_txs["prediction"] == 1
+        suspicious_txs = df_not_included_txs[should_be_included].copy()
+        suspicious_txs.reset_index(drop=True, inplace=True)
+        # Save them to tx_censored
+        censored_collection = db_analytics['censored_txs']
+        for _, row in suspicious_txs.iterrows():
+            censored_collection.update_one(
+                {'hash': {'$eq': row['hash']}},
+                {'$set': {'hash': row['hash'],
+                          'first_seen': block_ts - row['already_waiting']},
+                 '$push': {'censored': {'block_number': block_number,
+                                        'validator': validator_name}}},
+                upsert=True
+            )
+
+        # logger.info(f'Censored: {suspicious_txs["hash"].values}')
         # if there are non compliant txes
         if n_non_compliant_txs > 0:
             non_compliant_txs = df_block_txs[df_block_txs['status'] == -1].copy() # noqa E501
-            logger.info(non_compliant_txs)
             validators_collection.update_one(
                 {'name': {'$eq': validator_name}},
                 {'$addToSet': {
                     f'{block_date}.non_censored_blocks': block_number}
                  },
                 upsert=True)
-            for tx_hash in non_compliant_txs['hash'].values:
+            for _, row in non_compliant_txs.iterrows():
+                tx_hash = row['hash']
                 validators_collection.update_one(
                     {'name': {'$eq': validator_name}},
                     {'$addToSet': {
                         f'{block_date}.non_ofac_compliant_txs': tx_hash}
                      },
                     upsert=True)
-                # TODO Check - maybe this tx was censored earlier
+                censored_collection.update_one(
+                    {'hash': {'$eq': tx_hash}},
+                    {'$set': {'block_number': block_number,
+                              'block_ts': block_ts,
+                              'date': block_date,
+                              'validator': validator_name,
+                              'non_ofac_compliant': True,
+                              'hash': tx_hash,
+                              'first_seen': block_ts - row['already_waiting']},
+                     },
+                    upsert=True
+                )
+                # Add censored blocks information to validators
+                censored_tx = censored_collection.find_one(
+                    {'hash': {'$eq': tx_hash}})
+                for censored_block in censored_tx['censored']:
+                    name = censored_block['validator']
+                    n = censored_block['block_number']
+                    validators_collection.find_one_and_update(
+                        {
+                            'name': {'$eq': name}},
+                        {'$addToSet': {
+                            f'{block_date}.censored_block': n}
+                         },
+                        upsert=True)
+
+        # compliant txs
+        if n_compliant_txs > 0:
+            compliant_txs = df_block_txs[df_block_txs['status'] == 1].copy() # noqa E501
+            for _, row in compliant_txs.iterrows():
+                tx_hash = row['hash']
+                censored_collection.update_one(
+                    {'hash': {'$eq': tx_hash}},
+                    {'$set': {'block_number': block_number,
+                              'block_ts': block_ts,
+                              'date': block_date,
+                              'validator': validator_name,
+                              'non_ofac_compliant': False,
+                              'hash': tx_hash,
+                              'first_seen': block_ts - row['already_waiting']},
+                     }
+                )
 
     async def get_validator_name(self,
                                  block_number: int,
