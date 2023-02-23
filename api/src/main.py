@@ -243,7 +243,7 @@ async def get_ofac_list() -> JSONResponse:
         cursor = ofac_list.find({}, {"_id": 0})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
     res = jsonable_encoder(list(cursor))
     return JSONResponse(res)
 
@@ -266,7 +266,9 @@ async def get_ofac_list_by_day(date: str) -> JSONResponse:
 async def get_ofac_list_by_daterange(start_date: str, end_date: str) -> JSONResponse:
     # Query example: /data/get_ofac_list_by_daterange?start_date=15-02-23&end_date=17-02-23
     try:
-        metrics = data.get_ofac_list_by_daterange(ofac_list, start_date, end_date)
+        metrics = data.get_ofac_list_by_daterange(
+            ofac_list, start_date, end_date
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -277,4 +279,4 @@ async def get_ofac_list_by_daterange(start_date: str, end_date: str) -> JSONResp
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=API_HOST, port=API_PORT, reload=True, workers=4)
+    uvicorn.run(app, host=API_HOST, port=int(API_PORT))

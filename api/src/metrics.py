@@ -307,30 +307,21 @@ def get_latency(
     """
     # Find min and max timestamps in censored transactions' mongo collection
     try:
-        pipeline = [
-            {
-                "$group": {
-                    "_id": {},
-                    "minTS": {"$min": "$block_ts"},
-                    "maxTS": {"$max": "$block_ts"},
-                }
-            }
-        ]
-        agg_res = txs_collection.aggregate(pipeline).next()
+        ts_df = pd.DataFrame(list(txs_collection.find({}, {"_id": 0, "block_ts": 1})))
+        
+        ts_df.dropna(inplace = True)
 
-        min_ts = agg_res["minTS"]
-        max_ts = agg_res["maxTS"]
+        min_ts = int(ts_df.block_ts.min())
+        max_ts = int(ts_df.block_ts.max())
     except Exception:
         raise Exception("Failed to fetch transactions data from db")
 
     # Calculate corrensponding weeks for min and max timestamps
     first_monday_ts, first_sunday_ts = get_week(min_ts)
     _, last_monday_ts = get_week(max_ts)
-
     first_monday = datetime.datetime.utcfromtimestamp(first_monday_ts)
     first_sunday = datetime.datetime.utcfromtimestamp(first_sunday_ts)
     last_monday = datetime.datetime.utcfromtimestamp(last_monday_ts)
-
     # Week difference between min and max timestamps' weeks
     week_diff = (last_monday - first_monday).days // 7
 
@@ -353,7 +344,7 @@ def get_latency(
                 txs_collection.find(
                     {
                         "block_ts": {"$gte": monday_ts, "$lte": sunday_ts},
-                        "non_ofac_compliant": True,
+                        "non_ofac_compliant": 0,
                     },
                     {"_id": 0, "censored": 1},
                 )
@@ -367,7 +358,6 @@ def get_latency(
         shifted_df[
             "censorship_latency_without_lido_censorship"
         ] = shifted_df.censored.apply(_calc_lido_latency, args=(lido_vals,))
-
         latency.append(
             {
                 "start_date": monday_dt,
