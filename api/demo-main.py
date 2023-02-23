@@ -3,11 +3,18 @@ import uvicorn
 import pandas as pd
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins="*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 @app.get("/metrics/lido_validators_share/{period}")
 async def get_lido_validators_share(period: str) -> JSONResponse:
     metrics = [
@@ -211,8 +218,20 @@ async def get_latencies() -> JSONResponse:
         {
             "start_date": "13-02-23",
             "end_date": "19-02-23",
+            "censorship_latency": 10.86046511627907,
+            "censorship_latency_without_lido_censorship": 5.348837209302326,
+        },
+                {
+            "start_date": "20-02-23",
+            "end_date": "27-02-23",
             "censorship_latency": 29.86046511627907,
             "censorship_latency_without_lido_censorship": 15.348837209302326,
+        },
+                {
+            "start_date": "5-03-23",
+            "end_date": "12-03-23",
+            "censorship_latency": 39.86046511627907,
+            "censorship_latency_without_lido_censorship": 20.348837209302326,
         }
     ]
     res = jsonable_encoder(metrics)

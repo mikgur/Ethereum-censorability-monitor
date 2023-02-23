@@ -8,23 +8,6 @@ import {getOfacByPeriod} from './DataAccessLayer'
 
 function VisChart() {
 
-  // console.log(plotData[1])
-  let barofacArray = []
-  let barnonofacArray = []
-  let barofacarraySum = 0
-  let barnonofacarraySum = 0
-
-
-  // plotData.map((plotData, index) => {
-  //   barofacarraySum += plotData.ofac_share
-  //   barnonofacarraySum += plotData.non_ofac_share
-  // })
-
-  // plotData.map((plotData, index) => {
-  //   barofacArray.push({y:(plotData.ofac_share/barofacarraySum)*100, x:plotData.validator})
-  //   barnonofacArray.push({y:(plotData.non_ofac_share/barnonofacarraySum)*100, x:plotData.validator})
-  // })
-
   const [appState, setAppState] = useState();
   const [periodState, setPeriodState] = useState(true);
   const [buttonLidoState, setButtonLidoState] = useState('Switch to last month')
@@ -75,7 +58,7 @@ function VisChart() {
     width={700}
     label = "Share of Lido transactions (OFAC - NON OFAC compliant transactions)"
     >
-      <VictoryLegend x={650} y={30}
+      <VictoryLegend x={640} y={30}
         orientation="vertical"
         gutter={10}
         style={{title: {fontSize: 5, fill: "#FFFFFF"  } }}
@@ -127,7 +110,7 @@ function VisChart() {
       label = "Lido Validator"
       axisLabelComponent={
         <VictoryLabel
-          dy={-70}
+          dy={-100}
           style={[
             { fill: "#FFFFFF", fontSize: 20},
           ]}
