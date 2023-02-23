@@ -17,19 +17,17 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
     # and update them from accounts data
     transactions = first_seen_collection.find(
         {'timestamp': {'$lte': block_ts},
-         '$or': [{'block_number': {'$exists': False}},
-                 {'block_number': {'$gte': block_number}}]
+         '$and': [
+            {'$or': [{'block_number': {'$exists': False}},
+                     {'block_number': {'$gte': block_number}}
+                     ]
+             },
+            {'$or': [{'maxFeePerGas': {'$exists': False}},
+                     {'maxFeePerGas': {'$gte': block["baseFeePerGas"]}}
+                     ]}
+            ]
          })
-    # Get list of interesting transactions
-    n_mempool_txs = 0
-    mempool_txs = set()
-    for tx in transactions:
-        n_mempool_txs += 1
-        # check that tx maxGasPrice is higher than blocks BaseFeePerGas
-        if ('maxFeePerGas' in tx
-                and tx['maxFeePerGas'] < block['baseFeePerGas']):
-            continue
-        mempool_txs.add(tx['hash'])
+    mempool_txs = set([tx['hash'] for tx in transactions])
 
     # Get details
     tx_details_collection = db['tx_details']
