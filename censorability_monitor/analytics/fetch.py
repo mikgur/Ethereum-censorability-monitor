@@ -8,6 +8,8 @@ from web3.auto import Web3
 
 def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
     first_seen_collection = db['tx_first_seen_ts']
+    # first_seen_collection.create_index('timestamp')
+    # first_seen_collection.create_index('block_number')
     tx_details_collection = db['tx_details']
     block = w3.eth.getBlock(block_number)
     block_ts = block['timestamp']

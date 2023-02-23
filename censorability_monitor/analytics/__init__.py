@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Set
 
 import pandas as pd
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from pymongo.database import Database
 from web3.auto import Web3
 from web3.beacon import Beacon
@@ -38,6 +38,7 @@ class CensorshipMonitor:
         self.name = name
         self.start_block = start_block
         self.beacon_url = beacon_url
+        self.ofac_cache = None
         with open(model_path, 'rb') as f:
             self.model = pickle.load(f)
 
@@ -147,14 +148,16 @@ class CensorshipMonitor:
         # Update validators and ofac list
         mongo_client = self.get_mongo_analytics_client()
         db = mongo_client['ethereum_censorship_monitor']
+        block = w3.eth.getBlock(block_number)
+        block_ts = block['timestamp']
         try:
-            self.update_ofac_list_and_validators(db)
+            self.update_ofac_list_and_validators(block_ts, db)
         except Exception as e:
             logger.error(f'Error during list updates: {type(e)} {e}')
         # Process block
         success = False
         try:
-            await self.process_one_block(block_number)
+            await self.process_one_block(block, block_number)
             success = True
         except Exception as e:
             logger.error(f'Error with block {block_number}: {type(e)} {e}')
@@ -166,18 +169,16 @@ class CensorshipMonitor:
             {'block_number': block_number,
              'success': success})
 
-    async def process_one_block(self, block_number: int):
+    async def process_one_block(self, block: Dict, block_number: int):
         logger = logging.getLogger(self.name)
         ''' Process block'''
         w3 = self.get_web3_client()
         mongo_client = self.get_mongo_client()
         mongo_analytics_client = self.get_mongo_analytics_client()
-        block = w3.eth.getBlock(block_number)
         block_ts = block['timestamp']
 
         # Get validator name
         validator_name = await self.get_validator_name(block_number, block_ts)
-
         # Transactions
         block_txs = [b.hex() for b in block['transactions']]
         db = mongo_client['ethereum_mempool']
@@ -197,7 +198,6 @@ class CensorshipMonitor:
         if len(block_txs_addresses) != len(block['transactions']):
             logger.error((f'Block {block_number}: len of block_txs_addresses '
                           'is not equal to number of txs in block'))
-
         # Second try to find txs in db - we need only first seen ts
         # without mempool constrains
         found_in_db = self.find_txs_in_db(not_found_in_db_txs, db)
@@ -211,12 +211,10 @@ class CensorshipMonitor:
         txs_details_hashes = set(txs_details_from_db.keys())
         # Транзакции из БД, для которых нет деталей:
         db_txs_without_details = all_txs_found_in_db - txs_details_hashes
-
         # Достанем детали из блокчейна для "транзакций, напрямую попавших в
         # блок" и "транзакции, найденные в БД, но без деталей"
         txs_no_details = db_txs_without_details.union(not_found_in_db_txs)
         additional_details = self.get_txs_details_from_w3(txs_no_details, w3)
-
         # Соберем потребление газа для транзакций
         gas_consumption = self.gather_gas_estimation(
             txs_details=txs_details_from_db,
@@ -275,7 +273,6 @@ class CensorshipMonitor:
 
         dt = datetime.utcfromtimestamp(block_ts)
         block_date = dt.strftime('%d-%m-%y')
-
         validators_collection = db_analytics['validators_metrics']
         n_compliant_txs = len(df_block_txs[df_block_txs['status'] == 1])
         n_non_compliant_txs = len(df_block_txs) - n_compliant_txs
@@ -297,6 +294,7 @@ class CensorshipMonitor:
         suspicious_txs.reset_index(drop=True, inplace=True)
         # Save them to tx_censored
         censored_collection = db_analytics['censored_txs']
+        censored_collection.create_index('hash', unique=True)
         for _, row in suspicious_txs.iterrows():
             censored_collection.update_one(
                 {'hash': {'$eq': row['hash']}},
@@ -309,36 +307,40 @@ class CensorshipMonitor:
         logger.info((f'Found {len(suspicious_txs)} suspicious txs, '
                      f'{n_non_compliant_txs} non compliant'))
 
-        # logger.info(f'Censored: {suspicious_txs["hash"].values}')
         # if there are non compliant txes
         if n_non_compliant_txs > 0:
+            validators_updates = []
+            censored_txs_updates = []
             non_compliant_txs = df_block_txs[df_block_txs['status'] == -1].copy() # noqa E501
-            validators_collection.update_one(
-                {'name': {'$eq': validator_name}},
-                {'$addToSet': {
+            validators_updates.append(UpdateOne(
+                filter={'name': {'$eq': validator_name}},
+                update={'$addToSet': {
                     f'{block_date}.non_censored_blocks': block_number}
                  },
-                upsert=True)
+                upsert=True
+            ))
             for _, row in non_compliant_txs.iterrows():
                 tx_hash = row['hash']
-                validators_collection.update_one(
-                    {'name': {'$eq': validator_name}},
-                    {'$addToSet': {
+                validators_updates.append(UpdateOne(
+                    filter={'name': {'$eq': validator_name}},
+                    update={'$addToSet': {
                         f'{block_date}.non_ofac_compliant_txs': tx_hash}
                      },
-                    upsert=True)
-                censored_collection.update_one(
-                    {'hash': {'$eq': tx_hash}},
-                    {'$set': {'block_number': block_number,
-                              'block_ts': block_ts,
-                              'date': block_date,
-                              'validator': validator_name,
-                              'non_ofac_compliant': True,
-                              'hash': tx_hash,
-                              'first_seen': block_ts - row['already_waiting']},
-                     },
                     upsert=True
-                )
+                ))
+                censored_txs_updates.append(UpdateOne(
+                    filter={'hash': {'$eq': tx_hash}},
+                    update={'$set': {'block_number': block_number,
+                                     'block_ts': block_ts,
+                                     'date': block_date,
+                                     'validator': validator_name,
+                                     'non_ofac_compliant': True,
+                                     'hash': tx_hash,
+                                     'first_seen': block_ts - row['already_waiting']}, # noqa E501
+                            },
+                    upsert=True
+                ))
+
                 # Add censored blocks information to validators
                 censored_tx = censored_collection.find_one(
                     {'hash': {'$eq': tx_hash}})
@@ -354,25 +356,35 @@ class CensorshipMonitor:
                             f'{block_date}.censored_block': n}
                          },
                         upsert=True)
+            # Write to db
+            if len(validators_updates) > 0:
+                validators_collection.bulk_write(validators_updates)
+            if len(censored_txs_updates) > 0:
+                censored_collection.bulk_write(censored_txs_updates)
 
         # compliant txs
         if n_compliant_txs > 0:
+            censored_txs_updates = []
             total_updates = 0
             compliant_txs = df_block_txs[df_block_txs['status'] == 1].copy() # noqa E501
             for _, row in compliant_txs.iterrows():
                 tx_hash = row['hash']
-                update_result = censored_collection.update_one(
-                    {'hash': {'$eq': tx_hash}},
-                    {'$set': {'block_number': block_number,
-                              'block_ts': block_ts,
-                              'date': block_date,
-                              'validator': validator_name,
-                              'non_ofac_compliant': False,
-                              'hash': tx_hash,
-                              'first_seen': block_ts - row['already_waiting']},
-                     }
-                )
-                total_updates += update_result.modified_count
+                censored_txs_updates.append(UpdateOne(
+                    filter={'hash': {'$eq': tx_hash}},
+                    update={
+                        '$set': {'block_number': block_number,
+                                 'block_ts': block_ts,
+                                 'date': block_date,
+                                 'validator': validator_name,
+                                 'non_ofac_compliant': False,
+                                 'hash': tx_hash,
+                                 'first_seen': block_ts - row['already_waiting']}, # noqa E501
+                                }
+                ))
+            if len(censored_txs_updates):
+                update_result = censored_collection.bulk_write(
+                    censored_txs_updates)
+            total_updates = update_result.modified_count
             logger.info(f'Updated {total_updates} compliant suspicious txs')
 
     async def get_validator_name(self,
@@ -493,7 +505,6 @@ class CensorshipMonitor:
         all_details = txs_details.copy()
         all_details.update(additional_details)
         for h, v in all_details.items():
-            # print(v)
             record = {'hash': h, 'from': v['from'], 'nonce': v['nonce']}
             if 'gasPrice' in v:
                 record['maxFeePerGas'] = v['gasPrice']
@@ -556,26 +567,33 @@ class CensorshipMonitor:
             lambda x: datetime.utcfromtimestamp(x).hour)
         return df
 
-    def get_compliance_statuses(self,
-                                block_ts: int,
-                                block_txs_addresses: Dict[str, List[str]],
-                                db: Database
-                                ) -> Dict[str, int]:
+    def get_ofac_cache(self,
+                       block_ts: int,
+                       db: Database):
         ofac_addresses_collection = db['ofac_addresses']
         ofac_db = ofac_addresses_collection.find(
             {'timestamp': {'$lte': block_ts}}
         ).sort('timestamp', -1).limit(1)
         ofac_addresses = set([a['addresses'] for a in ofac_db][0])
+        return ofac_addresses
+
+    def get_compliance_statuses(self,
+                                block_ts: int,
+                                block_txs_addresses: Dict[str, List[str]],
+                                db: Database
+                                ) -> Dict[str, int]:
+        if self.ofac_cache is None:
+            self.ofac_cache = self.get_ofac_cache(block_ts, db)
         compliance_status = {}
         for tx, addresses in block_txs_addresses.items():
-            n_ofac_addresses = len(set(addresses).intersection(ofac_addresses))
+            n_ofac_addresses = len(set(addresses).intersection(self.ofac_cache)) # noqa E501
             if n_ofac_addresses == 0:
                 compliance_status[tx] = 1
             else:
                 compliance_status[tx] = -1
         return compliance_status
 
-    def update_ofac_list_and_validators(self, db: Database):
+    def update_ofac_list_and_validators(self, block_ts: int, db: Database):
         logger = logging.getLogger(self.name)
         ofac_addresses_collection = db['ofac_addresses']
         ofac_db = ofac_addresses_collection.find()
@@ -605,6 +623,7 @@ class CensorshipMonitor:
                 'timestamp': ofac_data['dt'],
                 'addresses': unique_addresses
             })
+            self.ofac_cache = self.get_ofac_cache(block_ts, db)
 
         # update validators
         logger.info('Fetching lido validators')

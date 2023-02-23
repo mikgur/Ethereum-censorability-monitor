@@ -85,6 +85,7 @@ def get_validator_pubkey(block_number: int,
 
 def get_validator_info(validator_pubkey, db: Database) -> Tuple[str, str]:
     validators_collection = db['validators']
+    validators_collection.create_index('pubkey', unique=True)
     result = validators_collection.find({'pubkey': {'$eq': validator_pubkey}})
     db_validators = [v for v in result]
     if len(db_validators) == 0:
