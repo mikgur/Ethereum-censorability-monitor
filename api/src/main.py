@@ -28,8 +28,9 @@ client = MongoClient(mongo_url)
 
 db = client["censorred"]
 validators = db["validators"]
-validators_metrics = db["validator_metrics"]
+validators_metrics = db["validators_metrics"]
 censored_txs = db["censored_txs"]
+ofac_list = db["ofac_addresses"]
 
 
 @app.get("/metrics/lido_validators_share/{period}")
@@ -226,6 +227,46 @@ async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
         metrics = data.get_censored_transactions_by_day(
             censored_txs, start_date, end_date
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/data/ofac_addresses")
+async def get_ofac_list() -> JSONResponse:
+    # Query example: /data/ofac_addresses
+    try:
+        cursor = ofac_list.find({}, {"_id": 0})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(list(cursor))
+    return JSONResponse(res)
+
+
+@app.get("/data/ofac_addresses_by_day")
+async def get_ofac_list_by_day(date: str) -> JSONResponse:
+    # Query example: /data/ofac_addresses?date=17-02-23
+    try:
+        metrics = data.get_ofac_list_by_day(ofac_list, date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/data/ofac_addresses_by_day")
+async def get_ofac_list_by_daterange(start_date: str, end_date: str) -> JSONResponse:
+    # Query example: /data/get_ofac_list_by_daterange?start_date=15-02-23&end_date=17-02-23
+    try:
+        metrics = data.get_ofac_list_by_daterange(ofac_list, start_date, end_date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

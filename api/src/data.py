@@ -214,7 +214,7 @@ def get_censored_transactions(collection: Collection) -> List[dict]:
         collection  -   Mongo collection of censored transactions
 
     Returns:
-        List of all records from in the censored transactions collection
+        List of all records in the censored transactions collection
     """
     try:
         cursor = collection.find({}, {"_id": 0})
@@ -232,7 +232,7 @@ def get_censored_transactions_by_day(collection: Collection, date: str) -> List[
         date        -   Date to get censored transactions
 
     Returns:
-        List of all records from in the censored transactions collection for the chosen day
+        List of all records in the censored transactions collection for the chosen day
     """
     try:
         start_dt = datetime.datetime.strptime(date, "%d-%m-%y")
@@ -263,7 +263,7 @@ def get_censored_transactions_by_daterange(
     collection: Collection, start_date: str, end_date: str
 ) -> List[dict]:
     """
-    Get all censored transactions for the single day
+    Get all censored transactions for the date range
 
     Args:
         collection  -   Mongo collection of censored transactions
@@ -271,7 +271,7 @@ def get_censored_transactions_by_daterange(
         end_date    -   Right bound of the date range
 
     Returns:
-        List of all records from in the censored transactions collection for the date range
+        List of all records in the censored transactions collection for the date range
     """
     try:
         start_dt = datetime.datetime.strptime(start_date, "%d-%m-%y")
@@ -295,6 +295,85 @@ def get_censored_transactions_by_daterange(
             {
                 "block_ts": {"$gte": start_ts, "$lt": end_ts},
                 "non_ofac_compliant": True,
+            },
+            {"_id": 0},
+        )
+    except:
+        raise Exception("Failed to fetch transactions data from db")
+
+    return list(cursor)
+
+
+def get_ofac_list_by_day(collection: Collection, date: str) -> List[dict]:
+    """
+    Get OFAC list for the single day
+
+    Args:
+        collection  -   Mongo collection of OFAC lists' snapshots
+        date        -   Date to get OFAC list
+
+    Returns:
+        List of non OFAC compliant addresses for the chosen day
+    """
+    try:
+        start_dt = datetime.datetime.strptime(date, "%d-%m-%y")
+    except:
+        raise ValueError("Date has wrong format. Required format is dd-mm-yy")
+
+    end_dt = start_dt + datetime.timedelta(days=1)
+
+    start_ts = int(start_dt.timestamp())
+    end_ts = int(end_dt.timestamp())
+    # Find all transactions with timestamp between
+    # timestamps of the start of the day and it's end
+    try:
+        cursor = collection.find(
+            {
+                "timestamp": {"$gte": start_ts, "$lt": end_ts},
+            },
+            {"_id": 0},
+        )
+    except:
+        raise Exception("Failed to fetch transactions data from db")
+
+    return list(cursor)
+
+
+def get_ofac_list_by_daterange(
+    collection: Collection, start_date: str, end_date: str
+) -> List[dict]:
+    """
+    Get OFAC list for the date range
+
+    Args:
+        collection  -   Mongo collection of OFAC lists' snapshots
+        start_date  -   Left bound of the date range
+        end_date    -   Right bound of the date range
+
+    Returns:
+        List of non OFAC compliant addresses for the date range
+    """
+    try:
+        start_dt = datetime.datetime.strptime(start_date, "%d-%m-%y")
+    except:
+        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+
+    try:
+        end_dt = datetime.datetime.strptime(end_date, "%d-%m-%y") + datetime.timedelta(
+            days=1
+        )
+    except:
+        raise ValueError("End date has wrong format. Required format is dd-mm-yy")
+
+    start_ts = int(start_dt.timestamp())
+    end_ts = int(end_dt.timestamp())
+    # Find all records with timestamp between
+    # timestamps of the start of the first day
+    # and the end of the last day of the date range
+    try:
+        cursor = collection.find(
+            {
+                "timestamp": {"$gte": start_ts, "$lt": end_ts},
             },
             {"_id": 0},
         )
