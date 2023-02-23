@@ -8,6 +8,9 @@ block_adresses_details_old/
 .env
 classifier_dataset/
 notebooks/catboost_info
+notebooks/10 - check mongo analytics.ipynb
+collections
+migrate_to_mongo.py
 
 mongo_migrator/collections
 mongo_migrator/env
