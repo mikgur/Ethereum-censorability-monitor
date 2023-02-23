@@ -33,8 +33,8 @@ def main():
                 beacon_url=beacon_url,
                 model_path=model_path,
                 interval=0.5,
-                # start_block=16649566,
-                start_block=16649641,
+                start_block=16649566,
+                # start_block=16649630,
                 verbose=False)
 
     asyncio.run(censorship_monitor.run())

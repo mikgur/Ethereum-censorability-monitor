@@ -259,7 +259,7 @@ class CensorshipMonitor:
         n_compliant_txs = len(df_block_txs[df_block_txs['status'] == 1])
         n_non_compliant_txs = len(df_block_txs) - n_compliant_txs
         logger.info((f'Txs in block: {len(block_txs)} '
-                     f'non compliant: {n_compliant_txs}'))
+                     f'compliant: {n_compliant_txs}'))
 
         validators_collection.update_one(
             {'name': {'$eq': validator_name}},
