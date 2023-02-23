@@ -248,7 +248,7 @@ def get_censored_transactions_by_day(collection: Collection, date: str) -> List[
     try:
         cursor = collection.find(
             {
-                "timestamp": {"$gte": start_ts, "$lt": end_ts},
+                "block_ts": {"$gte": start_ts, "$lt": end_ts},
                 "non_ofac_compliant": True,
             },
             {"_id": 0},
@@ -293,7 +293,7 @@ def get_censored_transactions_by_daterange(
     try:
         cursor = collection.find(
             {
-                "timestamp": {"$gte": start_ts, "$lt": end_ts},
+                "block_ts": {"$gte": start_ts, "$lt": end_ts},
                 "non_ofac_compliant": True,
             },
             {"_id": 0},

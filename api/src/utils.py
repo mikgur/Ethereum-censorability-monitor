@@ -27,7 +27,7 @@ def get_last_dates(period_start: int, period_end: int) -> List[str]:
         List of dates that started period_end days ago and finished period_end days ago
     """
     return [
-        str_date_repr(datetime.date.today() - datetime.timedelta(days=i))
+        str_date_repr(datetime.datetime.utcnow().date() - datetime.timedelta(days=i))
         for i in range(period_start, period_end)
     ]
 
@@ -67,7 +67,7 @@ def get_week(ts: int) -> Tuple[int, int]:
     Returns:
         Week's monday and sunday timestamps and dates corresponding to the given timestamp
     """
-    today = datetime.datetime.fromtimestamp(ts)
+    today = datetime.datetime.utcfromtimestamp(ts)
     this_week_monday = today - datetime.timedelta(
         days=today.weekday(),
         seconds=today.second,

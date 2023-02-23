@@ -46,7 +46,7 @@ def _get_ofac_compliant_count(row: pd.Series, dates: List[str]) -> int:
     count = 0
     for day in dates:
         if day in row.keys():
-            count += row[day]["num_ofac_compliant_txs"]
+            count += row[day].get("num_ofac_compliant_txs", 0)
 
     return count
 
@@ -65,45 +65,37 @@ def _get_ofac_non_compliant_count(row: pd.Series, dates: List[str]) -> int:
     count = 0
     for day in dates:
         if day in row.keys():
-            count += row[day]["num_non_ofac_compliant_txs"]
+            count += len(row[day].get("non_ofac_compliant_txs", []))
 
     return count
 
 
 def _get_ofac_compliant_share(row: pd.Series, df: pd.DataFrame) -> float:
     """
-    Calculate the share of a particular validator in the validation of ofac compliant transactions inside Lido
+    Calculate the share of a particular validator in the validation of ofac compliant transactions inside Ethereum blockchain
 
     Args:
         row -   Pandas series corresconding to the specific validator
         df  -   Whole dataframe with metrics
 
     Returns:
-        Share of a particular validator in the validation of ofac compliant transactions inside Lido in percents
+        Share of a particular validator in the validation of ofac compliant transactions inside Ethereum blockchain in percents
     """
-    return (
-        100
-        * row["ofac_compliant_count"]
-        / df[df.name != "Other"].ofac_compliant_count.sum()
-    )
+    return 100 * row["ofac_compliant_count"] / df.ofac_compliant_count.sum()
 
 
 def _get_ofac_non_compliant_share(row: pd.Series, df: pd.DataFrame) -> float:
     """
-    Calculate the share of a particular validator in the validation of ofac non compliant transactions inside Lido
+    Calculate the share of a particular validator in the validation of ofac non compliant transactions inside Ethereum blockchain
 
     Args:
         row -   Pandas series corresconding to the specific validator
         df  -   Whole dataframe with metrics
 
     Returns:
-        Share of a particular validator in the validation of ofac non compliant transactions inside Lido in percents
+        Share of a particular validator in the validation of ofac non compliant transactions inside Ethereum blockchain in percents
     """
-    return (
-        100
-        * row["ofac_non_compliant_count"]
-        / df[df.name != "Other"].ofac_non_compliant_count.sum()
-    )
+    return 100 * row["ofac_non_compliant_count"] / df.ofac_non_compliant_count.sum()
 
 
 def _get_ratio(row: pd.Series) -> float:
@@ -319,8 +311,8 @@ def get_latency(
             {
                 "$group": {
                     "_id": {},
-                    "minTS": {"$min": "$timestamp"},
-                    "maxTS": {"$max": "$timestamp"},
+                    "minTS": {"$min": "$block_ts"},
+                    "maxTS": {"$max": "$block_ts"},
                 }
             }
         ]
@@ -335,9 +327,9 @@ def get_latency(
     first_monday_ts, first_sunday_ts = get_week(min_ts)
     _, last_monday_ts = get_week(max_ts)
 
-    first_monday = datetime.datetime.fromtimestamp(first_monday_ts)
-    first_sunday = datetime.datetime.fromtimestamp(first_sunday_ts)
-    last_monday = datetime.datetime.fromtimestamp(last_monday_ts)
+    first_monday = datetime.datetime.utcfromtimestamp(first_monday_ts)
+    first_sunday = datetime.datetime.utcfromtimestamp(first_sunday_ts)
+    last_monday = datetime.datetime.utcfromtimestamp(last_monday_ts)
 
     # Week difference between min and max timestamps' weeks
     week_diff = (last_monday - first_monday).days // 7
@@ -360,13 +352,16 @@ def get_latency(
             list(
                 txs_collection.find(
                     {
-                        "timestamp": {"$gte": monday_ts, "$lte": sunday_ts},
+                        "block_ts": {"$gte": monday_ts, "$lte": sunday_ts},
                         "non_ofac_compliant": True,
                     },
                     {"_id": 0, "censored": 1},
                 )
             )
         )
+        # Drop all non ofac compliant transactions
+        # that haven't been censored
+        shifted_df.dropna(axis=0, subset=['censored'], inplace=True)
         # Сalculate censorship metrics
         shifted_df["censorship_latency"] = shifted_df.censored.apply(len) * 12
         shifted_df[

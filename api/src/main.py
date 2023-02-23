@@ -236,4 +236,4 @@ async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=API_HOST, port=API_PORT)
+    uvicorn.run(app, host=API_HOST, port=API_PORT, reload=True, workers=4)
