@@ -169,12 +169,15 @@ class AddressDataCollector:
         w3 = self.get_web3_client()
         result = {}
         for address in addresses:
-            n_transactions = w3.eth.get_transaction_count(
-                address, block_number)
-            eth_account = w3.eth.get_balance(
-                address, block_number) / 10 ** 18
-            result[address] = {'n_txs': n_transactions,
-                               'eth': eth_account}
+            try:
+                n_transactions = w3.eth.get_transaction_count(
+                    address, block_number)
+                eth_account = w3.eth.get_balance(
+                    address, block_number) / 10 ** 18
+                result[address] = {'n_txs': n_transactions,
+                                   'eth': eth_account}
+            except ValueError:
+                pass
         return result
 
 
@@ -275,8 +278,11 @@ class BlockCollector(DataCollector):
             if current_block > last_processed_block:
                 for block_number in range(last_processed_block + 1,
                                           current_block + 1):
-                    await self.process_block_data(
-                        block_number, w3, mongo_client)
+                    try:
+                        await self.process_block_data(
+                            block_number, w3, mongo_client)
+                    except Exception as e:
+                        logger.info(f'Block {block_number} - {type(e)} {e}')
                 last_processed_block = current_block
             t2 = time.time()
             time_left = self.interval - (t2 - t1)

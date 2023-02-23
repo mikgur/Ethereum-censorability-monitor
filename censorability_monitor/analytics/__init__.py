@@ -1,6 +1,8 @@
 import asyncio
+import json
 import logging
 import pickle
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Set
 
@@ -15,6 +17,8 @@ from censorability_monitor.analytics.fetch import (get_addresses_from_receipt,
                                                    load_mempool_state)
 from censorability_monitor.analytics.validators import (get_validator_info,
                                                         get_validator_pubkey)
+from censorability_monitor.data_collection.ofac import (
+    get_banned_wallets, get_grouped_by_prefixes)
 
 
 class CensorshipMonitor:
@@ -140,13 +144,27 @@ class CensorshipMonitor:
         w3 = self.get_web3_client()
         n_behind = w3.eth.blockNumber - block_number
         logger.info(f'processing {block_number}, {n_behind} behind ETH')
+        # Update validators and ofac list
+        mongo_client = self.get_mongo_analytics_client()
+        db = mongo_client['ethereum_censorship_monitor']
+        try:
+            self.update_ofac_list_and_validators(db)
+        except Exception as e:
+            logger.error(f'Error during list updates: {type(e)} {e}')
+        # Process block
+        success = False
+        try:
+            await self.process_one_block(block_number)
+            success = True
+        except Exception as e:
+            logger.error(f'Error with block {block_number}: {type(e)} {e}')
         # Save block_number to db
-        await self.process_one_block(block_number)
         mongo_analytics_client = self.get_mongo_analytics_client()
         db_analytics = mongo_analytics_client['ethereum_censorship_monitor']
         processed_blocks = db_analytics['processed_blocks']
         processed_blocks.insert_one(
-            {'block_number': block_number})
+            {'block_number': block_number,
+             'success': success})
 
     async def process_one_block(self, block_number: int):
         logger = logging.getLogger(self.name)
@@ -163,7 +181,10 @@ class CensorshipMonitor:
         # Transactions
         block_txs = [b.hex() for b in block['transactions']]
         db = mongo_client['ethereum_mempool']
-        mempool_txs = load_mempool_state(db, block_number, w3)
+        try:
+            mempool_txs = load_mempool_state(db, block_number, w3)
+        except Exception as e:
+            logger.error(f'Mempool error {block_number} {type(e)} {e}')
 
         # block txs AND mempool txs
         all_transactions = set(block_txs).copy()
@@ -553,3 +574,76 @@ class CensorshipMonitor:
             else:
                 compliance_status[tx] = -1
         return compliance_status
+
+    def update_ofac_list_and_validators(self, db: Database):
+        logger = logging.getLogger(self.name)
+        ofac_addresses_collection = db['ofac_addresses']
+        ofac_db = ofac_addresses_collection.find()
+        ofac_db = ofac_db.sort('timestamp', -1).limit(1)
+        ofac_lists = [a for a in ofac_db]
+        need_to_update = len(ofac_lists) == 0
+        if len(ofac_lists) > 0:
+            last_update_ts = ofac_lists[0]['timestamp']
+        # update once in 12 hours
+        if time.time() - last_update_ts > 12 * 60 * 60:
+            need_to_update = True
+        if not need_to_update:
+            return
+
+        # update ofac list
+        logger.info('Fetching OFAC data')
+        banned_wallets, is_successful = get_banned_wallets(
+            'https://www.treasury.gov/ofac/downloads/sdnlist.txt')
+        if is_successful:
+            logger.info('Save ofac data')
+            ofac_data = get_grouped_by_prefixes(banned_wallets)
+            eth_addresses = ofac_data['wallets']['ETH'].copy()
+            eth_addresses.extend([a for a in ofac_data['wallets']['USDT']
+                                  if a[:2] == '0x'])
+            unique_addresses = list(set(eth_addresses))
+            ofac_addresses_collection.insert_one({
+                'timestamp': ofac_data['dt'],
+                'addresses': unique_addresses
+            })
+
+        # update validators
+        logger.info('Fetching lido validators')
+        lido_NodeOperatorsRegistry = '0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5' # noqa E501
+        with open('lido_contract_abi.json', 'r') as f:
+            lido_abi = json.load(f)
+        w3 = self.get_web3_client()
+        contract = w3.eth.contract(
+            address=lido_NodeOperatorsRegistry, abi=lido_abi)
+
+        key_status = {}
+        key_to_validator = {}
+        key_to_validator_address = {}
+
+        for i in range(contract.functions.getNodeOperatorsCount().call()):
+            operator = contract.functions.getNodeOperator(i, True).call()
+            print(f'Operator: {operator[1]}')
+            for j in range(contract.functions.getTotalSigningKeyCount(i).call()): # noqa E501
+                key = contract.functions.getSigningKey(i, j).call()
+                key_hex = '0x' + key[0].hex()
+                key_to_validator[key_hex] = operator[1]
+                key_to_validator_address[key_hex] = operator[2]
+                key_status[key_hex] = key[2]
+
+        validators_collection = db['validators']
+        validators_db = validators_collection.find()
+        validators = set([a['pubkey'] for a in validators_db])
+        records = []
+        current_time = int(time.time())
+        for k, v in key_to_validator.items():
+            if k in validators:
+                continue
+            record = {
+                'pubkey': k,
+                'pool_name': 'Lido',
+                'name': v,
+                'timestamp': current_time
+            }
+            records.append(record)
+        logger.info(f'Add {len(records)} new validators to db')
+        if len(records) > 0:
+            validators_collection.insert_many(records)
