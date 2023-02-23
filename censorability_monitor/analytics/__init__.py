@@ -161,6 +161,7 @@ class CensorshipMonitor:
             success = True
         except Exception as e:
             logger.error(f'Error with block {block_number}: {type(e)} {e}')
+            raise e
         # Save block_number to db
         mongo_analytics_client = self.get_mongo_analytics_client()
         db_analytics = mongo_analytics_client['ethereum_censorship_monitor']
@@ -344,6 +345,8 @@ class CensorshipMonitor:
                 # Add censored blocks information to validators
                 censored_tx = censored_collection.find_one(
                     {'hash': {'$eq': tx_hash}})
+                if censored_tx is None:
+                    continue
                 if 'censored' not in censored_tx:
                     continue
                 for censored_block in censored_tx['censored']:
