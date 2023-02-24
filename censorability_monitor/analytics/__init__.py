@@ -24,13 +24,17 @@ from censorability_monitor.data_collection.ofac import (
 class CensorshipMonitor:
     ''' Monitor non included into block transactions'''
     def __init__(self, mongo_url: str, mongo_analytics_url: str,
+                 collector_db_name: str,
+                 analytics_db_name: str,
                  web3_type: str, web3_url: str,
                  beacon_url: str,
                  model_path: str,
                  interval: float, verbose: bool, start_block: int = 0,
                  name: str = 'CensorshipMonitor'):
         self.mongo_url = mongo_url
-        self.mongo_analytics_url = mongo_analytics_url,
+        self.mongo_analytics_url = mongo_analytics_url
+        self.collector_db_name = collector_db_name
+        self.analytics_db_name = analytics_db_name
         self.web3_type = web3_type
         self.web3_url = web3_url
         self.interval = interval
@@ -108,8 +112,8 @@ class CensorshipMonitor:
         logger = logging.getLogger(self.name)
         mongo_client = self.get_mongo_client()
         mongo_analytics_client = self.get_mongo_analytics_client()
-        db_collector = mongo_client['ethereum_mempool']
-        db_analytics = mongo_analytics_client['ethereum_censorship_monitor']
+        db_collector = mongo_client[self.collector_db_name]
+        db_analytics = mongo_analytics_client[self.analytics_db_name]
 
         logger.info('Select starting block')
         last_processed_block = self.get_last_processed_block_number(
@@ -147,7 +151,7 @@ class CensorshipMonitor:
         logger.info(f'processing {block_number}, {n_behind} behind ETH')
         # Update validators and ofac list
         mongo_client = self.get_mongo_analytics_client()
-        db = mongo_client['ethereum_censorship_monitor']
+        db = mongo_client[self.analytics_db_name]
         block = w3.eth.getBlock(block_number)
         block_ts = block['timestamp']
         try:
@@ -164,7 +168,7 @@ class CensorshipMonitor:
             raise e
         # Save block_number to db
         mongo_analytics_client = self.get_mongo_analytics_client()
-        db_analytics = mongo_analytics_client['ethereum_censorship_monitor']
+        db_analytics = mongo_analytics_client[self.analytics_db_name]
         processed_blocks = db_analytics['processed_blocks']
         processed_blocks.insert_one(
             {'block_number': block_number,
@@ -182,7 +186,7 @@ class CensorshipMonitor:
         validator_name = await self.get_validator_name(block_number, block_ts)
         # Transactions
         block_txs = [b.hex() for b in block['transactions']]
-        db = mongo_client['ethereum_mempool']
+        db = mongo_client[self.collector_db_name]
         try:
             mempool_txs = load_mempool_state(db, block_number, w3)
         except Exception as e:
@@ -191,6 +195,8 @@ class CensorshipMonitor:
         # block txs AND mempool txs
         all_transactions = set(block_txs).copy()
         all_transactions.update(mempool_txs)
+        logger.info((f'Total txs to process: {len(all_transactions)}'
+                     f' (memopool: {len(mempool_txs)})'))
         # txs in block which were not found in mempool
         not_found_in_db_txs = set(block_txs) - set(mempool_txs)
 
@@ -250,12 +256,13 @@ class CensorshipMonitor:
                            'total_eligible_txs', 'priority_percent',
                            'cumulative_gas', 'first_gas_unit', 'last_gas_unit',
                            'change_baseFeePerGas', 'hour']
+        logger.info(f'Txs passed through classifier: {len(df)}')
         classifier_features = df[feature_columns].copy()
         preds = self.model.predict(classifier_features)
         df['prediction'] = preds
 
         # Compliance status
-        db_analytics = mongo_analytics_client['ethereum_censorship_monitor']
+        db_analytics = mongo_analytics_client[self.analytics_db_name]
         status = self.get_compliance_statuses(
             block_ts=block_ts,
             block_txs_addresses=block_txs_addresses,
@@ -400,7 +407,7 @@ class CensorshipMonitor:
                 w3 = self.get_web3_client()
                 beacon = self.get_beacon()
                 mongo_client = self.get_mongo_analytics_client()
-                db_analytics = mongo_client['ethereum_censorship_monitor']
+                db_analytics = mongo_client[self.analytics_db_name]
                 validator_pubkey = get_validator_pubkey(
                     block_number, block_ts, beacon, w3, db_analytics)
                 _, validator_name = get_validator_info(
@@ -643,7 +650,7 @@ class CensorshipMonitor:
 
         for i in range(contract.functions.getNodeOperatorsCount().call()):
             operator = contract.functions.getNodeOperator(i, True).call()
-            print(f'Operator: {operator[1]}')
+            logger.info(f'Operator: {operator[1]}')
             for j in range(contract.functions.getTotalSigningKeyCount(i).call()): # noqa E501
                 key = contract.functions.getSigningKey(i, j).call()
                 key_hex = '0x' + key[0].hex()
