@@ -28,7 +28,7 @@
   <a href=#quick-start> Quick Start </a> |
   <a href=#mongo_db_metrics_scheme> Mongo DB metrics scheme  </a> |
   <a href=#community> Community </a>
-  <a href=#acknowledges> Acknowledges </a>
+  <a href=#acknowledgments> Acknowledgments </a>
 </h4>
 
 -----------------------------------------------
@@ -113,7 +113,9 @@ Please find details in our [notion page](https://accidental-eyelash-d3a.notion.s
 
 ## &#128204; Community 
 
-## &#128204; Acknowledges
+## &#128204; Acknowledgments
+
+- Folks from [DRPC.org](https://drpc.org/) were kind enough to give us access to their archive node, which has been a huge help for our project!
 
 ## License
 
