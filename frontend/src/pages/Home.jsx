@@ -10,6 +10,9 @@ import Newsletter from '../partials/Newsletter';
 import Banner from '../partials/Banner';
 import Footer from '../partials/Footer';
 import VisChart from '../partials/VisChart';
+import RatioChart from '../partials/RatioChart';
+import PoolChart from '../partials/PoolChart';
+import LatencyChart from '../partials/LatencyChart';
 
 function Home() {
   return (
@@ -27,16 +30,21 @@ function Home() {
         {/*  Page sections */}
         <HeroHome />
         <VisChart />
-        <FeaturesBlocks />
+        <div style={{height: 500, weight: 200}}></div>
+        <RatioChart />
+        <div style={{height: 500, weight: 200}}></div>
+        <PoolChart />
+        <LatencyChart />
+        {/* <FeaturesBlocks />
         <FeaturesZigZag />
         <Testimonials />
-        <Newsletter />
+        <Newsletter /> */}
       </main>
 
-      <Banner />
+      {/* <Banner /> */}
 
       {/*  Site footer */}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }
