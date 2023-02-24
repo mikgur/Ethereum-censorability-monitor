@@ -41,17 +41,13 @@ function PoolChart() {
   };
 
   const width = 1800;
-  const height = 800;
+  const height = 600;
   return (
     <div>
-      <div class="h3 w-1/6 bg-indigo-500 px-8 py-6 text-white text-right bg-center font-extrabold rounded-full">
-        <button type="button" onClick={handleClick}>
-          {buttonPoolState}
-        </button>
-      </div>
+
 
       <div class="h2 text-center">
-      <h3>Share of all transactions (OFAC - NON OFAC transactions)</h3>
+      <h3>Lido vs rest ratio</h3>
       </div>
 
       <div
@@ -62,14 +58,14 @@ function PoolChart() {
         class=" mx-auto"
       >
         <VictoryChart
-          height={130}
+          height={150}
           width={700}
-          padding={{bottom:100,left:100}}
-          label="Share of all transactions (OFAC - NON OFAC transactions)"
+          padding={{bottom:50,left:100,right:100,top:50}}
+          label="Lido vs rest ratio"
         >
         <VictoryBar
             horizontal
-            barWidth={8}
+            barWidth={10}
             alignment="middle"
             style={{ data: { fill: "#1e90ff" } }}
             data={poolState}
@@ -100,7 +96,12 @@ function PoolChart() {
           />
         </VictoryChart>
       </div>
-
+      
+      <div class="h3 mb-4  px-6 py-3 text-white text-center bg-center font-extrabold rounded-full">
+        <button type="button" onClick={handleClick} class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3">
+          {buttonPoolState}
+        </button>
+      </div>
     </div>
   );
 }

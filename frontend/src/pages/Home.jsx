@@ -34,6 +34,7 @@ function Home() {
         <RatioChart />
         <div style={{height: 500, weight: 200}}></div>
         <PoolChart />
+        <div style={{height: 500, weight: 200}}></div>
         <LatencyChart />
         {/* <FeaturesBlocks />
         <FeaturesZigZag />

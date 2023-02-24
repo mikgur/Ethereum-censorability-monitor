@@ -27,12 +27,12 @@ function LatencyChart() {
     setLatencyState(data.data);
   };
 
-  const width = 1800;
+  const width = 1900;
   const height = 1800;
   return (
     <div>
 
-      <div class="h2 text-center">
+      <div class="h1 text-center">
       <h2>Сensorship latency and without lido censorship</h2>
       </div>
 
@@ -52,8 +52,8 @@ function LatencyChart() {
         >
         <VictoryLegend x={900} y={30}
         orientation="vertical"
-        // gutter={20}
-        // style={{title: {fontSize: 5, fill: "#FFFFFF"  } }}
+        gutter={90}
+        style={{labels: {fontSize: 20} }}
         data={[
           { name: "Сensorship latency", symbol: { fill: "#1e90ff" }, labels: { fill: "#FFFFFF" } },
           { name: "Without lido censorship", symbol: { fill: "#c43a31" }, labels: { fill: "#FFFFFF" } },

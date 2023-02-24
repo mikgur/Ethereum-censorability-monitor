@@ -8,7 +8,7 @@ function HeroHome() {
 
   return (
     <section>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
+      <div className=" mx-auto px-4 sm:px-6 relative">
         {/* Illustration behind hero content */}
         <div
           className="absolute left-0 bottom-0 -ml-20 hidden lg:block pointer-events-none"
@@ -35,9 +35,9 @@ function HeroHome() {
         {/* Hero content */}
         <div className="relative pt-32 pb-10 md:pt-40 md:pb-16">
           {/* Section header */}
-          <div className="max-w-3xl mx-auto text-center pb-12 md:pb-16">
+          <div className="mx-auto text-center pb-12 md:pb-16">
             <h1 className="h1 mb-4" data-aos="fade-up">
-              CensorRed
+            Neutrality Watch
             </h1>
             {/* <p className="text-xl text-gray-400 mb-8" data-aos="fade-up" data-aos-delay="200">
               Our landing page template works on all devices, so you only have to set it up once, and get beautiful results forever.
