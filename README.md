@@ -21,14 +21,14 @@
 -----------------------------------------------
 
 <h4 align="center">
-  <a href=#problem> Problem </a> |
-  <a href=#project_components> Project Components: </a> |
-  <a href=#metrics> Metrics </a> |
-  <a href=#installation> Installation </a> |
-  <a href=#quick-start> Quick Start </a> |
-  <a href=#mongo_db_metrics_scheme> Mongo DB metrics scheme  </a> |
-  <a href=#community> Community </a>
-  <a href=#acknowledgments> Acknowledgments </a>
+  <a href=#-problem> Problem </a> |
+  <a href=#-project_components> Project Components: </a> |
+  <a href=#-metrics> Metrics </a> |
+  <a href=#-installation> Installation </a> |
+  <a href=#-quick-start> Quick Start </a> |
+  <a href=#-mongo_db_metrics_scheme> Mongo DB metrics scheme  </a> |
+  <a href=#-community> Community </a>
+  <a href=#-acknowledgments> Acknowledgments </a>
 </h4>
 
 -----------------------------------------------
