@@ -53,11 +53,32 @@
 
 We proposed following metrics:
 
-- Сensorship latency
-- Сensorship latency adjusted by Lido censorship latency
-- Validator’s compliant\Non compliant transactions share
-- Validator’s compliant\Non compliant ratio
-- Lido compliant\Non compliant ratio
+### <b>1) Non-OFAC and OFAC Compliance Ratio Metrics</b>
+
+For each validator we calculate:
+
+1. Non-OFAC Compliance Ratio: the percentage of non-OFAC compliant transactions that are included in blocks proposed by the validator.
+2. OFAC Compliance Ratio: the percentage of OFAC compliant transactions that are included in blocks proposed by the validator.
+
+These metrics help us understand the relative likelihood of a validator including non-OFAC compliant transactions versus OFAC compliant ones.
+
+### <b>2) Censorship Resistance Index</b>
+
+The metric we calculate is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
+
+The possible values of this index range from zero to infinity. An index of one means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than one means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than one indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
+
+### <b>3) Lido Censorship Resistance Index and Other Validators Censorship Resistance Index.</b>
+
+We calculate Censorship Resistance Index for all the Lido validators and compare it to all the other validators in total.
+
+### <b>4) Censorship Latency</b>
+
+The Censorship Latency metric measures the difference in average waiting time for transactions with similar features, except for their OFAC compliance status. We use a binary classifier with high accuracy to predict the number of blocks for which non-OFAC compliant transactions were not included due to censorship. This number is then multiplied by 12 to calculate the Censorship Latency metric.
+
+### <b>5) Lido-adjusted censorship latency</b>
+
+We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators do not engage in censorship. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
 
 Please find details in our [notion page](https://accidental-eyelash-d3a.notion.site/Transaction-analysis-and-metrics-calculation-991b4e30fbc146469398860073547016)
 
@@ -67,33 +88,35 @@ Please find details in our [notion page](https://accidental-eyelash-d3a.notion.s
 
 - create __.env file__, example (you can use same MongoDB instance for both _db_collector_ and _db_analytics_):
 
-        # MongoDB
-        db_collector_url = localhost
-        db_collector_port = 27017
-        db_collector_username = root
-        db_collector_password = some_password
-        db_collector_name = ethereum_mempool
+```# MongoDB
+db_collector_url = localhost
+db_collector_port = 27017
+db_collector_username = root
+db_collector_password = some_password
+db_collector_name = ethereum_mempool
 
-        db_analytics_url = otherhost
-        db_analytics_port = 27017
-        db_analytics_username = root
-        db_analytics_password = another_password
-        db_analytics_name = ethereum_censorship_monitor
+db_analytics_url = otherhost
+db_analytics_port = 27017
+db_analytics_username = root
+db_analytics_password = another_password
+db_analytics_name = ethereum_censorship_monitor
 
 
-        # Ethereum node
-        node_url = /path_to/geth.ipc
-        node_connection_type = ipc
+# Ethereum node
+node_url = /path_to/geth.ipc
+node_connection_type = ipc
 
-        # Beacon
-        beacon_url = http://localhost:5052
+# Beacon
+beacon_url = http://localhost:5052
 
-        # Classifier
-        model_path = models/classifier_isotonic_20000_blocks.pkl
+# Classifier
+model_path = models/classifier_isotonic_20000_blocks.pkl
+```
 
 - create poetry environment:
 
-        poetry install
+```poetry install
+```
 
 ### __Backend__ and  __Frontend__
 
@@ -103,8 +126,9 @@ Please find details in our [notion page](https://accidental-eyelash-d3a.notion.s
 
 ### __Data collection service__ and  __Analytics service__
 
-        poetry run python data_collector.py
-        poetry run python censorship_analytics.py
+```poetry run python data_collector.py
+poetry run python censorship_analytics.py
+```
 
 ### __Backend__ and  __Frontend__
 
@@ -124,26 +148,30 @@ The analytics module of the project utilizes a MongoDB database with several col
 
 Example:
 
-        {
-            timestamp: 1677196277,
-            addresses: [
-                '0xD691F27f38B395864Ea86CfC7253969B409c362d',
-                ...
-                '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c'
-            ]
-        }
+```
+{
+    timestamp: 1677196277,
+    addresses: [
+        '0xD691F27f38B395864Ea86CfC7253969B409c362d',
+        ...
+        '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c'
+    ]
+}
+```
 
 ### validators
 <p>The <b>validators</b> collection contains information on known validators' public keys and validator pools.</p>
 
 Example:
 
-        {
-            pubkey: '0x81b4ae61a898396903897f94bea0e062c3a6925ee93d30f4d4aee93b533b49551ac337da78ff2ab0cfbb0adb380cad94',
-            pool_name: 'Lido',
-            name: 'Staking Facilities',
-            timestamp: 1676729376
-        }
+```
+{
+    pubkey: '0x81b4ae61a898396903897f94bea0e062c3a6925ee93d30f4d4aee93b533b49551ac337da78ff2ab0cfbb0adb380cad94',
+    pool_name: 'Lido',
+    name: 'Staking Facilities',
+    timestamp: 1676729376
+}
+```
 
 ### censored_txs
 <p>The <b>censored_txs</b> collection stores information about transactions that were censored</p>
@@ -154,29 +182,31 @@ Example:
 
 Example:
 
+```
+{
+    hash: '0xa4e6597135d9f3b7999170903e8068b8852668a9c789e052aad4f30b149d1814',
+    censored: [
         {
-            hash: '0xa4e6597135d9f3b7999170903e8068b8852668a9c789e052aad4f30b149d1814',
-            censored: [
-                {
-                    block_number: 16649638,
-                    validator: 'RockX'
-                },
-                {
-                    block_number: 16649639,
-                    validator: 'Other'
-                },
-                {
-                    block_number: 16649640,
-                    validator: 'Other'
-                }
-            ],
-            first_seen: 1676651657,
-            block_number: 16649641,
-            block_ts: 1676651699,
-            date: '17-02-23',
-            non_ofac_compliant: true,
-            validator: 'Simply Staking'
+            block_number: 16649638,
+            validator: 'RockX'
+        },
+        {
+            block_number: 16649639,
+            validator: 'Other'
+        },
+        {
+            block_number: 16649640,
+            validator: 'Other'
         }
+    ],
+    first_seen: 1676651657,
+    block_number: 16649641,
+    block_ts: 1676651699,
+    date: '17-02-23',
+    non_ofac_compliant: true,
+    validator: 'Simply Staking'
+}
+```
 
 ### validators_metrics
 
@@ -188,38 +218,40 @@ Example:
 <p>- The <b>non_ofac_compliant_txs</b> field contains a list of non-compliant transactions in these blocks. Can be omitted.</p>
 <p>- The <b>censored_block</b> field is a list of blocks with censorship proposed by the validator. Can be omitted.</p>
 
-        {
-            name: 'SkillZ',
-            '17-02-23': {
-                num_blocks: 41,
-                num_ofac_compliant_txs: 6622,
-                num_txs: 6624,
-                non_censored_blocks: [
-                    16649665,
-                    16651173
-                ],
-                non_ofac_compliant_txs: [
-                    '0xf35893b1ad307c0936deafeb9c4b7830ac5f9b6c33c71b63584946c74805a37b',
-                    '0xc4c727a0dc9db3de4f6fd220532e55e3bf69fc7c7a9398574e4376255dc9745e'
-                ]
-            },
-            '18-02-23': {
-                num_blocks: 101,
-                num_ofac_compliant_txs: 15032,
-                num_txs: 15034,
-                non_censored_blocks: [
-                    16654317,
-                    16658345
-                ],
-                non_ofac_compliant_txs: [
-                    '0xb9286c30a90d3e72ab71b2fbef5af2ba6e1f8b72a62a9c227c8b28751c75a73b',
-                    '0x20e99a9f32f9fde23868f63c02600730606847744b13db9a608b119ec900c10a'
-                ],
-                censored_block: [
-                    16655813
-                ]
-            }
-        }
+```
+{
+    name: 'SkillZ',
+    '17-02-23': {
+        num_blocks: 41,
+        num_ofac_compliant_txs: 6622,
+        num_txs: 6624,
+        non_censored_blocks: [
+            16649665,
+            16651173
+        ],
+        non_ofac_compliant_txs: [
+            '0xf35893b1ad307c0936deafeb9c4b7830ac5f9b6c33c71b63584946c74805a37b',
+            '0xc4c727a0dc9db3de4f6fd220532e55e3bf69fc7c7a9398574e4376255dc9745e'
+        ]
+    },
+    '18-02-23': {
+        num_blocks: 101,
+        num_ofac_compliant_txs: 15032,
+        num_txs: 15034,
+        non_censored_blocks: [
+            16654317,
+            16658345
+        ],
+        non_ofac_compliant_txs: [
+            '0xb9286c30a90d3e72ab71b2fbef5af2ba6e1f8b72a62a9c227c8b28751c75a73b',
+            '0x20e99a9f32f9fde23868f63c02600730606847744b13db9a608b119ec900c10a'
+        ],
+        censored_block: [
+            16655813
+        ]
+    }
+}
+```
 
 ## &#128204; Community 
 
