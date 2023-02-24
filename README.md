@@ -111,6 +111,116 @@ Please find details in our [notion page](https://accidental-eyelash-d3a.notion.s
         HOW TO RUN
 ## &#128204; Mongo DB metrics scheme 
 
+The analytics module of the project utilizes a MongoDB database with several collections:
+- ofac_addresses
+- validators
+- censored_txs
+- validators_metrics
+- block_numbers_slots
+- processed_blocks
+
+### ofac_addresses
+<p>The <b>ofac_addresses</b> collection stores snapshots of sanctions lists.</p>
+
+Example:
+
+        {
+            timestamp: 1677196277,
+            addresses: [
+                '0xD691F27f38B395864Ea86CfC7253969B409c362d',
+                ...
+                '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c'
+            ]
+        }
+
+### validators
+<p>The <b>validators</b> collection contains information on known validators' public keys and validator pools.</p>
+
+Example:
+
+        {
+            pubkey: '0x81b4ae61a898396903897f94bea0e062c3a6925ee93d30f4d4aee93b533b49551ac337da78ff2ab0cfbb0adb380cad94',
+            pool_name: 'Lido',
+            name: 'Staking Facilities',
+            timestamp: 1676729376
+        }
+
+### censored_txs
+<p>The <b>censored_txs</b> collection stores information about transactions that were censored</p>
+
+<p> The <b><i>censored</i></b> field contains a list of block numbers and validators who did not include a transaction in a block, despite our classifier indicating that it should have been included. </p>
+
+<p> The <b><i>non_ofac_compliant<i></b> field is set to <b><i>False</i></b> for transactions that are noncompliant with OFAC regulations. However, for transactions that are compliant with regulations but flagged as censored by our classifier, the non_ofac_compliant field will be set to <b><i>True<i></b>.</p>
+
+Example:
+
+        {
+            hash: '0xa4e6597135d9f3b7999170903e8068b8852668a9c789e052aad4f30b149d1814',
+            censored: [
+                {
+                    block_number: 16649638,
+                    validator: 'RockX'
+                },
+                {
+                    block_number: 16649639,
+                    validator: 'Other'
+                },
+                {
+                    block_number: 16649640,
+                    validator: 'Other'
+                }
+            ],
+            first_seen: 1676651657,
+            block_number: 16649641,
+            block_ts: 1676651699,
+            date: '17-02-23',
+            non_ofac_compliant: true,
+            validator: 'Simply Staking'
+        }
+
+### validators_metrics
+
+<p>The <b><i></i></b> collection contains the following information for each day:</p>
+<p>- the number of blocks proposed by a validator - <b>num_blocks</b></p>
+<p>- the number of compliant transactions in these blocks - <b>num_ofac_compliant_txs</b></p>
+<p>- the total number of transactions in these blocks - <b>num_txs</b></p>
+<p>- The <b>non_censored_blocks</b> field contains a list of block numbers proposed by the validator that have non-compliant  transactions in them. Can be omitted.</p>
+<p>- The <b>non_ofac_compliant_txs</b> field contains a list of non-compliant transactions in these blocks. Can be omitted.</p>
+<p>- The <b>censored_block</b> field is a list of blocks with censorship proposed by the validator. Can be omitted.</p>
+
+        {
+            name: 'SkillZ',
+            '17-02-23': {
+                num_blocks: 41,
+                num_ofac_compliant_txs: 6622,
+                num_txs: 6624,
+                non_censored_blocks: [
+                    16649665,
+                    16651173
+                ],
+                non_ofac_compliant_txs: [
+                    '0xf35893b1ad307c0936deafeb9c4b7830ac5f9b6c33c71b63584946c74805a37b',
+                    '0xc4c727a0dc9db3de4f6fd220532e55e3bf69fc7c7a9398574e4376255dc9745e'
+                ]
+            },
+            '18-02-23': {
+                num_blocks: 101,
+                num_ofac_compliant_txs: 15032,
+                num_txs: 15034,
+                non_censored_blocks: [
+                    16654317,
+                    16658345
+                ],
+                non_ofac_compliant_txs: [
+                    '0xb9286c30a90d3e72ab71b2fbef5af2ba6e1f8b72a62a9c227c8b28751c75a73b',
+                    '0x20e99a9f32f9fde23868f63c02600730606847744b13db9a608b119ec900c10a'
+                ],
+                censored_block: [
+                    16655813
+                ]
+            }
+        }
+
 ## &#128204; Community 
 
 ## &#128204; Acknowledgments
