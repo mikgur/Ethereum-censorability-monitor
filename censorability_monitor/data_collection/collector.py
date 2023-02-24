@@ -17,9 +17,11 @@ logger = logging.getLogger(__name__)
 
 class DataCollector:
     '''Base class for data collectors'''
-    def __init__(self, mongo_url: str, web3_type: str, web3_url: str,
+    def __init__(self, mongo_url: str, db_name: str,
+                 web3_type: str, web3_url: str,
                  interval: float, verbose: bool, name: str = 'DataCollector'):
         self.mongo_url = mongo_url
+        self.db_name = db_name
         self.web3_type = web3_type
         self.web3_url = web3_url
         self.interval = interval
@@ -58,9 +60,10 @@ class DataCollector:
 class MempoolCollector(DataCollector):
     '''Collects transactions from the mempool
        and stores the first seen timestamp in MongoDB'''
-    def __init__(self, mongo_url: str, web3_type: str, web3_url: str,
+    def __init__(self, mongo_url: str, db_name: str,
+                 web3_type: str, web3_url: str,
                  interval: float = 0.5, verbose: bool = True):
-        super().__init__(mongo_url, web3_type, web3_url,
+        super().__init__(mongo_url, db_name, web3_type, web3_url,
                          interval, verbose, 'MempoolCollector')
 
     async def collect(self):
@@ -71,7 +74,7 @@ class MempoolCollector(DataCollector):
         logger.info('Start collecting mempool data')
 
         # Get the collections
-        db = mongo_client['ethereum_mempool']
+        db = mongo_client[self.db_name]
         first_seen_collection = db['tx_first_seen_ts']
         tx_details_collection = db['tx_details']
         first_seen_collection.create_index('hash', unique=True)
@@ -252,9 +255,10 @@ class GasEstimator:
 
 
 class BlockCollector(DataCollector):
-    def __init__(self, mongo_url: str, web3_type: str, web3_url: str,
+    def __init__(self, mongo_url: str, db_name: str,
+                 web3_type: str, web3_url: str,
                  interval: float = 3, verbose: bool = True):
-        super().__init__(mongo_url, web3_type, web3_url,
+        super().__init__(mongo_url, db_name, web3_type, web3_url,
                          interval, verbose, 'BlockCollector')
         self.max_workers = 256
         self.address_data_collectors = [
@@ -295,7 +299,7 @@ class BlockCollector(DataCollector):
         t1 = time.time()
         logger = logging.getLogger(self.name)
         logger.info(f'Start processing block {block_number}')
-        db = mongo_client['ethereum_mempool']
+        db = mongo_client[self.db_name]
         first_seen_collection = db['tx_first_seen_ts']
         tx_details_collection = db['tx_details']
         block = w3.eth.getBlock(block_number)
@@ -624,9 +628,10 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
 
 
 class MemPoolGasEstimator(DataCollector):
-    def __init__(self, mongo_url: str, web3_type: str, web3_url: str,
+    def __init__(self, mongo_url: str, db_name: str,
+                 web3_type: str, web3_url: str,
                  interval: float = 3, verbose: bool = True):
-        super().__init__(mongo_url, web3_type, web3_url,
+        super().__init__(mongo_url, db_name, web3_type, web3_url,
                          interval, verbose, 'MemPoolGasEstimator')
         self.max_workers = 256
         self.gas_estimators = [
@@ -638,7 +643,7 @@ class MemPoolGasEstimator(DataCollector):
         logger = logging.getLogger(self.name)
         mongo_client = self.get_mongo_client()
         w3 = self.get_web3_client()
-        db = mongo_client['ethereum_mempool']
+        db = mongo_client[self.db_name]
         processed_blocks = db['processed_blocks']
 
         # Wait for the first block to be processed
@@ -694,7 +699,7 @@ class MemPoolGasEstimator(DataCollector):
         t1 = time.time()
         logger = logging.getLogger(self.name)
         logger.info(f'Start gas estimation {block_number}')
-        db = mongo_client['ethereum_mempool']
+        db = mongo_client[self.db_name]
 
         txs_for_gas_estimate = get_transactions_for_gas_estimation(
             db, block_number, w3
