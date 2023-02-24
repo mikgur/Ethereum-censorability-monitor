@@ -50,7 +50,7 @@ function PoolChart() {
         </button>
       </div>
 
-      <div class="h3 text-center">
+      <div class="h2 text-center">
       <h3>Share of all transactions (OFAC - NON OFAC transactions)</h3>
       </div>
 
@@ -100,6 +100,7 @@ function PoolChart() {
           />
         </VictoryChart>
       </div>
+
     </div>
   );
 }

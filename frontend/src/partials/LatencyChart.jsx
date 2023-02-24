@@ -17,11 +17,6 @@ import { getLatency } from "./DataAccessLayer";
 
 function LatencyChart() {
   const [latencyState, setLatencyState] = useState();
-//   const [latencyPeriodState, setLatencyPeriodState] = useState(true);
-
-//   const [buttonLatencyState, setButtonLatencyState] = useState(
-//     "Switch to last month"
-//   );
 
   useEffect(() => {
     getLatencyData()
@@ -32,28 +27,12 @@ function LatencyChart() {
     setLatencyState(data.data);
   };
 
-//   const handleClick = () => {
-//     setLatencyPeriodState((latencyPeriodState) => !latencyPeriodState);
-//     if (LatencyPeriodState == false) {
-//       getLatencyData("last_month");
-//       setButtonLatencyState("Switch to last week");
-//     } else {
-//       getLatencyData("last_week");
-//       setButtonLatencyState("Switch to last month");
-//     }
-//   };
-
   const width = 1800;
   const height = 1800;
   return (
     <div>
-    {/* //   <div class="h3 w-1/6 bg-indigo-500 px-8 py-6 text-white text-right bg-center font-extrabold rounded-full">
-    //     <button type="button" onClick={handleClick}>
-    //       {buttonLatencyState}
-    //     </button>
-    //   </div> */}
 
-      <div class="h3 text-center">
+      <div class="h2 text-center">
       <h2>Сensorship latency and without lido censorship</h2>
       </div>
 
@@ -73,10 +52,8 @@ function LatencyChart() {
         >
         <VictoryLegend x={900} y={30}
         orientation="vertical"
-        gutter={20}
+        // gutter={20}
         // style={{title: {fontSize: 5, fill: "#FFFFFF"  } }}
-        height={400}
-        weight={400}
         data={[
           { name: "Сensorship latency", symbol: { fill: "#1e90ff" }, labels: { fill: "#FFFFFF" } },
           { name: "Without lido censorship", symbol: { fill: "#c43a31" }, labels: { fill: "#FFFFFF" } },

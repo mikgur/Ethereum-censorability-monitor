@@ -30,7 +30,9 @@ function Home() {
         {/*  Page sections */}
         <HeroHome />
         <VisChart />
+        <div style={{height: 500, weight: 200}}></div>
         <RatioChart />
+        <div style={{height: 500, weight: 200}}></div>
         <PoolChart />
         <LatencyChart />
         {/* <FeaturesBlocks />

@@ -44,14 +44,10 @@ function RatioChart() {
   const height = 1800;
   return (
     <div>
-      <div class="h3 w-1/6 bg-indigo-500 px-8 py-6 text-white text-right bg-center font-extrabold rounded-full">
-        <button type="button" onClick={handleClick}>
-          {buttonRatioState}
-        </button>
-      </div>
 
-      <div class="h3 text-center">
-      <h3>Share of all transactions (OFAC - NON OFAC transactions)</h3>
+
+      <div class="h2 text-center">
+      <h3>Validator’s OFAC\Non OFAC compliant ratio</h3>
       </div>
 
       <div
@@ -98,6 +94,11 @@ function RatioChart() {
             }
           />
         </VictoryChart>
+      </div>
+      <div class="h3 text-white text-center bg-center font-extrabold rounded-full">
+        <button type="button" onClick={handleClick} class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3">
+          {buttonRatioState}
+        </button>
       </div>
     </div>
   );
