@@ -46,21 +46,17 @@ function RatioChart() {
     <div>
 
 
-      <div class="h2 text-center">
-      <h3>Validator’s OFAC\Non OFAC compliant ratio</h3>
+      <div class="h3 text-center">
+        <h3>Censorship Resistance Index(7 days/30 days)</h3>
       </div>
+      <div class="flex space-x-0">
 
       <div
-        style={{
-          height: height,
-          width: width,
-        }}
-        class=" mx-auto"
+        class="desktop:w-[1200px] desktop:h-[700px] laptop:w-[900px] "
       >
         <VictoryChart
-          height={900}
-          width={700}
-          label="Share of all transactions (OFAC - NON OFAC transactions)"
+          height={700}
+          width={500}
         >
         <VictoryBar
             horizontal
@@ -73,7 +69,7 @@ function RatioChart() {
         />
           <VictoryAxis
             dependentAxis
-            tickFormat={(t) => `${t}%`}
+            // tickFormat={(t) => `${t}%`}
             style={{ tickLabels: { fontSize: 12, fill: "#FFFFFF" } }}
             label="RATIO"
             axisLabelComponent={
@@ -94,12 +90,23 @@ function RatioChart() {
             }
           />
         </VictoryChart>
-      </div>
-      <div class="h3 text-white text-center bg-center font-extrabold rounded-full">
+      
+        <div class="h5 text-white text-center bg-center font-extrabold rounded-full">
         <button type="button" onClick={handleClick} class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3">
           {buttonRatioState}
         </button>
       </div>
+      </div>
+      <div class="desktop:w-[400px] mr-48">
+      <p class="text-xg indent-8">
+        The metric we calculate is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
+      </p>
+        <p class="text-xg indent-8">
+        The possible values of this index range from zero to infinity. An index of one means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than one means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than one indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
+        </p>
+
+    </div>
+    </div>
     </div>
   );
 }

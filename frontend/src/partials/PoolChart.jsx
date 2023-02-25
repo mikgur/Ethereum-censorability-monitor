@@ -41,35 +41,30 @@ function PoolChart() {
   };
 
   const width = 1800;
-  const height = 800;
+  const height = 600;
   return (
     <div>
-      <div class="h3 w-1/6 bg-indigo-500 px-8 py-6 text-white text-right bg-center font-extrabold rounded-full">
-        <button type="button" onClick={handleClick}>
-          {buttonPoolState}
-        </button>
+      <div class="h3 text-center">
+        <h4>Lido Censorship Resistance Index and Other Validators Censorship Resistance Index(7 days/30 days)</h4>
       </div>
-
-      <div class="h2 text-center">
-      <h3>Share of all transactions (OFAC - NON OFAC transactions)</h3>
-      </div>
-
+      <br></br>
+      <div class="flex space-x-0">
       <div
         style={{
-          height: height,
-          width: width,
+          // height: height,
+          // width: width,
         }}
-        class=" mx-auto"
+        class="desktop:w-[1200px] desktop:h-[200px] laptop:w-[900px]"
       >
         <VictoryChart
-          height={130}
+          height={150}
           width={700}
-          padding={{bottom:100,left:100}}
-          label="Share of all transactions (OFAC - NON OFAC transactions)"
+          padding={{bottom:50,left:100,right:100,top:50}}
+          label="Lido vs rest ratio"
         >
         <VictoryBar
             horizontal
-            barWidth={8}
+            barWidth={10}
             alignment="middle"
             style={{ data: { fill: "#1e90ff" } }}
             data={poolState}
@@ -99,8 +94,20 @@ function PoolChart() {
             }
           />
         </VictoryChart>
+        <div class="h5 mb-4  px-6 py-3 text-white text-center bg-center font-extrabold rounded-full">
+        <button type="button" onClick={handleClick} class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3">
+          {buttonPoolState}
+        </button>
       </div>
+      </div>
+      
 
+      <div class="desktop:w-[400px] mr-48">
+      <p class="text-xl">
+      We calculate Censorship Resistance Index for all the Lido validators and compare it to all the other validators in total.
+      </p>
+    </div>
+    </div>
     </div>
   );
 }
