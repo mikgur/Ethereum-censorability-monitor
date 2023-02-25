@@ -187,6 +187,8 @@ def _calc_lido_latency(censored_blocks: List[dict], lido_vals: List[str]) -> int
         Censorship latency in case the Lido validators would not censor OFAC non compliant transactions in seconds
     """
     latency = 0
+    if not isinstance(censored_block, list):
+        return latency
     for censored_block in censored_blocks:
         # If we find validators of lido in the list of censors,
         # we will assume that he validated the transaction and
@@ -197,6 +199,22 @@ def _calc_lido_latency(censored_blocks: List[dict], lido_vals: List[str]) -> int
             break
 
     return latency
+
+
+def _get_count_of_censored_blocks(censored: List[dict]) -> int:
+    """
+    Get count of blocks where transaction was censored
+
+    Args:
+        censored    -   Dict of blocks
+
+    Returns:
+        Count of blocks where transaction was censored
+    """
+    if isinstance(censored, list):
+        return len(censored)
+    else:
+        return 0
 
 
 def get_lido_validators_metrics(
@@ -309,7 +327,7 @@ def get_latency(
     try:
         ts_df = pd.DataFrame(list(txs_collection.find({}, {"_id": 0, "block_ts": 1})))
 
-        ts_df.dropna(inplace = True)
+        ts_df.dropna(inplace=True)
 
         min_ts = int(ts_df.block_ts.min())
         max_ts = int(ts_df.block_ts.max())
@@ -351,11 +369,10 @@ def get_latency(
             )
         )
 
-        # Drop all non ofac compliant transactions
-        # that haven't been censored
-        shifted_df.dropna(axis=0, subset=['censored'], inplace=True)
         # Сalculate censorship metrics
-        shifted_df["censorship_latency"] = shifted_df.censored.apply(len) * 12
+        shifted_df["censorship_latency"] = (
+            shifted_df.censored.apply(_get_count_of_censored_blocks) * 12
+        )
         shifted_df[
             "censorship_latency_without_lido_censorship"
         ] = shifted_df.censored.apply(_calc_lido_latency, args=(lido_vals,))
