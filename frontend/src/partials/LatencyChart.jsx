@@ -27,36 +27,35 @@ function LatencyChart() {
     setLatencyState(data.data);
   };
 
-  const width = 1900;
+  const width = 1800;
   const height = 1800;
   return (
     <div>
 
-      <div class="h1 text-center">
-      <h2>Сensorship latency and without lido censorship</h2>
+      <div class="h3 text-center">
+      <h3>Сensorship latency and without lido censorship</h3>
       </div>
-
+      <br></br>
+      <div class="flex space-x-0">
       <div
-        style={{
-          height: height,
-          width: width,
-        }}
-        class=" mx-auto"
+        class="desktop:w-[1200px] desktop:h-[700px] laptop:w-[900px] "
       >
         <VictoryChart
-          height={1000}
-          width={1100}
+          height={800}
+          width={1000}
           padding={{bottom:130,left:100,right:200}}
+          minDomain={{ y: 0 }}
+          maxDomain={{ y: 45 }}
           theme={VictoryTheme.material}
           label="Share of all transactions (OFAC - NON OFAC transactions)"
         >
-        <VictoryLegend x={900} y={30}
+        <VictoryLegend x={800} y={30}
         orientation="vertical"
         gutter={90}
         style={{labels: {fontSize: 20} }}
         data={[
           { name: "Сensorship latency", symbol: { fill: "#1e90ff" }, labels: { fill: "#FFFFFF" } },
-          { name: "Without lido censorship", symbol: { fill: "#c43a31" }, labels: { fill: "#FFFFFF" } },
+          { name: "Lido-adjusted censorship latency", symbol: { fill: "#c43a31" }, labels: { fill: "#FFFFFF" } },
         ]}
         />
         <VictoryLine
@@ -99,6 +98,19 @@ function LatencyChart() {
           />
         </VictoryChart>
       </div>
+      <div class="desktop:w-[400px] mr-48">
+      <p class="text-xl">
+        <b> Censorship Latency</b>
+      </p>
+      <p class="text-xg indent-8">The Censorship Latency metric measures the difference in average waiting time for transactions with similar features, except for their OFAC compliance status. We use a binary classifier with high accuracy to predict the number of blocks for which non-OFAC compliant transactions were not included due to censorship. This number is then multiplied by 12 to calculate the Censorship Latency metric.</p>
+        <br></br>
+      <p class="text-xl">
+        <b>Lido-adjusted censorship latency</b>
+      </p>
+        <p class="text-xg indent-8">We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators do not engage in censorship. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.</p>
+
+    </div>
+    </div>
     </div>
   );
 }

@@ -4,7 +4,19 @@ module.exports = {
     './src/**/*.{js,jsx,ts,tsx}',
   ],
   theme: {
+
     extend: {
+      screens: {
+        'tablet': '640px',
+        // => @media (min-width: 640px) { ... }
+  
+        'laptop': '1280px',
+        // => @media (min-width: 1024px) { ... }
+  
+        'desktop': '1920px',
+        // => @media (min-width: 1280px) { ... }
+        'uwdesktop': '2500px'
+      },
       colors: {
         gray: {
           100: '#EBF1F5',
@@ -67,9 +79,6 @@ module.exports = {
       scale: {
         '98': '.98'
       },
-      width: {
-        '1200': '32rem',
-      }
     },
   },
   plugins: [
