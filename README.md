@@ -115,12 +115,17 @@ model_path = models/classifier_isotonic_20000_blocks.pkl
 
 - create poetry environment:
 
-```poetry install
-```
+```poetry install```
 
-### __Backend__ and  __Frontend__
+### __Backend__
 
-        HOW TO INSTALL
+- Build docker image via typing following command to your terminal\command line 
+> `docker build -t api ./api`
+
+### __Frontend__
+
+- Build docker image via typing following command to your terminal\command line 
+> `docker build -t frontend ./frontend`
 
 ## &#128204; Quick start
 
@@ -130,9 +135,18 @@ model_path = models/classifier_isotonic_20000_blocks.pkl
 poetry run python censorship_analytics.py
 ```
 
-### __Backend__ and  __Frontend__
+### __Backend__
 
-        HOW TO RUN
+- Run docker container typing following command to your terminal\command line 
+> `docker run --network host --name api -d api`
+- Just enjoy your api running at localhost:8000
+
+### __Frontend__
+
+- Run docker container typing following command to your terminal\command line 
+> `docker run --network host --name frontend -d frontend`
+- Just enjoy your web application running at localhost:5173
+
 ## &#128204; Mongo DB metrics scheme 
 
 The analytics module of the project utilizes a MongoDB database with several collections:
