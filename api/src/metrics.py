@@ -308,7 +308,7 @@ def get_latency(
     # Find min and max timestamps in censored transactions' mongo collection
     try:
         ts_df = pd.DataFrame(list(txs_collection.find({}, {"_id": 0, "block_ts": 1})))
-        
+
         ts_df.dropna(inplace = True)
 
         min_ts = int(ts_df.block_ts.min())
@@ -344,12 +344,13 @@ def get_latency(
                 txs_collection.find(
                     {
                         "block_ts": {"$gte": monday_ts, "$lte": sunday_ts},
-                        "non_ofac_compliant": 0,
+                        "non_ofac_compliant": True,
                     },
                     {"_id": 0, "censored": 1},
                 )
             )
         )
+
         # Drop all non ofac compliant transactions
         # that haven't been censored
         shifted_df.dropna(axis=0, subset=['censored'], inplace=True)
