@@ -187,7 +187,7 @@ def _calc_lido_latency(censored_blocks: List[dict], lido_vals: List[str]) -> int
         Censorship latency in case the Lido validators would not censor OFAC non compliant transactions in seconds
     """
     latency = 0
-    if not isinstance(censored_block, list):
+    if not isinstance(censored_blocks, list):
         return latency
     for censored_block in censored_blocks:
         # If we find validators of lido in the list of censors,
