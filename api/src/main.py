@@ -262,7 +262,7 @@ async def get_ofac_list_by_day(date: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@app.get("/data/ofac_addresses_by_day")
+@app.get("/data/ofac_addresses_by_daterange")
 async def get_ofac_list_by_daterange(start_date: str, end_date: str) -> JSONResponse:
     # Query example: /data/get_ofac_list_by_daterange?start_date=15-02-23&end_date=17-02-23
     try:
