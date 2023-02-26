@@ -11,9 +11,7 @@ import './css/style.css';
 import AOS from 'aos';
 
 import Home from './pages/Home';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import ResetPassword from './pages/ResetPassword';
+
 
 function App() {
 
@@ -33,6 +31,10 @@ function App() {
     window.scroll({ top: 0 })
     document.querySelector('html').style.scrollBehavior = ''
   }, [location.pathname]); // triggered on route change
+
+  useEffect(() => {
+    document.title = 'Neutrality Watch';
+  }, []);
 
   return (
     <>
