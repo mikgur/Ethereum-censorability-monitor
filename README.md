@@ -14,7 +14,8 @@
 
 ![1](https://img.shields.io/badge/python-3.10-blue.svg)
 ![2](https://img.shields.io/badge/os-linux-green.svg)
-![3](https://img.shields.io/github/stars/Deeploid-Meta/deeploid-mini-cli?color=ccf)
+![3](https://img.shields.io/github/stars/mikgur/Ethereum-censorability-monitor?color=ccf)
+![4](https://img.shields.io/github/license/mikgur/Ethereum-censorability-monitor)
 
 </h4>
 
@@ -267,7 +268,30 @@ Example:
 }
 ```
 
+## &#128204; API Reference
+
+Thanks to the API, you can receive data without accessing the database and in a more convenient format
+
+<b>API endpoint</b>: `/data/validators`</br>
+<b>Parameters</b>: None </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators`</br>
+<b>Response example</b>: 
+```
+
+```
+
+## &#128204; Team
+
+
+
+| <img src = "https://sun7.userapi.com/sun7-9/s/v1/ig2/nlmpctb21vUqfPkpUrX8aRmqhhQMyfYAwDrsXrVlduxzPmvyI8SW3luH2SR4fsUpLHPZCKdH_-QXEYtT5E3DqFUc.jpg?size=810x1080&quality=96&type=album" height = "300px"> | <img src = "https://sun7.userapi.com/sun7-9/s/v1/ig2/dQ01qNaBz_9WlD49Xdas0Q5N-G8y4AlaWKXHcPVA39WQWgALU6KD7OOaIVI1L1jivaIwVUcH1fEYP7_53KzPEDrX.jpg?size=810x1080&quality=96&type=album" height = "300px"> | <img src = "https://sun7.userapi.com/sun7-14/s/v1/ig2/eP7ic4XAgFhfGJO5ccrKfn63OS_fGrHEk-zL3G2Cw11pAy1Bs5gkZ1kx23gzQTYnlOMVLw9uYp562-RfTNoS4AAR.jpg?size=810x1080&quality=96&type=album" height = "300px"> |
+|:---:|:---:|:---:|
+| [Mikhail Gurevich](https://github.com/mikgur) | [Petr Korchagin](https://github.com/PetrovitchSharp) | [Evgenii Bezmen](https://github.com/flashlight101) | 
+| tg: [@gurev](https://t.me/gurev) | tg: [@petrovitch_sharp](https://t.me/petrovitch_sharp) | tg: [@flashlight101](https://t.me/flashlight101) |
+
 ## &#128204; Community 
+
+
 
 ## &#128204; Acknowledgments
 
