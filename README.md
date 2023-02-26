@@ -14,7 +14,8 @@
 
 ![1](https://img.shields.io/badge/python-3.10-blue.svg)
 ![2](https://img.shields.io/badge/os-linux-green.svg)
-![3](https://img.shields.io/github/stars/Deeploid-Meta/deeploid-mini-cli?color=ccf)
+![3](https://img.shields.io/github/stars/mikgur/Ethereum-censorability-monitor?color=ccf)
+![4](https://img.shields.io/github/license/mikgur/Ethereum-censorability-monitor)
 
 </h4>
 
@@ -115,12 +116,17 @@ model_path = models/classifier_isotonic_20000_blocks.pkl
 
 - create poetry environment:
 
-```poetry install
-```
+```poetry install```
 
-### __Backend__ and  __Frontend__
+### __Backend__
 
-        HOW TO INSTALL
+- Build docker image via typing following command to your terminal\command line 
+> `docker build -t api ./api`
+
+### __Frontend__
+
+- Build docker image via typing following command to your terminal\command line 
+> `docker build -t frontend ./frontend`
 
 ## &#128204; Quick start
 
@@ -130,9 +136,18 @@ model_path = models/classifier_isotonic_20000_blocks.pkl
 poetry run python censorship_analytics.py
 ```
 
-### __Backend__ and  __Frontend__
+### __Backend__
 
-        HOW TO RUN
+- Run docker container typing following command to your terminal\command line 
+> `docker run --network host --name api -d api`
+- Just enjoy your api running at localhost:8000
+
+### __Frontend__
+
+- Run docker container typing following command to your terminal\command line 
+> `docker run --network host --name frontend -d frontend`
+- Just enjoy your web application running at localhost:5173
+
 ## &#128204; Mongo DB metrics scheme 
 
 The analytics module of the project utilizes a MongoDB database with several collections:
@@ -253,7 +268,477 @@ Example:
 }
 ```
 
+## &#128204; API Reference
+
+Thanks to the API, you can receive data without accessing the database and in a more convenient format
+
+<b>API endpoint</b>: `/data/validators`</br>
+<b>Parameters</b>: None </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'pubkey':'0x81b4ae61a898396903897f94bea0e062c3a6925ee93d30f4d4aee93b533b49551ac337da78ff2ab0cfbb0adb380cad94',
+        'pool_name': 'Lido',
+        'name': 'Staking Facilities',
+        'timestamp': 1676729376
+    },
+    {
+        'pubkey': '0x953805708367b0b5f6710d41608ccdd0d5a67938e10e68dd010890d4bfefdcde874370423b0af0d0a053b7b98ae2d6ed',
+        'pool_name': 'Lido',
+        'name': 'Staking Facilities',
+        'timestamp': 1676729376
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/metrics`</br>
+<b>Parameters</b>: None </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'name': 'Certus One',
+        '17-02-23': {
+            'num_blocks': 6,
+            'num_ofac_compliant_txs': 956,
+            'num_txs': 956
+        },
+        '18-02-23': {
+            'num_blocks': 14,
+            'num_ofac_compliant_txs': 1950,
+            'num_txs': 1950
+        }
+    },
+    {
+        'name': 'InfStones',
+        '17-02-23': {
+            'num_blocks': 20,
+            'num_ofac_compliant_txs': 3381,
+            'num_txs': 3381
+        },
+        '18-02-23': {
+            'num_blocks': 75,
+            'num_ofac_compliant_txs': 10153,
+            'num_txs': 10154,
+            'censored_block': [
+                16656151
+            ],
+            'non_censored_blocks': [
+                16656383
+            ],
+            'non_ofac_compliant_txs': [
+                '0x0e999d6fcfd15db925f1baf371eaa50f478205211b003c36a5cac23f36853413'
+            ]
+        }
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/metrics_by_day`</br>
+<b>Parameters</b>: Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?date=18-02-23`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'name': 'Figment',
+        '18-02-23': {
+            'num_blocks': 85,
+            'num_ofac_compliant_txs': 12015,
+            'num_txs': 12015,
+            'censored_block': [
+                16652200,
+                16654567,
+                16655187, 
+                16655997
+            ]
+        }
+    },
+    {
+        'name': 'RockX',
+        '18-02-23': {
+            'num_blocks': 91,
+            'num_ofac_compliant_txs': 12273,
+            'num_txs': 12274,
+            'non_censored_blocks': [
+                16653366
+            ],
+            'non_ofac_compliant_txs': [
+                '0xe92207df0fa3d97fea2263f47186718b5212e0dd9d8e63422036669d7e2c00da'
+            ],
+            'censored_block': [
+                16657321
+            ]
+        }
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/metrics_by_validators`</br>
+<b>Parameters</b>: Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?names=stakefish&names=BridgeTower`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'name': 'stakefish',
+        '17-02-23': {
+            'num_blocks': 17,
+            'num_ofac_compliant_txs': 2753,
+            'num_txs': 2753},
+            '18-02-23': {
+                'num_blocks': 91,
+                'num_ofac_compliant_txs': 9505,
+                'num_txs': 9507,
+                'non_censored_blocks': [
+                    16653655, 
+                    16656982
+                ],
+                'non_ofac_compliant_txs': [
+                    '0x1e36ab8d3055f0b7f385d455a537b7885e1d874f620e0bcfb9478cc73aa377b0',
+                    '0x020ccc01520f8378e2928a1977159eb997f2206cf0de4b11428d1bdae55fbeaa'
+                ]
+            }
+        },
+    {
+        'name': 'BridgeTower',
+        '17-02-23': {
+            'num_blocks': 40,
+            'num_ofac_compliant_txs': 6373,
+            'num_txs': 6376,
+            'non_censored_blocks': [
+                16649944, 
+                16649973, 
+                16650400
+            ],
+            'non_ofac_compliant_txs': [
+                '0x698fc76f971c1470c8e70bfa52cc4c3f6525756747c8770dd634b05b1c8e60c0',
+                '0x52ee75fff1e152347482b6491334c2e1f3b18b88c5f353552c76d118da347302',
+                '0x66a773542290c15d68f2748678906aad79c8c025c94955166cea906c00ef674a'
+            ],
+            'censored_block': [
+                16651285
+            ]
+        },
+        '18-02-23': {
+            'num_blocks': 94,
+            'num_ofac_compliant_txs': 13370,
+            'num_txs': 13374,
+            'non_censored_blocks': [
+                16654535, 
+                16655950
+            ],
+            'non_ofac_compliant_txs': [
+                '0x44b9420c4a89e60eff7cbb6a9a10f087b2aa383fe9edecde8c73bf906034b903',
+                '0xe09559639b8cde02d25c3bbfcbe880faf98044e0ee6167b46dd0c08afa361dea',
+                '0x726034837fb82fc4323908a19273c05e5985b88ee70441e8e43c1bed18f30246',
+                '0xd601760596ac3cac7a2cd6bdd94026907bc35324ed5d4d25b9a36ec9f803fa8b'
+            ]
+        }
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/metrics_by_daterange`</br>
+<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_daterange?start_date=16-02-23&end_date=17-02-23`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'name': 'Blockdaemon',
+        '17-02-23': {
+            'num_blocks': 10,
+            'num_ofac_compliant_txs': 1506,
+            'num_txs': 1506
+        }
+    },
+    {
+        'name': 'Anyblock Analytics',
+        '17-02-23': {
+            'num_blocks': 15,
+            'num_ofac_compliant_txs': 2256,
+            'num_txs': 2256,
+            'censored_block': [
+                16651070
+            ]
+        }
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/metrics_by_validators_by_day`</br>
+<b>Parameters</b>: Date - date in dd-mm-yy format, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_day?date=17-02-23&names=Sigma Prime&names=Stakin`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'name': 'Stakin',
+        '17-02-23': {
+            'num_blocks': 31,
+            'num_ofac_compliant_txs': 4707,
+            'num_txs': 4707
+        }
+    },
+    {
+        'name': 'Sigma Prime',
+        '17-02-23': {
+            'num_blocks': 21,
+            'num_ofac_compliant_txs': 3454,
+            'num_txs': 3454
+        }
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/metrics_by_validators_by_daterange`</br>
+<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_daterange?start_date=17-02-23&end_date=19-02-23&names=Stakely&names=ChainLayer`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        'name': 'Stakin',
+        '17-02-23': {
+            'num_blocks': 31,
+            'num_ofac_compliant_txs': 4707,
+            'num_txs': 4707
+        },
+        '18-02-23': {
+            'num_blocks': 65,
+            'num_ofac_compliant_txs': 9631,
+            'num_txs': 9632,
+            'non_censored_blocks': [16656772],
+            'non_ofac_compliant_txs': [
+                '0x64d519bbdae8f54784fec9e113d903f839df63bc9b38332f699ebb688f2ed940'
+            ]
+        }
+    },
+    {
+        'name': 'Sigma Prime',
+        '17-02-23': {
+            'num_blocks': 21,
+            'num_ofac_compliant_txs': 3454,
+            'num_txs': 3454
+        },
+        '18-02-23': {
+            'num_blocks': 32,
+            'num_ofac_compliant_txs': 4468,
+            'num_txs': 4468
+        }
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/censored_transactions`</br>
+<b>Parameters</b>: None </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        "hash":"0x0a7eef822d16d7bfa45fe3387e4b7692311ab375ffa956582b17996a7062be3d",
+        "censored":[],
+        "first_seen":1676665298,
+        "block_number":16650761.0,
+        "block_ts":1676665307.0,
+        "date":"17-02-23",
+        "non_ofac_compliant":1.0,
+        "validator":"Other"
+    },
+    {
+        "hash":"0x1177c5dff2bd5d8abcdcc8cd72875675699b1c4543e1dccda8adaf3ccadb2650",
+        "censored":[
+            {
+                "block_number":16651065,
+                "validator":"Other"
+            },
+            {
+                "block_number":16651066,
+                "validator":"Other"
+            }
+        ],
+        "first_seen":1676669047,
+        "block_number":16651067.0,
+        "block_ts":1676669075.0,
+        "date":"17-02-23",
+        "non_ofac_compliant":1.0,
+        "validator":"Other"
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/censored_transactions_by_day`</br>
+<b>Parameters</b>: Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_day?date=17-02-23`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        "hash":"0x0a7eef822d16d7bfa45fe3387e4b7692311ab375ffa956582b17996a7062be3d",
+        "censored":[],
+        "first_seen":1676665298,
+        "block_number":16650761.0,
+        "block_ts":1676665307.0,
+        "date":"17-02-23",
+        "non_ofac_compliant":1.0,
+        "validator":"Other"
+    },
+    {
+        "hash":"0x1177c5dff2bd5d8abcdcc8cd72875675699b1c4543e1dccda8adaf3ccadb2650",
+        "censored":[
+            {
+                "block_number":16651065,
+                "validator":"Other"
+            },
+            {
+                "block_number":16651066,
+                "validator":"Other"
+            }
+        ],
+        "first_seen":1676669047,
+        "block_number":16651067.0,
+        "block_ts":1676669075.0,
+        "date":"17-02-23",
+        "non_ofac_compliant":1.0,
+        "validator":"Other"
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/censored_transactions_by_daterange`</br>
+<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_daterange?start_date=17-02-23&end_date=19-02-23`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        "hash":"0x0a7eef822d16d7bfa45fe3387e4b7692311ab375ffa956582b17996a7062be3d",
+        "censored":[],
+        "first_seen":1676665298,
+        "block_number":16650761.0,
+        "block_ts":1676665307.0,
+        "date":"17-02-23",
+        "non_ofac_compliant":1.0,
+        "validator":"Other"
+    },
+    {
+        "hash":"0x1177c5dff2bd5d8abcdcc8cd72875675699b1c4543e1dccda8adaf3ccadb2650",
+        "censored":[
+            {
+                "block_number":16651065,
+                "validator":"Other"
+            },
+            {
+                "block_number":16651066,
+                "validator":"Other"
+            }
+        ],
+        "first_seen":1676669047,
+        "block_number":16651067.0,
+        "block_ts":1676669075.0,
+        "date":"17-02-23",
+        "non_ofac_compliant":1.0,
+        "validator":"Other"
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/ofac_addresses`</br>
+<b>Parameters</b>: None </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        "timestamp":1676623295,
+        "addresses":[
+            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
+            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
+            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
+            "0x09193888b3f38C82dEdfda55259A82C0E7De875E",
+            ...
+            "0xaf4c0B70B2Ea9FB7487C7CbB37aDa259579fe040",
+            "0xD21be7248e0197Ee08E0c20D4a96DEBdaC3D20Af",
+            "0xd47438C816c9E7f2E2888E060936a499Af9582b3",
+            "0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b",
+            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
+            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
+        ]
+    },
+    {
+        "timestamp":1676709695,
+        "addresses":[
+            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
+            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
+            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
+            "0x09193888b3f38C82dEdfda55259A82C0E7De875E",
+            "0xdf231d99Ff8b6c6CBF4E9B9a945CBAcEF9339178",
+            ...
+            "0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b",
+            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
+            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
+        ]
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/ofac_addresses_by_day`</br>
+<b>Parameters</b>: Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_day?date=18-02-23`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        "timestamp":1676709695,
+        "addresses":[
+            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
+            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
+            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
+            ...
+            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
+            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
+        ]
+    }
+]
+```
+
+<b>API endpoint</b>: `/data/ofac_addresses_by_daterange`</br>
+<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_daterange?start_date=18-02-23&end_date=20-02-23`</br>
+<b>Response example</b>: 
+```
+[
+    {
+        "timestamp":1676709695,
+        "addresses":[
+            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
+            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
+            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
+            ...
+            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
+            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
+        ]
+    }
+]
+```
+
+## &#128204; Team
+
+
+
+| <img src = "https://sun7.userapi.com/sun7-9/s/v1/ig2/nlmpctb21vUqfPkpUrX8aRmqhhQMyfYAwDrsXrVlduxzPmvyI8SW3luH2SR4fsUpLHPZCKdH_-QXEYtT5E3DqFUc.jpg?size=810x1080&quality=96&type=album" height = "300px"> | <img src = "https://sun7.userapi.com/sun7-9/s/v1/ig2/dQ01qNaBz_9WlD49Xdas0Q5N-G8y4AlaWKXHcPVA39WQWgALU6KD7OOaIVI1L1jivaIwVUcH1fEYP7_53KzPEDrX.jpg?size=810x1080&quality=96&type=album" height = "300px"> | <img src = "https://sun7.userapi.com/sun7-14/s/v1/ig2/eP7ic4XAgFhfGJO5ccrKfn63OS_fGrHEk-zL3G2Cw11pAy1Bs5gkZ1kx23gzQTYnlOMVLw9uYp562-RfTNoS4AAR.jpg?size=810x1080&quality=96&type=album" height = "300px"> |
+|:---:|:---:|:---:|
+| [Mikhail Gurevich](https://github.com/mikgur) | [Petr Korchagin](https://github.com/PetrovitchSharp) | [Evgenii Bezmen](https://github.com/flashlight101) | 
+| tg: [@gurev](https://t.me/gurev) | tg: [@petrovitch_sharp](https://t.me/petrovitch_sharp) | tg: [@flashlight101](https://t.me/flashlight101) |
+
 ## &#128204; Community 
+
+
 
 ## &#128204; Acknowledgments
 
