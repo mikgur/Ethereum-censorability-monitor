@@ -20,13 +20,14 @@ function Home() {
           <PageIllustration />
         </div>
         <HeroHome />
+        <LatencyChart />
+        <div style={{height: 300, weight: 200}}></div>
         <VisChart />
         <div style={{height: 300, weight: 200}}></div>
         <RatioChart />
         <div style={{height: 300, weight: 200}}></div>
         <PoolChart />
         <div style={{height: 300, weight: 200}}></div>
-        <LatencyChart />
       </main>
     </div>
   );
