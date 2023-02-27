@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "parsers"
+version = "0.1.0"
+description = ""
+authors = ["PetrovitchSharp <korchagin_official@yahoo.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">= 3.8, <= 3.9"
+pandas = "^1.5.2"
+web3 = "^5.31.3"
+mongo = "^0.2.0"
+pymongo = "^4.3.3"
+lido-sdk = "^2.7.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
