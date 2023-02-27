@@ -47,13 +47,13 @@ Our project meets the first grant criteria in the following ways:
 
 - We propose several metrics for tracking service degradation for censorable transactions, please refer to section <a href=#-metrics> Metrics </a> for more info.
 
-- Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#2-censorship-resistance-index>Censorship Latency</a>)
+- Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#4-censorship-latency>Censorship Latency</a> and <a href=#5-lido-adjusted-censorship-latency>Lido-adjusted censorship latency</a>)
 
 - We have developed an API to access our data, and we plan to open up access to it in March upon request, for more info please refer to <a href=#-api-reference> API Reference </a> section.
 
 - Our project has been designed to be easily maintainable by a small team of developers (1-2 in total), with low complexity and cost.
 
-- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=3-lido-censorship-resistance-index-and-other-validators-censorship-resistance-index>Lido Censorship Resistance Index and Other Validators Censorship Resistance Index</a>)
+- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=#1-non-ofac-and-ofac-compliance-ratio-metrics>Non-OFAC and OFAC Compliance Ratio Metrics</a>, <a href=#2-censorship-resistance-index>Censorship Resistance Index</a>)
 
 - Our project is open-source.
 
