@@ -311,7 +311,7 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
 
 
 def get_latency(
-    txs_collection: Collection, validators_collection: Collection
+    txs_collection: Collection, validators_collection: Collection, mean: str
 ) -> List[dict]:
     """
     Calculate the censorship latency
@@ -319,6 +319,7 @@ def get_latency(
     Args:
         txs_collection          -   Mongo collection of censored transactions
         validators_collection   -   Mongo collection of validators
+        mean                    -   Type of mean (average or median)
 
     Returns:
         List of censorship latency over all weeks
@@ -376,13 +377,22 @@ def get_latency(
         shifted_df[
             "censorship_latency_without_lido_censorship"
         ] = shifted_df.censored.apply(_calc_lido_latency, args=(lido_vals,))
-        latency.append(
-            {
+
+        if mean == "average":
+            record = {
                 "start_date": monday_dt,
                 "end_date": sunday_dt,
-                "censorship_latency": shifted_df.censorship_latency.mean(),
-                "censorship_latency_without_lido_censorship": shifted_df.censorship_latency_without_lido_censorship.mean(),
+                "average_censorship_latency": shifted_df.censorship_latency.mean(),
+                "average_censorship_latency_without_lido_censorship": shifted_df.censorship_latency_without_lido_censorship.mean(),
             }
-        )
+        if mean == "median":
+            record = {
+                "start_date": monday_dt,
+                "end_date": sunday_dt,
+                "median_censorship_latency": shifted_df.censorship_latency.median(),
+                "median_censorship_latency_without_lido_censorship": shifted_df.censorship_latency_without_lido_censorship.median(),
+            }
+
+        latency.append(record)
 
     return latency

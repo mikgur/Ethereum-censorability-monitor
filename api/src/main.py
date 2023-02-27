@@ -182,11 +182,12 @@ async def get_metrics_by_validators_by_daterange(
     return JSONResponse(res)
 
 
-@app.get("/metrics/latency")
-async def get_latencies() -> JSONResponse:
-    # Query example: /metrics/latency
+@app.get("/metrics/latency/{mean_type}")
+async def get_latencies(mean_type: str) -> JSONResponse:
+    # Query example: /metrics/latency/average
+    # Query example: /metrics/latency/median
     try:
-        metrics = get_latency(censored_txs, validators)
+        metrics = get_latency(censored_txs, validators, mean_type)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -243,7 +244,7 @@ async def get_ofac_list() -> JSONResponse:
         cursor = ofac_list.find({}, {"_id": 0})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
     res = jsonable_encoder(list(cursor))
     return JSONResponse(res)
 
@@ -266,9 +267,7 @@ async def get_ofac_list_by_day(date: str) -> JSONResponse:
 async def get_ofac_list_by_daterange(start_date: str, end_date: str) -> JSONResponse:
     # Query example: /data/get_ofac_list_by_daterange?start_date=15-02-23&end_date=17-02-23
     try:
-        metrics = data.get_ofac_list_by_daterange(
-            ofac_list, start_date, end_date
-        )
+        metrics = data.get_ofac_list_by_daterange(ofac_list, start_date, end_date)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
