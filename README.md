@@ -23,11 +23,13 @@
 
 <h4 align="center">
   <a href=#-problem> Problem </a> |
-  <a href=#-project_components> Project Components: </a> |
+  <a href=#-lego-grant> Lego grant </a> |
+  <a href=#-project_components> Project Components </a> |
   <a href=#-metrics> Metrics </a> |
   <a href=#-installation> Installation </a> |
   <a href=#-quick-start> Quick Start </a> |
   <a href=#-mongo_db_metrics_scheme> Mongo DB metrics scheme  </a> |
+  <a href=#-api-reference> API Reference </a> |
   <a href=#-community> Community </a>
   <a href=#-acknowledgments> Acknowledgments </a>
 </h4>
@@ -36,6 +38,24 @@
 ## &#128204; Problem
 
   The problem of censorship for non compliant transactions on the Ethereum blockchain is that certain transactions may be blocked or censored by node operators or validators who comply with some lists of forbidden addresses.
+
+## &#128204; LEGO grant
+
+[Lido RFP Ethereum Censorability Monitor](https://research.lido.fi/t/rfp-ethereum-censorability-monitor/3330)
+
+Our project meets the first grant criteria in the following ways:
+
+- We propose several metrics for tracking service degradation for censorable transactions, please refer to section <a href=#-metrics> Metrics </a> for more info.
+
+- Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#2)-censorship-resistance-index>Censorship Latency</a>)
+
+- We have developed an API to access our data, and we plan to open up access to it in March upon request, for more info please refer to <a href=#-api-reference> API Reference </a> section.
+
+- Our project has been designed to be easily maintainable by a small team of developers (1-2 in total), with low complexity and cost.
+
+- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. Lido Censorship Resistance Index and Other Validators Censorship Resistance Index)
+
+- Our project is open-source.
 
 ## &#128204; Project Components
 
