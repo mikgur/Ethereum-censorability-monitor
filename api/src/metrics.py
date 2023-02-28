@@ -2,7 +2,7 @@ from typing import List
 from pymongo.collection import Collection
 import pandas as pd
 
-import datetime
+from  datetime import datetime, timezone
 
 from utils import get_last_dates, get_shifted_week, get_week
 
@@ -310,16 +310,15 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
     return lido_vs_rest
 
 
-def get_latency(
-    txs_collection: Collection, validators_collection: Collection, mean: str
+def get_overall_latency(
+    txs_collection: Collection, validators_collection: Collection
 ) -> List[dict]:
     """
-    Calculate the censorship latency
+    Calculate the censorship latency for all non OFAC compliant transactions
 
     Args:
         txs_collection          -   Mongo collection of censored transactions
         validators_collection   -   Mongo collection of validators
-        mean                    -   Type of mean (average or median)
 
     Returns:
         List of censorship latency over all weeks
@@ -338,9 +337,9 @@ def get_latency(
     # Calculate corrensponding weeks for min and max timestamps
     first_monday_ts, first_sunday_ts = get_week(min_ts)
     _, last_monday_ts = get_week(max_ts)
-    first_monday = datetime.datetime.utcfromtimestamp(first_monday_ts)
-    first_sunday = datetime.datetime.utcfromtimestamp(first_sunday_ts)
-    last_monday = datetime.datetime.utcfromtimestamp(last_monday_ts)
+    first_monday = datetime.utcfromtimestamp(first_monday_ts)
+    first_sunday = datetime.utcfromtimestamp(first_sunday_ts)
+    last_monday = datetime.utcfromtimestamp(last_monday_ts)
     # Week difference between min and max timestamps' weeks
     week_diff = (last_monday - first_monday).days // 7
 
@@ -378,6 +377,86 @@ def get_latency(
             "censorship_latency_without_lido_censorship"
         ] = shifted_df.censored.apply(_calc_lido_latency, args=(lido_vals,))
 
+        record = {
+            "start_date": monday_dt,
+            "end_date": sunday_dt,
+            "overall_censorship_latency": shifted_df.censorship_latency.mean(),
+            "overall_censorship_latency_without_lido_censorship": shifted_df.censorship_latency_without_lido_censorship.mean(),
+        }
+
+        latency.append(record)
+
+    return latency
+
+
+def get_censored_latency(
+    txs_collection: Collection, validators_collection: Collection, mean: str
+) -> List[dict]:
+    """
+    Calculate the censorship latency for non OFAC compliant censored transactions
+
+    Args:
+        txs_collection          -   Mongo collection of censored transactions
+        validators_collection   -   Mongo collection of validators
+        mean                    -   Type of mean (average or median)
+
+    Returns:
+        List of censorship latency over all weeks
+    """
+    # Find min and max timestamps in censored transactions' mongo collection
+    try:
+        ts_df = pd.DataFrame(list(txs_collection.find({}, {"_id": 0, "block_ts": 1})))
+
+        ts_df.dropna(inplace=True)
+
+        min_ts = int(ts_df.block_ts.min())
+        max_ts = int(ts_df.block_ts.max())
+    except Exception:
+        raise Exception("Failed to fetch transactions data from db")
+
+    # Calculate corrensponding weeks for min and max timestamps
+    first_monday_ts, first_sunday_ts = get_week(min_ts)
+    _, last_monday_ts = get_week(max_ts)
+    first_monday = datetime.utcfromtimestamp(first_monday_ts)
+    first_sunday = datetime.utcfromtimestamp(first_sunday_ts)
+    last_monday = datetime.utcfromtimestamp(last_monday_ts)
+    # Week difference between min and max timestamps' weeks
+    week_diff = (last_monday - first_monday).days // 7
+
+    latency = []
+    # List of Lido validators
+    try:
+        lido_vals = validators_collection.distinct("name", {"pool_name": "Lido"})
+    except:
+        raise Exception("Failed to fetch validators data from db")
+
+    for shift in range(week_diff + 1):
+        # For each available week find it's boundaries
+        monday_ts, sunday_ts, monday_dt, sunday_dt = get_shifted_week(
+            first_monday, first_sunday, shift
+        )
+        # Find censored transactions that were added to
+        # the blockchain in a certain week
+        shifted_df = pd.DataFrame(
+            list(
+                txs_collection.find(
+                    {
+                        "block_ts": {"$gte": monday_ts, "$lte": sunday_ts},
+                        "non_ofac_compliant": True,
+                    },
+                    {"_id": 0, "censored": 1},
+                )
+            )
+        )
+        # Drop all non censored transactions
+        shifted_df.dropna(axis=0, subset=["censored"])
+
+        # Сalculate censorship metrics
+        shifted_df["censorship_latency"] = shifted_df.censored.apply(len) * 12
+        shifted_df[
+            "censorship_latency_without_lido_censorship"
+        ] = shifted_df.censored.apply(_calc_lido_latency, args=(lido_vals,))
+
         if mean == "average":
             record = {
                 "start_date": monday_dt,
@@ -396,3 +475,73 @@ def get_latency(
         latency.append(record)
 
     return latency
+
+
+def get_censored_percentage(
+    txs_collection: Collection, validators_collection: Collection, period: str
+) -> List[dict]:
+    """
+    Calculate the percentage of censored transactions
+
+    Args:
+        txs_collection          -   Mongo collection of censored transactions
+        validators_collection   -   Mongo collection of validators
+        period                  -   Time period for which censorship metrics need to be calculated (last_week or last_month)
+
+    Returns:
+        Percentage of censored transactions
+    """
+    # Find min and max timestamps in censored transactions' mongo collection
+    if period == "last_week":
+        dates = get_last_dates(0, 7)
+    elif period == "last_month":
+        dates = get_last_dates(0, 30)
+    else:
+        raise ValueError("Wrong period")
+
+    start_date = datetime.strptime(dates[-1], "%d-%m-%y")
+    end_date = datetime.strptime(dates[-0], "%d-%m-%y")
+
+    start_date_ts = int(start_date.replace(tzinfo=timezone.utc).timestamp())
+    end_date_ts = int(end_date.replace(tzinfo=timezone.utc).timestamp())
+
+
+
+    non_compliant_txs_df = pd.DataFrame(
+        list(
+            txs_collection.find(
+                {
+                    "block_ts": {"$gte": start_date_ts, "$lte": end_date_ts},
+                    "non_ofac_compliant": True,
+                },
+                {"_id": 0, "censored": 1},
+            )
+        )
+    )
+
+    try:
+        lido_vals = validators_collection.distinct("name", {"pool_name": "Lido"})
+    except:
+        raise Exception("Failed to fetch validators data from db")
+
+    censored_txs_df = non_compliant_txs_df.dropna(axis=1, subset=["censored"])
+
+    # Сalculate censorship metrics
+    censored_txs_df["censorship_latency"] = censored_txs_df.censored.apply(len) * 12
+    censored_txs_df[
+        "censorship_latency_without_lido_censorship"
+    ] = censored_txs_df.censored.apply(_calc_lido_latency, args=(lido_vals,))
+
+    lido_censored_txs_df = censored_txs_df[
+        censored_txs_df.censorship_latency
+        != censored_txs_df.censorship_latency_without_lido_censorship
+    ]
+
+    percentage = {
+        "censored_percentage": len(censored_txs_df) / len(non_compliant_txs_df) * 100,
+        "lido_censored_percentage": len(lido_censored_txs_df)
+        / len(non_compliant_txs_df)
+        * 100,
+    }
+
+    return percentage

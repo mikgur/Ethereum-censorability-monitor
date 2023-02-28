@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from typing import List, Union
 
-from metrics import get_lido_validators_metrics, get_lido_vs_rest, get_latency
+from metrics import get_lido_validators_metrics, get_lido_vs_rest, get_overall_latency, get_censored_latency, get_censored_percentage
 import data
 
 
@@ -228,12 +228,38 @@ async def get_metrics_by_validators_by_daterange(
     return JSONResponse(res)
 
 
-@app.get("/metrics/latency/{mean_type}")
-async def get_latencies(mean_type: str) -> JSONResponse:
-    # Query example: /metrics/latency/average
-    # Query example: /metrics/latency/median
+@app.get("/metrics/overall_latency")
+async def get_overall_latency() -> JSONResponse:
+    # Query example: /metrics/overall_latency
+    # Query example: /metrics/overall_latency
     try:
-        metrics = get_latency(censored_txs, validators, mean_type)
+        metrics = get_overall_latency(censored_txs, validators)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/metrics/censored_latency/{mean_type}")
+async def get_censored_latency(mean_type: str) -> JSONResponse:
+    # Query example: /metrics/censored_latency/average
+    # Query example: /metrics/censored_latency/median
+    try:
+        metrics = get_censored_latency(censored_txs, validators, mean_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/metrics/censored_percentage/{period}")
+async def get_censored_percentage(period: str) -> JSONResponse:
+    # Query example: /metrics/censorship_percentage/last_week
+    # Query example: /metrics/censorship_percentage/last_month
+    try:
+        metrics = get_censored_percentage(censored_txs, validators, period)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -259,7 +285,7 @@ async def get_transactions(api_key: str) -> JSONResponse:
 
 
 @app.get("/data/censored_transactions_by_day")
-async def get_transactions(api_key: str, date: str) -> JSONResponse:
+async def get_transactions_by_day(api_key: str, date: str) -> JSONResponse:
     # Query example: /data/censored_transactions_by_day?api_key=123&date=17-02-23
     if not (api_key == AUTH_KEY):
         return HTTPException(
@@ -278,7 +304,7 @@ async def get_transactions(api_key: str, date: str) -> JSONResponse:
 
 
 @app.get("/data/censored_transactions_by_daterange")
-async def get_transactions(api_key: str, start_date: str, end_date: str) -> JSONResponse:
+async def get_transactions_by_daterange(api_key: str, start_date: str, end_date: str) -> JSONResponse:
     # Query example: /data/censored_transactions_by_daterange?api_key=123&start_date=15-02-23&end_date=17-02-23
     if not (api_key == AUTH_KEY):
         return HTTPException(
