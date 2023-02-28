@@ -293,8 +293,8 @@ Example:
 Thanks to the API, you can receive data without accessing the database and in a more convenient format
 
 <b>API endpoint</b>: `/data/validators`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -314,8 +314,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -358,8 +358,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?date=18-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?api_key=123&date=18-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -398,8 +398,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_validators`</br>
-<b>Parameters</b>: Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?names=stakefish&names=BridgeTower`</br>
+<b>Parameters</b>: Api key - key string for api, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?api_key=123&names=stakefish&names=BridgeTower`</br>
 <b>Response example</b>: 
 ```
 [
@@ -463,8 +463,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_daterange?start_date=16-02-23&end_date=17-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_daterange?api_key=123&start_date=16-02-23&end_date=17-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -491,8 +491,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_validators_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_day?date=17-02-23&names=Sigma Prime&names=Stakin`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_day?api_key=123&date=17-02-23&names=Sigma Prime&names=Stakin`</br>
 <b>Response example</b>: 
 ```
 [
@@ -516,8 +516,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_validators_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_daterange?start_date=17-02-23&end_date=19-02-23&names=Stakely&names=ChainLayer`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23&names=Stakely&names=ChainLayer`</br>
 <b>Response example</b>: 
 ```
 [
@@ -555,8 +555,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/censored_transactions`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -593,8 +593,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/censored_transactions_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_day?date=17-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_day?api_key=123&date=17-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -631,8 +631,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/censored_transactions_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_daterange?start_date=17-02-23&end_date=19-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -669,8 +669,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/ofac_addresses`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -708,8 +708,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/ofac_addresses_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_day?date=18-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_day?api_key=123&date=18-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -728,8 +728,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/ofac_addresses_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_daterange?start_date=18-02-23&end_date=20-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_daterange?api_key=123&start_date=18-02-23&end_date=20-02-23`</br>
 <b>Response example</b>: 
 ```
 [
