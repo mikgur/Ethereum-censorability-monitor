@@ -18,6 +18,7 @@ MONGO_HOST = os.environ["MONGO_HOST"]
 MONGO_PORT = os.environ["MONGO_PORT"]
 MONGO_USER = os.environ["MONGO_USER"]
 MONGO_PASSWORD = os.environ["MONGO_PASSWORD"]
+AUTH_KEY = os.environ["AUTH_KEY"]
 
 app = FastAPI()
 
@@ -79,8 +80,13 @@ async def get_total_validators_ratio(period: str) -> JSONResponse:
 
 
 @app.get("/data/validators")
-async def get_validators() -> JSONResponse:
-    # Query example: /data/validators
+async def get_validators(api_key: str) -> JSONResponse:
+    # Query example: /data/validators?api_key=123
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         cursor = validators.find({}, {"_id": 0})
     except:
@@ -93,8 +99,13 @@ async def get_validators() -> JSONResponse:
 
 
 @app.get("/data/metrics")
-async def get_metrics() -> JSONResponse:
-    # Query example: /data/metrics
+async def get_metrics(api_key: str) -> JSONResponse:
+    # Query example: /data/metrics?api_key=123
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_metrics(validators_metrics)
     except Exception as e:
@@ -105,8 +116,13 @@ async def get_metrics() -> JSONResponse:
 
 
 @app.get("/data/metrics_by_day")
-async def get_metrics_by_date(date: str) -> JSONResponse:
-    # Query example: /data/metrics_by_day?date=17-02-23
+async def get_metrics_by_date(api_key: str, date: str) -> JSONResponse:
+    # Query example: /data/metrics_by_day?api_key=123&date=17-02-23
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_metrics_by_day(validators_metrics, date)
     except ValueError as e:
@@ -120,9 +136,15 @@ async def get_metrics_by_date(date: str) -> JSONResponse:
 
 @app.get("/data/metrics_by_validators")
 async def get_metrics_by_validators(
+    api_key: str,
     names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
-    # Query example: /data/metrics_by_validators?names=stakefish&names=Figment
+    # Query example: /data/metrics_by_validators?api_key=123&names=stakefish&names=Figment
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_metrics_by_validators(validators_metrics, names)
     except Exception as e:
@@ -133,8 +155,17 @@ async def get_metrics_by_validators(
 
 
 @app.get("/data/metrics_by_daterange")
-async def get_metrics_by_daterange(start_date: str, end_date: str) -> JSONResponse:
-    # Query example: /data/metrics_by_daterange?start_date=15-02-23&end_date=17-02-23
+async def get_metrics_by_daterange(
+    api_key: str,
+    start_date: str,
+    end_date: str
+) -> JSONResponse:
+    # Query example: /data/metrics_by_daterange?api_key=123&start_date=15-02-23&end_date=17-02-23
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_metrics_by_daterange(
             validators_metrics, start_date, end_date
@@ -150,9 +181,16 @@ async def get_metrics_by_daterange(start_date: str, end_date: str) -> JSONRespon
 
 @app.get("/data/metrics_by_validators_by_day")
 async def get_metrics_by_validators_by_day(
-    date: str, names: Union[List[str], None] = Query(default=None)
+    api_key: str,
+    date: str, 
+    names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
-    # Query example: /data/metrics_by_validators_by_day?date=17-02-23&names=stakefish&names=Figment
+    # Query example: /data/metrics_by_validators_by_day?api_key=123&date=17-02-23&names=stakefish&names=Figment
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_metrics_by_validators_by_day(validators_metrics, names, date)
     except ValueError as e:
@@ -166,9 +204,17 @@ async def get_metrics_by_validators_by_day(
 
 @app.get("/data/metrics_by_validators_by_daterange")
 async def get_metrics_by_validators_by_daterange(
-    start_date: str, end_date: str, names: Union[List[str], None] = Query(default=None)
+    api_key: str,
+    start_date: str,
+    end_date: str,
+    names: Union[List[str], None] = Query(default=None)
 ) -> str:
-    # Query example: /data/metrics_by_validators_by_daterange?start_date=17-02-23&end_date=19-02-23&names=stakefish&names=Figment
+    # Query example: /data/metrics_by_validators_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23&names=stakefish&names=Figment
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_metrics_by_validators_by_daterange(
             validators_metrics, names, start_date, end_date
@@ -196,8 +242,13 @@ async def get_latencies(mean_type: str) -> JSONResponse:
 
 
 @app.get("/data/censored_transactions")
-async def get_transactions() -> JSONResponse:
-    # Query example: /data/censored_transactions
+async def get_transactions(api_key: str) -> JSONResponse:
+    # Query example: /data/censored_transactions?api_key=123
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_censored_transactions(censored_txs)
     except Exception as e:
@@ -208,8 +259,13 @@ async def get_transactions() -> JSONResponse:
 
 
 @app.get("/data/censored_transactions_by_day")
-async def get_transactions(date: str) -> JSONResponse:
-    # Query example: /data/censored_transactions_by_day?date=17-02-23
+async def get_transactions(api_key: str, date: str) -> JSONResponse:
+    # Query example: /data/censored_transactions_by_day?api_key=123&date=17-02-23
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_censored_transactions_by_day(censored_txs, date)
     except ValueError as e:
@@ -222,8 +278,13 @@ async def get_transactions(date: str) -> JSONResponse:
 
 
 @app.get("/data/censored_transactions_by_daterange")
-async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
-    # Query example: /data/censored_transactions_by_daterange?start_date=15-02-23&end_date=17-02-23
+async def get_transactions(api_key: str, start_date: str, end_date: str) -> JSONResponse:
+    # Query example: /data/censored_transactions_by_daterange?api_key=123&start_date=15-02-23&end_date=17-02-23
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_censored_transactions_by_day(
             censored_txs, start_date, end_date
@@ -238,8 +299,13 @@ async def get_transactions(start_date: str, end_date: str) -> JSONResponse:
 
 
 @app.get("/data/ofac_addresses")
-async def get_ofac_list() -> JSONResponse:
-    # Query example: /data/ofac_addresses
+async def get_ofac_list(api_key: str) -> JSONResponse:
+    # Query example: /data/ofac_addresses?api_key=123
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         cursor = ofac_list.find({}, {"_id": 0})
     except Exception as e:
@@ -250,8 +316,13 @@ async def get_ofac_list() -> JSONResponse:
 
 
 @app.get("/data/ofac_addresses_by_day")
-async def get_ofac_list_by_day(date: str) -> JSONResponse:
-    # Query example: /data/ofac_addresses?date=17-02-23
+async def get_ofac_list_by_day(api_key: str, date: str) -> JSONResponse:
+    # Query example: /data/ofac_addresses?api_key=123&date=17-02-23
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_ofac_list_by_day(ofac_list, date)
     except ValueError as e:
@@ -264,8 +335,13 @@ async def get_ofac_list_by_day(date: str) -> JSONResponse:
 
 
 @app.get("/data/ofac_addresses_by_daterange")
-async def get_ofac_list_by_daterange(start_date: str, end_date: str) -> JSONResponse:
-    # Query example: /data/get_ofac_list_by_daterange?start_date=15-02-23&end_date=17-02-23
+async def get_ofac_list_by_daterange(api_key: str, start_date: str, end_date: str) -> JSONResponse:
+    # Query example: /data/get_ofac_list_by_daterange?api_key=123&start_date=15-02-23&end_date=17-02-23
+    if not (api_key == AUTH_KEY):
+        return HTTPException(
+            status_code=401,
+            detail="You need api key to receive data"
+        )
     try:
         metrics = data.get_ofac_list_by_daterange(ofac_list, start_date, end_date)
     except ValueError as e:
