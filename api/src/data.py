@@ -218,7 +218,7 @@ def get_censored_transactions(collection: Collection) -> List[dict]:
         List of all records in the censored transactions collection
     """
     try:
-        cursor = collection.find({}, {"_id": 0})
+        cursor = collection.find({"non_ofac_compliant": True}, {"_id": 0})
     except:
         raise Exception("Failed to fetch transactions data from db")
 
