@@ -60,10 +60,10 @@ function VisChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 space-y-16">
-        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[300px] laptop:w-[900px] ">
+        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[300px] laptop:w-[900px] laptop:h-[700px]">
           <VictoryChart
-            height={700}
-            width={500}
+            height={900}
+            width={600}
             label="Share of Lido transactions (OFAC - NON OFAC compliant transactions)"
             containerComponent={
               <VictoryContainer

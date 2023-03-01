@@ -35,7 +35,7 @@ function LatencyChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0">
-        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[900px] ">
+        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[900px]  laptop:h-[900px]">
           <VictoryChart
             height={800}
             width={1000}
@@ -66,7 +66,7 @@ function LatencyChart() {
                   labels: { fill: "#FFFFFF" },
                 },
                 {
-                  name: "Lido-adjusted censorship latency",
+                  name: "Censorship Latency if Lido \n was completely non-censoring",
                   symbol: { fill: "#c43a31" },
                   labels: { fill: "#FFFFFF" },
                 },
@@ -77,7 +77,7 @@ function LatencyChart() {
               style={{ data: { stroke: "#c43a31" } }}
               data={latencyState}
               x="start_date"
-              y="censorship_latency_without_lido_censorship"
+              y="overall_censorship_latency_without_lido_censorship"
             />
             <VictoryLine
               alignment="middle"
@@ -85,19 +85,19 @@ function LatencyChart() {
               // labels={({ datum }) => datum.y}
               data={latencyState}
               x="start_date"
-              y="censorship_latency"
+              y="overall_censorship_latency"
             />
             <VictoryScatter
               data={latencyState}
               x="start_date"
-              y="censorship_latency"
+              y="overall_censorship_latency"
               size={7}
               style={{
                 data: { fill: "white" },
                 labels: { fill: "white" },
               }}
               labels={({ datum }) =>
-                `latency: ${datum.censorship_latency.toFixed(4)}`
+                `latency: ${datum.overall_censorship_latency.toFixed(4)}`
               }
               labelComponent={
                 <VictoryTooltip
@@ -110,14 +110,14 @@ function LatencyChart() {
             <VictoryScatter
               data={latencyState}
               x="start_date"
-              y="censorship_latency_without_lido_censorship"
+              y="overall_censorship_latency_without_lido_censorship"
               size={7}
               style={{
                 data: { fill: "white" },
                 labels: { fill: "white" },
               }}
               labels={({ datum }) =>
-                `latency: ${datum.censorship_latency_without_lido_censorship.toFixed(
+                `latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(
                   4
                 )}`
               }
@@ -173,11 +173,18 @@ function LatencyChart() {
             <b>Lido-adjusted censorship latency</b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            We also compute a modified version of the Censorship Latency metric
-            by assuming that the Lido validators do not engage in censorship.
-            This adjusted metric helps to understand the impact of censorship by
-            other validators on the overall network.
+          Censorship Latency if Lido was completely non-censoring
+We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
           </p>
+          <br></br>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Example of metric calculation:</p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">A transaction was twice censored by other validators and then once by Lido before being included in a block by another validator:</p>
+          <br></br>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Block #1 - Censored by Non Lido validator
+Block #2 - Censored by Non Lido validator
+Block #3 - Censored by Lido validator
+Block #4 - Included in a block by Non Lido validator
+</p>
         </div>
       </div>
     </div>
