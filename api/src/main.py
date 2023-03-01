@@ -229,7 +229,7 @@ async def get_metrics_by_validators_by_daterange(
 
 
 @app.get("/metrics/overall_latency")
-async def get_overall_latency() -> JSONResponse:
+async def get_latency() -> JSONResponse:
     # Query example: /metrics/overall_latency
     # Query example: /metrics/overall_latency
     try:
@@ -242,7 +242,7 @@ async def get_overall_latency() -> JSONResponse:
 
 
 @app.get("/metrics/censored_latency/{mean_type}")
-async def get_censored_latency(mean_type: str) -> JSONResponse:
+async def get_censorship_latency(mean_type: str) -> JSONResponse:
     # Query example: /metrics/censored_latency/average
     # Query example: /metrics/censored_latency/median
     try:
