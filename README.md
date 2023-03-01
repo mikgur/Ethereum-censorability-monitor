@@ -53,7 +53,7 @@ Our project meets the first grant criteria in the following ways:
 
 - Our project has been designed to be easily maintainable by a small team of developers (1-2 in total), with low complexity and cost.
 
-- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=#1-Non-ofac-compliance-and-ofac-compliancec-ratio-metrics>Non-OFAC Compliance and OFAC Compliance Ratio Metrics</a>, <a href=#2-censorship-resistance-index>Censorship Resistance Index</a>)
+- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=#1-non-ofac-compliance-and-ofac-compliance-ratio-metrics>Non-OFAC Compliance and OFAC Compliance Ratio Metrics</a>, <a href=#2-censorship-resistance-index>Censorship Resistance Index</a>)
 
 - Our project is open-source.
 
@@ -87,8 +87,9 @@ _Example of metric calculation:_
 
 Let's say that for the period, there were a total of 100,000 compliant transactions and 1,000 non-compliant transactions on the Ethereum network. Our validator included 500 compliant transactions and 2 non-compliant transactions in their blocks.
 
-    Validator’s OFAC Compliance Ratio -  500 / 100,000 = 0.5%
-    Validator’s Non-OFAC Compliance Ratio -  2 / 1,000 = 0.2%
+> Validator’s OFAC Compliance Ratio:  500 / 100,000 = 0.5%
+
+> Validator’s Non-OFAC Compliance Ratio:  2 / 1,000 = 0.2%
 
 
 ### <b>2) Censorship Resistance Index</b>
@@ -104,13 +105,17 @@ Censorship Resistance Index is calculated for all Lido validators and compared t
 
 _Example of metric calculation:_
 
-    A = OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
-    B = NON-OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
-    Lido metric = B / A
+> A = OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
+>
+> B = NON-OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
+>
+> Lido metric = B / A
 
-    C = OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
-    D = NON-OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
-    Non-Lido validators metric = D / C
+> C = OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+>
+> D = NON-OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+>
+> Non-Lido validators metric = D / C
 
 
 ### <b>4) Censorship Latency</b>
@@ -132,8 +137,9 @@ A transaction was twice censored by other validators and then once by Lido befor
 
 For this case:
 
-    Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.
-    Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.
+> Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.
+
+> Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.
 
 
 Please find details in our [notion page](https://accidental-eyelash-d3a.notion.site/Transaction-analysis-and-metrics-calculation-991b4e30fbc146469398860073547016)
