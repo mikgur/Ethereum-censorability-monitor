@@ -47,13 +47,13 @@ Our project meets the first grant criteria in the following ways:
 
 - We propose several metrics for tracking service degradation for censorable transactions, please refer to section <a href=#-metrics> Metrics </a> for more info.
 
-- Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#4-censorship-latency>Censorship Latency</a> and <a href=#5-lido-adjusted-censorship-latency>Lido-adjusted censorship latency</a>)
+- Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#4-censorship-latency>Censorship Latency</a> and <a href=#5-censorship-latency-if-lido-was-completely-non-censoring>Censorship Latency if Lido was completely non-censoring</a>)
 
 - We have developed an API to access our data, and we can provide an API key to it upon request, for more info please refer to <a href=#-api-reference> API Reference </a> section.
 
 - Our project has been designed to be easily maintainable by a small team of developers (1-2 in total), with low complexity and cost.
 
-- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=#1-non-ofac-and-ofac-compliance-ratio-metrics>Non-OFAC and OFAC Compliance Ratio Metrics</a>, <a href=#2-censorship-resistance-index>Censorship Resistance Index</a>)
+- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=#1-Non-ofac-compliance-and-ofac-compliancec-ratio-metrics>Non-OFAC Compliance and OFAC Compliance Ratio Metrics</a>, <a href=#2-censorship-resistance-index>Censorship Resistance Index</a>)
 
 - Our project is open-source.
 
@@ -74,32 +74,67 @@ Our project meets the first grant criteria in the following ways:
 
 We proposed following metrics:
 
-### <b>1) Non-OFAC and OFAC Compliance Ratio Metrics</b>
+### <b>1) Non-OFAC Compliance and OFAC Compliance Ratio Metrics</b>
 
 For each validator we calculate:
 
-1. Non-OFAC Compliance Ratio: the percentage of non-OFAC compliant transactions that are included in blocks proposed by the validator.
-2. OFAC Compliance Ratio: the percentage of OFAC compliant transactions that are included in blocks proposed by the validator.
+- The Non-OFAC Compliance Ratio is the percentage of transactions that are not compliant with OFAC regulations and are included in blocks proposed by a validator.
+- The OFAC Compliance Ratio is the percentage of transactions that are compliant with OFAC regulations and are included in blocks proposed by a validator.
 
-These metrics help us understand the relative likelihood of a validator including non-OFAC compliant transactions versus OFAC compliant ones.
+These metrics help us understand how likely a validator is to include transactions that violate OFAC regulations compared to those that comply with them.
+
+_Example of metric calculation:_
+
+Let's say that for the period, there were a total of 100,000 compliant transactions and 1,000 non-compliant transactions on the Ethereum network. Our validator included 500 compliant transactions and 2 non-compliant transactions in their blocks.
+
+    Validator’s OFAC Compliance Ratio -  500 / 100,000 = 0.5%
+    Validator’s Non-OFAC Compliance Ratio -  2 / 1,000 = 0.2%
+
 
 ### <b>2) Censorship Resistance Index</b>
 
-The metric we calculate is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
+The metric is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
 
-The possible values of this index range from zero to infinity. An index of one means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than one means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than one indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
+The possible values of this index range from zero to infinity. An index of 1.0 means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than 1.0 means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than 1.0 indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
 
-### <b>3) Lido Censorship Resistance Index and Other Validators Censorship Resistance Index.</b>
 
-We calculate Censorship Resistance Index for all the Lido validators and compare it to all the other validators in total.
+### <b>3) Lido Censorship Resistance Index and Non-Lido validators Censorship Resistance Index</b>
+
+Censorship Resistance Index is calculated for all Lido validators and compared to all Non-Lido validators in total.
+
+_Example of metric calculation:_
+
+    A = OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
+    B = NON-OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
+    Lido metric = B / A
+
+    C = OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+    D = NON-OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+    Non-Lido validators metric = D / C
+
 
 ### <b>4) Censorship Latency</b>
 
 The Censorship Latency metric measures the difference in average waiting time for transactions with similar features, except for their OFAC compliance status. We use a binary classifier with high accuracy to predict the number of blocks for which non-OFAC compliant transactions were not included due to censorship. This number is then multiplied by 12 to calculate the Censorship Latency metric.
 
-### <b>5) Lido-adjusted censorship latency</b>
+### <b>5) Censorship Latency if Lido was completely non-censoring</b>
 
-We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators do not engage in censorship. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+
+_Example of metric calculation:_
+
+A transaction was twice censored by other validators and then once by Lido before being included in a block by another validator:
+
+- Block #1 - Censored by Non Lido validator
+- Block #2 - Censored by Non Lido validator
+- Block #3 - Censored by Lido validator
+- Block #4 - Included in a block by Non Lido validator
+
+For this case:
+
+    Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.
+    Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.
+
 
 Please find details in our [notion page](https://accidental-eyelash-d3a.notion.site/Transaction-analysis-and-metrics-calculation-991b4e30fbc146469398860073547016)
 
