@@ -49,7 +49,7 @@ Our project meets the first grant criteria in the following ways:
 
 - Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#4-censorship-latency>Censorship Latency</a> and <a href=#5-lido-adjusted-censorship-latency>Lido-adjusted censorship latency</a>)
 
-- We have developed an API to access our data, and we plan to open up access to it in March upon request, for more info please refer to <a href=#-api-reference> API Reference </a> section.
+- We have developed an API to access our data, and we can provide an API key to it upon request, for more info please refer to <a href=#-api-reference> API Reference </a> section.
 
 - Our project has been designed to be easily maintainable by a small team of developers (1-2 in total), with low complexity and cost.
 
