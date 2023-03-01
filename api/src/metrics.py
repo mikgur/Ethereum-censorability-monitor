@@ -303,8 +303,8 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
     other_ratio = other_ofac_non_compliant_share / other_ofac_compliant_share
 
     lido_vs_rest = [
-        {"pool": "lido", "ratio": lido_ratio},
-        {"pool": "other pools", "ratio": other_ratio},
+        {"pool": "Lido", "ratio": lido_ratio},
+        {"pool": "Non Lido", "ratio": other_ratio},
     ]
 
     return lido_vs_rest
