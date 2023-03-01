@@ -449,7 +449,7 @@ def get_censored_latency(
             )
         )
         # Drop all non censored transactions
-        shifted_df.dropna(axis=0, subset=["censored"])
+        shifted_df.dropna(axis=0, subset=["censored"], inplace = True)
 
         # Сalculate censorship metrics
         shifted_df["censorship_latency"] = shifted_df.censored.apply(len) * 12
