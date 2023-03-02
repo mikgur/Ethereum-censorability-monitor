@@ -14,28 +14,31 @@ import {
   VictoryTooltip,
 } from "victory";
 
-import { getLatency } from "./DataAccessLayer";
+import { getMedian, getAverage } from "./DataAccessLayer";
 
-function LatencyChart() {
-  const [latencyState, setLatencyState] = useState();
+function MedianChart() {
+  const [medianState, setMedianState] = useState();
+  const [averageState, setAverageState] = useState();
 
   useEffect(() => {
-    getLatencyData();
+    getMedianData();
+    // getAverageData();
   }, []);
 
-  const getLatencyData = async () => {
-    const data = await getLatency();
-    setLatencyState(data.data);
+  const getMedianData = async () => {
+    const data = await getMedian();
+    setMedianState(data.data);
   };
 
   return (
     <div>
-      <div class="h3 text-center">
-        <h3>Сensorship latency and without lido censorship</h3>
+      <div class="h3 text-center space-x-4">
+       <h3><b>Of all Non-OFAC compliant transactions, 76% were censored at least once. Lido validators were involved in censoring of 43% of Non-OFAC compliant transactions last 30 days.</b></h3>
       </div>
+      
       <br></br>
-      <div class="flex flex-wrap space-x-0 justify-center mx-8">
-        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
+      <div class="flex flex-wrap space-x-0 justify-center">
+        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px] ml-24">
           <VictoryChart
             height={600}
             width={600}
@@ -75,29 +78,29 @@ function LatencyChart() {
             <VictoryLine
               alignment="middle"
               style={{ data: { stroke: "#c43a31" } }}
-              data={latencyState}
+              data={medianState}
               x="start_date"
-              y="overall_censorship_latency_without_lido_censorship"
+              y="median_censorship_latency_without_lido_censorship"
             />
             <VictoryLine
               alignment="middle"
               style={{ data: { stroke: "#1e90ff" } }}
               // labels={({ datum }) => datum.y}
-              data={latencyState}
+              data={medianState}
               x="start_date"
-              y="overall_censorship_latency"
+              y="median_censorship_latency"
             />
             <VictoryScatter
-              data={latencyState}
+              data={medianState}
               x="start_date"
-              y="overall_censorship_latency"
+              y="median_censorship_latency"
               size={7}
               style={{
                 data: { fill: "white" },
                 labels: { fill: "white" },
               }}
               labels={({ datum }) =>
-                `latency: ${datum.overall_censorship_latency.toFixed(4)}`
+                `latency: ${datum.median_censorship_latency.toFixed(4)}`
               }
               labelComponent={
                 <VictoryTooltip
@@ -108,16 +111,16 @@ function LatencyChart() {
               }
             />
             <VictoryScatter
-              data={latencyState}
+              data={medianState}
               x="start_date"
-              y="overall_censorship_latency_without_lido_censorship"
+              y="median_censorship_latency_without_lido_censorship"
               size={7}
               style={{
                 data: { fill: "white" },
                 labels: { fill: "white" },
               }}
               labels={({ datum }) =>
-                `latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(
+                `latency: ${datum.median_censorship_latency_without_lido_censorship.toFixed(
                   4
                 )}`
               }
@@ -155,7 +158,7 @@ function LatencyChart() {
             />
           </VictoryChart>
         </div>
-        <div class="desktop:w-[500px] laptop:max-w-[500px] laptop:min-w-[300px] ">
+        {/* <div class="desktop:w-[500px] laptop:max-w-[500px] laptop:min-w-[300px] ">
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b> Censorship Latency</b>
           </p>
@@ -189,11 +192,11 @@ We also compute a modified version of the Censorship Latency metric by assuming 
           <ul class="list-disc list-inside">
             <li>Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.</li>
             <li>Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.</li>
-          </ul>
-        </div>
+          </ul> 
+        </div>*/}
       </div>
     </div>
   );
 }
 
-export default LatencyChart;
+export default MedianChart;

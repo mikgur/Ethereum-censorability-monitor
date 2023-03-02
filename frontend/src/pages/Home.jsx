@@ -7,6 +7,7 @@ import VisChart from '../partials/VisChart';
 import RatioChart from '../partials/RatioChart';
 import PoolChart from '../partials/PoolChart';
 import LatencyChart from '../partials/LatencyChart';
+import MedianChart from '../partials/MedianChart';
 
 function Home() {
   return (
@@ -21,7 +22,9 @@ function Home() {
         </div>
         <HeroHome />
         <LatencyChart />
-        <div style={{height: 300, weight: 200}}></div>
+        <div style={{height: 100, weight: 200}}></div>
+        <MedianChart />
+        <div style={{height: 200, weight: 200}}></div>
         <VisChart />
         <div style={{height: 300, weight: 200}}></div>
         <RatioChart />
