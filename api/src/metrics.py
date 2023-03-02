@@ -524,7 +524,7 @@ def get_censored_percentage(
     except:
         raise Exception("Failed to fetch validators data from db")
 
-    censored_txs_df = non_compliant_txs_df.dropna(axis=1, subset=["censored"])
+    censored_txs_df = non_compliant_txs_df.dropna(axis=0)
 
     # Сalculate censorship metrics
     censored_txs_df["censorship_latency"] = censored_txs_df.censored.apply(len) * 12
