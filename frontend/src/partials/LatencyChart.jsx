@@ -31,7 +31,7 @@ function LatencyChart() {
   return (
     <div>
       <div class="h3 text-center">
-        <h3>Сensorship latency and without lido censorship</h3>
+        <h3>Average Censorship Latency</h3>
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
@@ -57,16 +57,16 @@ function LatencyChart() {
               x={50}
               y={0}
               orientation="horizontal"
-              gutter={30}
-              style={{ labels: { fontSize: 17 } }}
+              gutter={15}
+              style={{ labels: { fontSize: 15 } }}
               data={[
                 {
-                  name: "Сensorship latency",
+                  name: "Average Сensorship Latency",
                   symbol: { fill: "#1e90ff" },
                   labels: { fill: "#FFFFFF" },
                 },
                 {
-                  name: "Censorship Latency if Lido \n was completely non-censoring",
+                  name: "Average Censorship Latency if Lido was\n completely non-censoring",
                   symbol: { fill: "#c43a31" },
                   labels: { fill: "#FFFFFF" },
                 },
@@ -170,25 +170,50 @@ function LatencyChart() {
           </p>
           <br></br>
           <p class="desktop:text-xl uwdesktop:text-2xl">
-            <b>Lido-adjusted censorship latency</b>
+            <b>
+            Average Censorship Latency if Lido was completely non-censoring 
+            </b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-          Censorship Latency if Lido was completely non-censoring
-We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+            We also
+            compute a modified version of the Censorship Latency metric by
+            assuming that the Lido validators were completely non-censoring.
+            This adjusted metric helps to understand the impact of censorship by
+            other validators on the overall network.
           </p>
           <br></br>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Example of metric calculation:</p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">A transaction was twice censored by other validators and then once by Lido before being included in a block by another validator:</p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+            Example of metric calculation:
+          </p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+            A transaction was twice censored by other validators and then once
+            by Lido before being included in a block by another validator:
+          </p>
           <br></br>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Block #1 - Censored by Non Lido validator</p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Block #2 - Censored by Non Lido validator</p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Block #3 - Censored by Lido validator</p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">Block #4 - Included in a block by Non Lido validator</p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+            Block #1 - Censored by Non Lido validator
+          </p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+            Block #2 - Censored by Non Lido validator
+          </p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+            Block #3 - Censored by Lido validator
+          </p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+            Block #4 - Included in a block by Non Lido validator
+          </p>
           <br></br>
           <p>For this case:</p>
           <ul class="list-disc list-inside">
-            <li>Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.</li>
-            <li>Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.</li>
+            <li>
+              Censorship Latency will be calculated as 3 blocks (Block #1, #2,
+              and #3) multiplied by 12 seconds = 36 seconds.
+            </li>
+            <li>
+              Lido-adjusted Censorship Latency will be calculated as 2 blocks
+              (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we
+              expect the Lido validator to include the transaction in Block #3.
+            </li>
           </ul>
         </div>
       </div>

@@ -35,7 +35,7 @@ function PoolChart() {
     <div>
       <div class="h3 text-center">
         <h4>
-        Lido Censorship Resistance Index and Non-Lido validators Censorship Resistance Index
+        Lido/Non-Lido Censorship Resistance Index
         </h4>
       </div>
       <br></br>
