@@ -49,7 +49,7 @@ function RatioChart() {
   return (
     <div>
       <div class="h3 text-center">
-        <h3>Censorship Resistance Index({buttonTitleRatioState})</h3>
+        <h3>Censorship Resistance Index ({buttonTitleRatioState})</h3>
       </div>
       <div class="flex flex-wrap space-x-0 justify-center mx-8 space-y-16">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[600px] laptop:w-[900px] laptop:h-[700px]">

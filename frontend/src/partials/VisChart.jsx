@@ -55,7 +55,7 @@ function VisChart() {
     <div>
       <div class="h3 text-center">
         <h3>
-          Non-OFAC and OFAC Compliance Ratio Metrics({buttonTitleLidoState})
+          Non-OFAC and OFAC Compliance Ratio Metrics ({buttonTitleLidoState})
         </h3>
       </div>
       <br></br>

@@ -30,7 +30,12 @@ function Home() {
         <RatioChart />
         <div style={{height: 300, weight: 200}}></div>
         <PoolChart />
-        <div style={{height: 300, weight: 200}}></div>
+        <div style={{height: 100, weight: 200}}></div>
+        <div class="flex flex-wrap justify-center">
+        <a href="https://github.com/mikgur/Ethereum-censorability-monitor">
+          <img src="src/images/github.png" width="100" height="100"></img>
+        </a>
+        </div>
       </main>
     </div>
   );
