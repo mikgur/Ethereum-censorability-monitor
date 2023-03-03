@@ -11,6 +11,7 @@ ENV MONGO_USER=root
 ENV MONGO_PASSWORD=test_pass
 ENV API_HOST=127.0.0.1
 ENV API_PORT=8000
+ENV AUTH_KEY=123
 
 RUN python -m venv env
 RUN . ./env/bin/activate

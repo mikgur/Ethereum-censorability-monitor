@@ -136,7 +136,7 @@ class CensorshipMonitor:
         current_block = max(first_ready_block, last_processed_block) + 1
         while True:
             while current_block > last_ready_block:
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
                 last_ready_block = await self.get_last_ready_block_number(
                     db_collector)
             while current_block <= last_ready_block:

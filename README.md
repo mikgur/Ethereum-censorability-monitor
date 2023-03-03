@@ -23,11 +23,13 @@
 
 <h4 align="center">
   <a href=#-problem> Problem </a> |
-  <a href=#-project_components> Project Components: </a> |
+  <a href=#-lego-grant> LEGO grant </a> |
+  <a href=#-project_components> Project Components </a> |
   <a href=#-metrics> Metrics </a> |
   <a href=#-installation> Installation </a> |
   <a href=#-quick-start> Quick Start </a> |
   <a href=#-mongo_db_metrics_scheme> Mongo DB metrics scheme  </a> |
+  <a href=#-api-reference> API Reference </a> |
   <a href=#-community> Community </a>
   <a href=#-acknowledgments> Acknowledgments </a>
 </h4>
@@ -36,6 +38,24 @@
 ## &#128204; Problem
 
   The problem of censorship for non compliant transactions on the Ethereum blockchain is that certain transactions may be blocked or censored by node operators or validators who comply with some lists of forbidden addresses.
+
+## &#128204; LEGO grant
+
+[Lido RFP Ethereum Censorability Monitor](https://research.lido.fi/t/rfp-ethereum-censorability-monitor/3330)
+
+Our project meets the first grant criteria in the following ways:
+
+- We propose several metrics for tracking service degradation for censorable transactions, please refer to section <a href=#-metrics> Metrics </a> for more info.
+
+- Our platform tracks the impact of Lido and Lido’s node operators on service degradation. (e.g. <a href=#4-censorship-latency>Censorship Latency</a> and <a href=#5-censorship-latency-if-lido-was-completely-non-censoring>Censorship Latency if Lido was completely non-censoring</a>)
+
+- We have developed an API to access our data, and we can provide an API key to it upon request, for more info please refer to <a href=#-api-reference> API Reference </a> section.
+
+- Our project has been designed to be easily maintainable by a small team of developers (1-2 in total), with low complexity and cost.
+
+- We compare impact of Lido and Lido’s node operators to other staking pools, where applicable. (e.g. <a href=#1-non-ofac-compliance-and-ofac-compliance-ratio-metrics>Non-OFAC Compliance and OFAC Compliance Ratio Metrics</a>, <a href=#2-censorship-resistance-index>Censorship Resistance Index</a>)
+
+- Our project is open-source.
 
 ## &#128204; Project Components
 
@@ -54,32 +74,73 @@
 
 We proposed following metrics:
 
-### <b>1) Non-OFAC and OFAC Compliance Ratio Metrics</b>
+### <b>1) Non-OFAC Compliance and OFAC Compliance Ratio Metrics</b>
 
 For each validator we calculate:
 
-1. Non-OFAC Compliance Ratio: the percentage of non-OFAC compliant transactions that are included in blocks proposed by the validator.
-2. OFAC Compliance Ratio: the percentage of OFAC compliant transactions that are included in blocks proposed by the validator.
+- The Non-OFAC Compliance Ratio is the percentage of transactions that are not compliant with OFAC regulations and are included in blocks proposed by a validator.
+- The OFAC Compliance Ratio is the percentage of transactions that are compliant with OFAC regulations and are included in blocks proposed by a validator.
 
-These metrics help us understand the relative likelihood of a validator including non-OFAC compliant transactions versus OFAC compliant ones.
+These metrics help us understand how likely a validator is to include transactions that violate OFAC regulations compared to those that comply with them.
+
+_Example of metric calculation:_
+
+Let's say that for the period, there were a total of 100,000 compliant transactions and 1,000 non-compliant transactions on the Ethereum network. Our validator included 500 compliant transactions and 2 non-compliant transactions in their blocks.
+
+> Validator’s OFAC Compliance Ratio:  500 / 100,000 = 0.5%
+
+> Validator’s Non-OFAC Compliance Ratio:  2 / 1,000 = 0.2%
+
 
 ### <b>2) Censorship Resistance Index</b>
 
-The metric we calculate is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
+The metric is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
 
-The possible values of this index range from zero to infinity. An index of one means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than one means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than one indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
+The possible values of this index range from zero to infinity. An index of 1.0 means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than 1.0 means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than 1.0 indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
 
-### <b>3) Lido Censorship Resistance Index and Other Validators Censorship Resistance Index.</b>
 
-We calculate Censorship Resistance Index for all the Lido validators and compare it to all the other validators in total.
+### <b>3) Lido Censorship Resistance Index and Non-Lido validators Censorship Resistance Index</b>
+
+Censorship Resistance Index is calculated for all Lido validators and compared to all Non-Lido validators in total.
+
+_Example of metric calculation:_
+
+> A = OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
+>
+> B = NON-OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)
+>
+> Lido metric = B / A
+
+> C = OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+>
+> D = NON-OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+>
+> Non-Lido validators metric = D / C
+
 
 ### <b>4) Censorship Latency</b>
 
 The Censorship Latency metric measures the difference in average waiting time for transactions with similar features, except for their OFAC compliance status. We use a binary classifier with high accuracy to predict the number of blocks for which non-OFAC compliant transactions were not included due to censorship. This number is then multiplied by 12 to calculate the Censorship Latency metric.
 
-### <b>5) Lido-adjusted censorship latency</b>
+### <b>5) Censorship Latency if Lido was completely non-censoring</b>
 
-We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators do not engage in censorship. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+
+_Example of metric calculation:_
+
+A transaction was twice censored by other validators and then once by Lido before being included in a block by another validator:
+
+- Block #1 - Censored by Non Lido validator
+- Block #2 - Censored by Non Lido validator
+- Block #3 - Censored by Lido validator
+- Block #4 - Included in a block by Non Lido validator
+
+For this case:
+
+> Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.
+
+> Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.
+
 
 Please find details in our [notion page](https://accidental-eyelash-d3a.notion.site/Transaction-analysis-and-metrics-calculation-991b4e30fbc146469398860073547016)
 
@@ -273,8 +334,8 @@ Example:
 Thanks to the API, you can receive data without accessing the database and in a more convenient format
 
 <b>API endpoint</b>: `/data/validators`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -294,8 +355,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -338,8 +399,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?date=18-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?api_key=123&date=18-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -378,8 +439,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_validators`</br>
-<b>Parameters</b>: Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?names=stakefish&names=BridgeTower`</br>
+<b>Parameters</b>: Api key - key string for api, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?api_key=123&names=stakefish&names=BridgeTower`</br>
 <b>Response example</b>: 
 ```
 [
@@ -443,8 +504,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_daterange?start_date=16-02-23&end_date=17-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_daterange?api_key=123&start_date=16-02-23&end_date=17-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -471,8 +532,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_validators_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_day?date=17-02-23&names=Sigma Prime&names=Stakin`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_day?api_key=123&date=17-02-23&names=Sigma Prime&names=Stakin`</br>
 <b>Response example</b>: 
 ```
 [
@@ -496,8 +557,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/metrics_by_validators_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_daterange?start_date=17-02-23&end_date=19-02-23&names=Stakely&names=ChainLayer`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format, Names - validators' names </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23&names=Stakely&names=ChainLayer`</br>
 <b>Response example</b>: 
 ```
 [
@@ -535,8 +596,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/censored_transactions`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -573,8 +634,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/censored_transactions_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_day?date=17-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_day?api_key=123&date=17-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -611,8 +672,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/censored_transactions_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_daterange?start_date=17-02-23&end_date=19-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -649,8 +710,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/ofac_addresses`</br>
-<b>Parameters</b>: None </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses`</br>
+<b>Parameters</b>: Api key - key string for api </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses?api_key=123`</br>
 <b>Response example</b>: 
 ```
 [
@@ -688,8 +749,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/ofac_addresses_by_day`</br>
-<b>Parameters</b>: Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_day?date=18-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_day?api_key=123&date=18-02-23`</br>
 <b>Response example</b>: 
 ```
 [
@@ -708,8 +769,8 @@ Thanks to the API, you can receive data without accessing the database and in a 
 ```
 
 <b>API endpoint</b>: `/data/ofac_addresses_by_daterange`</br>
-<b>Parameters</b>: Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_daterange?start_date=18-02-23&end_date=20-02-23`</br>
+<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
+<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_daterange?api_key=123&start_date=18-02-23&end_date=20-02-23`</br>
 <b>Response example</b>: 
 ```
 [

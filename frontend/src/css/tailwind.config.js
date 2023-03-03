@@ -10,7 +10,7 @@ module.exports = {
         'tablet': '300px',
         // => @media (min-width: 640px) { ... }
   
-        'laptop': '1280px',
+        'laptop': '1024px',
         // => @media (min-width: 1024px) { ... }
   
         'desktop': '1920px',

@@ -1,10 +1,10 @@
 import logging
 from typing import Tuple
 
-from web3.beacon import Beacon
 from pymongo.database import Database
+from requests.exceptions import HTTPError
 from web3.auto import Web3
-
+from web3.beacon import Beacon
 
 logger = logging.getLogger(__name__)
 
@@ -21,26 +21,49 @@ def get_slot_by_block_number(block_number: int,
         base_slot = block_db[0]['slot_number']
     else:
         base_slot = beacon.get_beacon_state()['data']['latest_block_header']['slot'] # noqa E501
-    base_ts = int(beacon.get_block(
-        base_slot
-    )['data']['message']['body']['execution_payload']['timestamp'])
+    try:
+        base_ts = int(beacon.get_block(
+            base_slot
+        )['data']['message']['body']['execution_payload']['timestamp'])
+    except HTTPError:
+        base_slot = beacon.get_beacon_state(
+            )['data']['latest_block_header']['slot']
+        base_ts = int(beacon.get_block(
+            base_slot
+        )['data']['message']['body']['execution_payload']['timestamp'])
 
     ts_diff = base_ts - block_ts
     expected_slot = int(base_slot) - ts_diff // 12
 
-    expected_block_number = int(beacon.get_block(
-        expected_slot
-    )['data']['message']['body']['execution_payload']['block_number'])
+    # Find first correct slot
+    n_attempt = 0
+    found_correct_slot = False
+    while not found_correct_slot and n_attempt < 100:
+        n_attempt += 1
+        try:
+            expected_block_number = int(beacon.get_block(
+                expected_slot
+            )['data']['message']['body']['execution_payload']['block_number'])
+            found_correct_slot = True
+        except HTTPError:
+            expected_slot -= 1
+
     while expected_block_number > block_number:
         expected_slot -= 1
-        expected_block_number = int(beacon.get_block(
-            expected_slot
-        )['data']['message']['body']['execution_payload']['block_number'])
+        try:
+            expected_block_number = int(beacon.get_block(
+                expected_slot
+            )['data']['message']['body']['execution_payload']['block_number'])
+        except HTTPError:
+            pass
     while expected_block_number < block_number:
         expected_slot += 1
-        expected_block_number = int(beacon.get_block(
-            expected_slot
-        )['data']['message']['body']['execution_payload']['block_number'])
+        try:
+            expected_block_number = int(beacon.get_block(
+                expected_slot
+            )['data']['message']['body']['execution_payload']['block_number'])
+        except HTTPError:
+            pass
     assert block_number == expected_block_number
     return expected_slot
 
