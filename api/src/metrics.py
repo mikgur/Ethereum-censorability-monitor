@@ -544,4 +544,4 @@ def get_censored_percentage(
         * 100,
     }
 
-    return percentage
+    return [percentage]
