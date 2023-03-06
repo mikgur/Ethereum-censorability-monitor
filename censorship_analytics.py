@@ -2,6 +2,7 @@ import asyncio
 import logging
 import logging.config
 import os
+from pathlib import Path
 
 import yaml
 from dotenv import load_dotenv
@@ -39,6 +40,9 @@ def main():
     beacon_url = os.environ.get('beacon_url', 'http://localhost:5052')
     model_path = os.environ.get('model_path',
                                 'models/classifier_isotonic_20000_blocks.pkl')
+    classifier_dataset_path = os.environ.get('dataset_path', None)
+    if classifier_dataset_path is not None:
+        classifier_dataset_path = Path(classifier_dataset_path)
 
     censorship_monitor = CensorshipMonitor(
                 mongo_url=mongo_url,
@@ -50,8 +54,9 @@ def main():
                 beacon_url=beacon_url,
                 model_path=model_path,
                 interval=0.5,
-                start_block=16649566,  # the earlies block possible to start
-                verbose=False)
+                start_block=16760243,  # the earlies block possible to start
+                verbose=False,
+                classifier_dataset_path=classifier_dataset_path)
 
     asyncio.run(censorship_monitor.run())
 

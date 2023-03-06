@@ -4,11 +4,13 @@ import logging
 import pickle
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Set
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 from pymongo import MongoClient, UpdateOne
 from pymongo.database import Database
+from pymongo.errors import AutoReconnect, NetworkTimeout
 from web3.auto import Web3
 from web3.beacon import Beacon
 from web3.exceptions import TransactionNotFound
@@ -30,7 +32,8 @@ class CensorshipMonitor:
                  beacon_url: str,
                  model_path: str,
                  interval: float, verbose: bool, start_block: int = 0,
-                 name: str = 'CensorshipMonitor'):
+                 name: str = 'CensorshipMonitor',
+                 classifier_dataset_path: Optional[Path] = None):
         self.mongo_url = mongo_url
         self.mongo_analytics_url = mongo_analytics_url
         self.collector_db_name = collector_db_name
@@ -43,6 +46,7 @@ class CensorshipMonitor:
         self.start_block = start_block
         self.beacon_url = beacon_url
         self.ofac_cache = None
+        self.classifier_dataset_path = classifier_dataset_path
         with open(model_path, 'rb') as f:
             self.model = pickle.load(f)
 
@@ -160,12 +164,19 @@ class CensorshipMonitor:
             logger.error(f'Error during list updates: {type(e)} {e}')
         # Process block
         success = False
-        try:
-            await self.process_one_block(block, block_number)
-            success = True
-        except Exception as e:
-            logger.error(f'Error with block {block_number}: {type(e)} {e}')
-            raise e
+        n_attempt = 0
+        while not success and n_attempt < 100:
+            try:
+                await self.process_one_block(block, block_number)
+                success = True
+            except (AutoReconnect, NetworkTimeout) as e:
+                logger.error((f'Error mongo {block_number}: '
+                              f'{type(e)} {e} {e.args[0]}'))
+                await asyncio.sleep(10)
+                n_attempt += 1
+            except Exception as e:
+                logger.error(f'Error with block {block_number}: {type(e)} {e}')
+                raise e
         # Save block_number to db
         mongo_analytics_client = self.get_mongo_analytics_client()
         db_analytics = mongo_analytics_client[self.analytics_db_name]
@@ -269,6 +280,11 @@ class CensorshipMonitor:
             db=db_analytics
         )
         df['status'] = df['hash'].apply(lambda x: status.get(x, 0))
+
+        # Save data for classifier training
+        if self.classifier_dataset_path is not None:
+            df.to_csv(self.classifier_dataset_path / f'{block_number}.csv',
+                      index=False)
 
         # Calculate and save block metrics
         df_block_txs = df[df['included_into_next_block']].reset_index(
@@ -431,7 +447,7 @@ class CensorshipMonitor:
                     block_txs_addresses[tx] = addresses
                 return block_txs_addresses
             except TransactionNotFound:
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
 
     def find_txs_in_db(self, hashes_list: List[str], db: Database):
         first_seen_collection = db['tx_first_seen_ts']
