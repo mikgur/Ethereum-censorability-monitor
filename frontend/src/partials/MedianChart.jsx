@@ -14,18 +14,13 @@ import {
   VictoryTooltip,
 } from "victory";
 
-import { getMedian, getPercent } from "./DataAccessLayer";
+import { getMedian } from "./DataAccessLayer";
 
 function MedianChart() {
   const [medianState, setMedianState] = useState();
-  const [percentState, setPercentState] = useState();
 
   useEffect(() => {
     getMedianData();
-  }, []);
-
-  useEffect(() => {
-    getPercentData();
   }, []);
 
   const getMedianData = async () => {
@@ -33,30 +28,11 @@ function MedianChart() {
     setMedianState(data.data);
   };
 
-  const getPercentData = async () => {
-    const data = await getPercent();
-    setPercentState(data.data);
-  };
-
-
   return (
     <div>
-      <div class="h3 text-center space-x-30 ">
-        <h3>
-          <b>
-            Of all Non-OFAC compliant transactions,{" "}
-            {46}% were censored at 
-            least once. Lido validators were involved in censoring of{" "}
-            {21}% of Non-OFAC
-            compliant transactions during last 30 days.
-          </b>
-        </h3>
-      </div>
-      <div style={{height: 100, weight: 200}}></div>
       <div class="h3 text-center">
-        <h3>Median Censorship Latency</h3>
+        <h3>Average Censorship Latency for censored transactions</h3>
       </div>
-
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px] ml-24">
@@ -85,12 +61,12 @@ function MedianChart() {
               style={{ labels: { fontSize: 15 } }}
               data={[
                 {
-                  name: "Median Censorship Latency ",
+                  name: "Average Censorship Latency ",
                   symbol: { fill: "#1e90ff" },
                   labels: { fill: "#FFFFFF" },
                 },
                 {
-                  name: "Median Censorship Latency if Lido was\n completely non-censoring ",
+                  name: "Average Censorship Latency if Lido was\n completely non-censoring ",
                   symbol: { fill: "#c43a31" },
                   labels: { fill: "#FFFFFF" },
                 },
@@ -181,35 +157,34 @@ function MedianChart() {
         </div>
         <div class="desktop:w-[500px] laptop:max-w-[500px] laptop:min-w-[300px] ">
           <p class="desktop:text-xl uwdesktop:text-2xl">
-            <b>Median Censorship Latency </b>
+            <b>Average Censorship Latency for censored transactions</b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            The Censorship Latency Median metric is calculated as the median
+            The Average Censorship Latency metric is calculated as the median
             waiting time for non-OFAC compliant transactions{" "}
             <b class="text-red-600">that were censored before being included in a block.</b> We use a
             binary classifier to predict the number of blocks for which non-OFAC
             compliant transactions were not included due to censorship, and then
-            calculate the median waiting time for these transactions.
+            calculate the average waiting time for these transactions.
           </p>
           <br></br>
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b>
-            Median Censorship Latency if Lido was completely non-censoring for
-              censored transactions 
+            Average Censorship Latency for censored transactions if Lido was completely non-censoring 
             </b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            This metric is a modified version of the Censorship Latency Median
+            This metric is a modified version of the Average Censorship Latency
             metric, which assumes that Lido validators were completely
-            non-censoring. This metric measures the median waiting time for
+            non-censoring. This metric measures the average waiting time for
             non-OFAC compliant{" "}
             <b class="text-red-600">
               transactions that were censored before being included in a block.
             </b>{" "}
-            Similar to the Censorship Latency Median metric, we use a binary
+            Similar to the Average Censorship Latency metric, we use a binary
             classifier to predict the number of blocks for which non-OFAC
             compliant transactions were not included due to censorship, and then
-            calculate the median waiting time for these transactions.
+            calculate the average waiting time for these transactions.
           </p>
           <br></br>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">

@@ -42,7 +42,7 @@ function Header() {
 
          
           {/* Mobile menu */}
-          <div className="md:hidden">
+          {/* <div className="md:hidden">
 
             Hamburger button
             <button ref={trigger} className={`hamburger ${mobileNavOpen && 'active'}`} aria-controls="mobile-nav" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}>
@@ -54,7 +54,7 @@ function Header() {
               </svg>
             </button>
 
-          </div>
+          </div> */}
 
         </div>
       </div>

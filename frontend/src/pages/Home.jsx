@@ -8,6 +8,7 @@ import RatioChart from '../partials/RatioChart';
 import PoolChart from '../partials/PoolChart';
 import LatencyChart from '../partials/LatencyChart';
 import MedianChart from '../partials/MedianChart';
+import Percent from '../partials/Percent';
 
 function Home() {
   return (
@@ -22,6 +23,8 @@ function Home() {
         </div>
         <HeroHome />
         <LatencyChart />
+        <div style={{height: 100, weight: 200}}></div>
+        <Percent />
         <div style={{height: 100, weight: 200}}></div>
         <MedianChart />
         <div style={{height: 200, weight: 200}}></div>

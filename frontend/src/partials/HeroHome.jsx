@@ -31,7 +31,7 @@ function HeroHome() {
         {/* Hero content */}
         <div className="relative pt-32 pb-10 md:pt-16 md:pb-16">
           {/* Section header */}
-          <div className="mx-auto text-center pb-12 md:pb-8">
+          <div className="mx-auto text-center text-base font-bold whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-blue-500 pb-12 md:pb-8">
             <h1 className="h1 mb-4" data-aos="fade-up">
             Neutrality Watch
             </h1>
