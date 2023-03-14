@@ -77,7 +77,7 @@ function MedianChart() {
               style={{ data: { stroke: "#c43a31" } }}
               data={medianState}
               x="start_date"
-              y="median_censorship_latency_without_lido_censorship"
+              y="average_censorship_latency_without_lido_censorship"
             />
             <VictoryLine
               alignment="middle"
@@ -85,19 +85,19 @@ function MedianChart() {
               // labels={({ datum }) => datum.y}
               data={medianState}
               x="start_date"
-              y="median_censorship_latency"
+              y="average_censorship_latency"
             />
             <VictoryScatter
               data={medianState}
               x="start_date"
-              y="median_censorship_latency"
+              y="average_censorship_latency"
               size={7}
               style={{
                 data: { fill: "white" },
                 labels: { fill: "white" },
               }}
               labels={({ datum }) =>
-                `latency: ${datum.median_censorship_latency.toFixed(4)}`
+                `latency: ${datum.average_censorship_latency.toFixed(4)}`
               }
               labelComponent={
                 <VictoryTooltip
@@ -110,14 +110,14 @@ function MedianChart() {
             <VictoryScatter
               data={medianState}
               x="start_date"
-              y="median_censorship_latency_without_lido_censorship"
+              y="average_censorship_latency_without_lido_censorship"
               size={7}
               style={{
                 data: { fill: "white" },
                 labels: { fill: "white" },
               }}
               labels={({ datum }) =>
-                `latency: ${datum.median_censorship_latency_without_lido_censorship.toFixed(
+                `latency: ${datum.average_censorship_latency_without_lido_censorship.toFixed(
                   4
                 )}`
               }
@@ -144,7 +144,7 @@ function MedianChart() {
               }
             />
             <VictoryAxis
-              style={{ tickLabels: { fontSize: 19, fill: "#FFFFFF" } }}
+              style={{ tickLabels: { fontSize: 13, fill: "#FFFFFF" } }}
               label="DATE"
               axisLabelComponent={
                 <VictoryLabel

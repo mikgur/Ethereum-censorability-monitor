@@ -144,7 +144,7 @@ function LatencyChart() {
               }
             />
             <VictoryAxis
-              style={{ tickLabels: { fontSize: 19, fill: "#FFFFFF" } }}
+              style={{ tickLabels: { fontSize: 13, fill: "#FFFFFF" } }}
               label="DATE"
               axisLabelComponent={
                 <VictoryLabel
