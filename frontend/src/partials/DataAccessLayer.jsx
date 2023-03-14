@@ -31,7 +31,7 @@ export const getMedian = async (period) => {
     return data
 }
 
-export const getPercent = async () => {
-    const data = await axios.get(`https://eth.neutralitywatch.com/metrics/censored_percentage/last_month`)
+export const getPercent = () => {
+    const data = axios.get(`https://eth.neutralitywatch.com/metrics/censored_percentage/last_month`)
     return data
 }

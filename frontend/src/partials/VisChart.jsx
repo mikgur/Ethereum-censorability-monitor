@@ -47,8 +47,6 @@ function VisChart() {
       setButtonLidoState("Switch to last month");
       setButtonTitleLidoState("last 7 days");
     }
-
-    console.log(appState);
   };
 
   return (
