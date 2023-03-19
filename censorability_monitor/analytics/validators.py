@@ -1,5 +1,6 @@
 import logging
 from typing import Tuple
+import requests
 
 from pymongo.database import Database
 from requests.exceptions import HTTPError
@@ -95,11 +96,13 @@ def get_validator_pubkey(block_number: int,
                          db: Database) -> str:
     ''' Get block validator'''
     slot = get_slot_with_cache(block_number, block_ts, beacon, w3, db)
-    beacon_block = beacon.get_block(slot)
+    try:
+        beacon_block = beacon.get_block(slot)
+    except requests.exceptions.HTTPError:
+        return ''
     beacon_message = beacon_block['data']['message']
     assert block_number == int(
         beacon_message['body']['execution_payload']['block_number'])
-
     validator_index = beacon_message['proposer_index']
     validator = beacon.get_validator(validator_index)['data']['validator']
     validator_pubkey = validator['pubkey']
