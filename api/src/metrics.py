@@ -303,8 +303,8 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
     other_ratio = other_ofac_non_compliant_share / other_ofac_compliant_share
 
     lido_vs_rest = [
-        {"pool": "lido", "ratio": lido_ratio},
-        {"pool": "other pools", "ratio": other_ratio},
+        {"pool": "Lido", "ratio": lido_ratio},
+        {"pool": "Non Lido", "ratio": other_ratio},
     ]
 
     return lido_vs_rest
@@ -449,7 +449,7 @@ def get_censored_latency(
             )
         )
         # Drop all non censored transactions
-        shifted_df.dropna(axis=0, subset=["censored"])
+        shifted_df.dropna(axis=0, subset=["censored"], inplace = True)
 
         # Сalculate censorship metrics
         shifted_df["censorship_latency"] = shifted_df.censored.apply(len) * 12
@@ -524,7 +524,7 @@ def get_censored_percentage(
     except:
         raise Exception("Failed to fetch validators data from db")
 
-    censored_txs_df = non_compliant_txs_df.dropna(axis=1, subset=["censored"])
+    censored_txs_df = non_compliant_txs_df.dropna(axis=0)
 
     # Сalculate censorship metrics
     censored_txs_df["censorship_latency"] = censored_txs_df.censored.apply(len) * 12
@@ -544,4 +544,4 @@ def get_censored_percentage(
         * 100,
     }
 
-    return percentage
+    return [percentage]

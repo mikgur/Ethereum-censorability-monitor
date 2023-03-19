@@ -19,7 +19,7 @@ import { getOfacByPeriod } from "./DataAccessLayer";
 
 function VisChart() {
   const [appState, setAppState] = useState();
-  const [periodState, setPeriodState] = useState(true);
+  const [periodState, setPeriodState] = useState(false);
   const [buttonLidoState, setButtonLidoState] = useState(
     "Switch to last month"
   );
@@ -47,23 +47,22 @@ function VisChart() {
       setButtonLidoState("Switch to last month");
       setButtonTitleLidoState("last 7 days");
     }
-
-    console.log(appState);
   };
 
   return (
     <div>
       <div class="h3 text-center">
         <h3>
-          Non-OFAC and OFAC Compliance Ratio Metrics({buttonTitleLidoState})
+          Non-OFAC and OFAC Compliance Ratio Metrics ({buttonTitleLidoState})
         </h3>
       </div>
       <br></br>
-      <div class="flex flex-wrap space-x-0 space-y-16">
-        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[300px] laptop:w-[900px] ">
+      <div class="flex flex-wrap space-x-0 space-y-16 justify-center">
+        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[900px] laptop:h-[700px]">
           <VictoryChart
-            height={700}
-            width={500}
+            height={800}
+            width={600}
+            padding={{left: 150, bottom: 50, top: 50, right: 10}}
             label="Share of Lido transactions (OFAC - NON OFAC compliant transactions)"
             containerComponent={
               <VictoryContainer
@@ -76,10 +75,10 @@ function VisChart() {
             }
           >
             <VictoryLegend
-              x={500}
-              y={30}
-              orientation="vertical"
-              gutter={10}
+              x={150}
+              y={0}
+              orientation="horizontal"
+              gutter={20}
               style={{ title: { fontSize: 5, fill: "#FFFFFF" } }}
               data={[
                 {
@@ -174,29 +173,31 @@ function VisChart() {
             </button>
           </div>
         </div>
-        <div class=" desktop:w-[600px] tablet:w-[400px] tablet:h-[300px] mr-48">
+        <div class=" desktop:w-[600px] tablet:w-[400px] tablet:h-[300px] laptop:w-[300px]  mr-48">
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b>For each validator we calculate:</b>
           </p>
           <br></br>
-          <ol class="list-decimal list-inside">
+          <ol class="list-disc list-inside">
             <li class="desktop:text-xg uwdesktop:text-xl">
-              Non-OFAC Compliance Ratio: the percentage of non-OFAC compliant
-              transactions that are included in blocks proposed by the
-              validator.
+            The Non-OFAC Compliance Ratio is the percentage of transactions that are not compliant with OFAC regulations and are included in blocks proposed by a validator.
+
             </li>
             <li class="desktop:text-xg uwdesktop:text-xl">
-              OFAC Compliance Ratio: the percentage of OFAC compliant
-              transactions that are included in blocks proposed by the
-              validator.
+            The OFAC Compliance Ratio is the percentage of transactions that are compliant with OFAC regulations and are included in blocks proposed by a validator.
+
             </li>
           </ol>
           <br></br>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            These metrics help us understand the relative likelihood of a
-            validator including non-OFAC compliant transactions versus OFAC
-            compliant ones.
+          <p class="desktop:text-xg uwdesktop:text-xl">
+          Example of metric calculation:
           </p>
+          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
+          Let's say that for the period, there were a total of 100,000 compliant transactions and 1,000 non-compliant transactions on the Ethereum network. Our validator included 500 compliant transactions and 2 non-compliant transactions in their blocks.
+          </p>
+          <br></br>
+          <p>Validator’s OFAC Compliance Ratio -  500 / 100,000 = 0.5%</p>
+          <p>Validator’s Non-OFAC Compliance Ratio -  2 / 1,000 = 0.2%</p>
         </div>
       </div>
     </div>

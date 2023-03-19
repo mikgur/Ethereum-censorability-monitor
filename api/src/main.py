@@ -255,7 +255,7 @@ async def get_censorship_latency(mean_type: str) -> JSONResponse:
 
 
 @app.get("/metrics/censored_percentage/{period}")
-async def get_censored_percentage(period: str) -> JSONResponse:
+async def get_censorship_percentage(period: str) -> JSONResponse:
     # Query example: /metrics/censorship_percentage/last_week
     # Query example: /metrics/censorship_percentage/last_month
     try:

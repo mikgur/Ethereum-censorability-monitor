@@ -35,12 +35,11 @@ function PoolChart() {
     <div>
       <div class="h3 text-center">
         <h4>
-          Lido Censorship Resistance Index and Other Validators Censorship
-          Resistance Index
+        Lido/Non-Lido Censorship Resistance Index
         </h4>
       </div>
       <br></br>
-      <div class="flex flex-wrap space-x-0">
+      <div class="flex flex-wrap space-x-0 justify-center mx-8">
         <div class="desktop:w-[1200px] desktop:h-[200px] uwdesktop:w-[1600px] uwdesktop:h-[300px] tablet:w-[400px] tablet:h-[300px] laptop:w-[900px]">
           <VictoryChart
             height={170}
@@ -127,6 +126,7 @@ function PoolChart() {
             <VictoryAxis
               style={{ tickLabels: { fontSize: 11, fill: "#FFFFFF" } }}
               label="POOL"
+              // tickFormat={(t) => `${t.charAt(0).toUpperCase() + t.slice(1)}`}
               axisLabelComponent={
                 <VictoryLabel
                   dy={-50}
@@ -142,6 +142,16 @@ function PoolChart() {
             We calculate Censorship Resistance Index for all the Lido validators
             and compare it to all the other validators in total.
           </p>
+          <br></br>
+          <p>Example of metric calculation:</p>
+          <br></br>
+          <p>A = OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)</p>
+          <p>B = NON-OFAC Compliance Ratio calculated for all Lido validators in total (as if they are one big validator)</p>
+          <p>Lido metric = B / A</p>
+          <br></br>
+          <p>C = OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)</p>
+          <p>D = NON-OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)</p>
+          <p>Non-Lido validators metric = D / C</p>
         </div>
       </div>
     </div>
