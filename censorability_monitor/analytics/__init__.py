@@ -10,7 +10,8 @@ from typing import Any, Dict, List, Optional, Set
 import pandas as pd
 from pymongo import MongoClient, UpdateOne
 from pymongo.database import Database
-from pymongo.errors import AutoReconnect, NetworkTimeout
+from pymongo.errors import (AutoReconnect, NetworkTimeout,
+                            ServerSelectionTimeoutError)
 from web3.auto import Web3
 from web3.beacon import Beacon
 from web3.exceptions import TransactionNotFound
@@ -144,7 +145,15 @@ class CensorshipMonitor:
                 last_ready_block = await self.get_last_ready_block_number(
                     db_collector)
             while current_block <= last_ready_block:
-                await self.process_block(current_block)
+                block_processed = False
+                while not block_processed:
+                    try:
+                        await self.process_block(current_block)
+                        block_processed = True
+                    except (NetworkTimeout, ServerSelectionTimeoutError):
+                        logger.error(('Mongo network error will try process '
+                                      f'block {current_block} one more time'))
+                        await asyncio.sleep(30)
                 current_block += 1
 
     async def process_block(self, block_number: int):
@@ -181,9 +190,24 @@ class CensorshipMonitor:
         mongo_analytics_client = self.get_mongo_analytics_client()
         db_analytics = mongo_analytics_client[self.analytics_db_name]
         processed_blocks = db_analytics['processed_blocks']
-        processed_blocks.insert_one(
-            {'block_number': block_number,
-             'success': success})
+        attempt = 0
+        processed_block_saved = False
+        while not processed_block_saved:
+            try:
+                processed_blocks.insert_one(
+                    {'block_number': block_number,
+                     'success': success})
+                processed_block_saved = True
+            except (NetworkTimeout, ServerSelectionTimeoutError) as e:
+                if attempt > 5:
+                    raise e
+                attempt += 1
+                logger.error((f'Waiting for attempt {attempt + 1} '
+                              'to save block status'))
+                await asyncio.sleep(30)
+                mongo_analytics_client = self.get_mongo_analytics_client()
+                db_analytics = mongo_analytics_client[self.analytics_db_name]
+                processed_blocks = db_analytics['processed_blocks']
 
     async def process_one_block(self, block: Dict, block_number: int):
         logger = logging.getLogger(self.name)
@@ -312,6 +336,8 @@ class CensorshipMonitor:
              },
             upsert=True)
 
+        logger.info('Saved validators_collection data')
+
         # Suspicious txes
         should_be_included = df_not_included_txs["prediction"] == 1
         suspicious_txs = df_not_included_txs[should_be_included].copy()
@@ -319,6 +345,7 @@ class CensorshipMonitor:
         # Save them to tx_censored
         censored_collection = db_analytics['censored_txs']
         censored_collection.create_index('hash', unique=True)
+        logger.info('Start saving suspicious_txs')
         for _, row in suspicious_txs.iterrows():
             censored_collection.update_one(
                 {'hash': {'$eq': row['hash']}},
@@ -330,6 +357,7 @@ class CensorshipMonitor:
             )
         logger.info((f'Found {len(suspicious_txs)} suspicious txs, '
                      f'{n_non_compliant_txs} non compliant'))
+        logger.info('Complete saving suspicious_txs')
 
         # if there are non compliant txes
         if n_non_compliant_txs > 0:
@@ -426,6 +454,10 @@ class CensorshipMonitor:
                 db_analytics = mongo_client[self.analytics_db_name]
                 validator_pubkey = get_validator_pubkey(
                     block_number, block_ts, beacon, w3, db_analytics)
+                # TODO Save blocknumber for not found validators
+                if validator_pubkey == '':
+                    logger.info('Validator not found!')
+                    return 'Unknown'
                 _, validator_name = get_validator_info(
                     validator_pubkey, db_analytics)
                 return validator_name
