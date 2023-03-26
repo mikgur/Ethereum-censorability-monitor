@@ -125,7 +125,7 @@ def _prepare_share_df(df: pd.DataFrame, dates: List[str]) -> pd.DataFrame:
     Returns:
         Pandas dataframe with calculated metrics
     """
-    _df = df.copy()
+    _df = df.query("name != 'Unknown'").copy()
 
     _df["ofac_compliant_count"] = _df.apply(
         _get_ofac_compliant_count, axis=1, args=(dates,)
