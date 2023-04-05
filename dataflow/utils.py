@@ -1,3 +1,5 @@
+import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 
@@ -91,3 +93,36 @@ def get_week(ts: int) -> Tuple[int, int]:
     )
 
     return monday_ts, sunday_ts
+
+
+def init_logger() -> logging.Logger:
+    """
+    Initialize logger
+
+    Returns:
+        Logger
+    """
+    logger = logging.getLogger("nwatch_logger")
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s \t [%(levelname)s | %(filename)s:%(lineno)s] > %(message)s"
+    )
+
+    now = datetime.now()
+    dirname = "./log"
+
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
+    fileHandler = logging.FileHandler(
+        dirname + "/log_" + now.strftime("%Y-%m-%d") + ".log"
+    )
+
+    streamHandler = logging.StreamHandler()
+
+    fileHandler.setFormatter(formatter)
+    streamHandler.setFormatter(formatter)
+
+    logger.addHandler(fileHandler)
+    logger.addHandler(streamHandler)
+
+    return logger

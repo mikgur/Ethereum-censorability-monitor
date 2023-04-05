@@ -1,5 +1,6 @@
 #!/bin/python
 from datetime import datetime, timezone
+from logging import Logger
 from typing import List
 
 import pandas as pd
@@ -13,6 +14,7 @@ def update_metrics(
     txs_collection: Collection,
     validators_collection: Collection,
     target_collection: Collection,
+    logger: Logger,
 ) -> None:
     """
     Update metrics in database
@@ -22,25 +24,26 @@ def update_metrics(
         txs_collection          -   Mongo collection of censored transactions
         validators_collection   -   Mongo collection of validators
         target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
     """
 
     update_censored_percentage(
-        txs_collection, validators_collection, target_collection
+        txs_collection, validators_collection, target_collection, logger
     )
     update_overall_average_latency(
-        txs_collection, validators_collection, target_collection
+        txs_collection, validators_collection, target_collection, logger
     )
     update_censored_average_latency(
-        txs_collection, validators_collection, target_collection
+        txs_collection, validators_collection, target_collection, logger
     )
     update_lido_vs_rest_censorship_resistance_index(
-        metrics_collection, target_collection
+        metrics_collection, target_collection, logger
     )
     update_validators_censorship_resistance_index(
-        metrics_collection, target_collection
+        metrics_collection, target_collection, logger
     )
     update_validators_compliance_ratio(
-        metrics_collection, target_collection
+        metrics_collection, target_collection, logger
     )
 
 
@@ -48,6 +51,7 @@ def update_overall_average_latency(
     txs_collection: Collection,
     validators_collection: Collection,
     target_collection: Collection,
+    logger: Logger,
 ) -> None:
     """
     Update overall average latency
@@ -56,42 +60,29 @@ def update_overall_average_latency(
         txs_collection          -   Mongo collection of censored transactions
         validators_collection   -   Mongo collection of validators
         target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
     """
+
+    logger.info("Calculating overall average latency")
 
     latency = get_overall_latency(txs_collection, validators_collection)
     record = {"metrics": "overall_average_latency", "values": latency}
 
+    logger.info("Overall average latency has been calculated")
+
+    logger.info("Updating overall average latency")
+
     target_collection.delete_one({"metrics": "overall_average_latency"})
     target_collection.insert_one(record)
+
+    logger.info("Overall average latency has been updated")
 
 
 def update_censored_percentage(
     txs_collection: Collection,
     validators_collection: Collection,
     target_collection: Collection,
-) -> None:
-    """
-    Update average latency for censored transactions
-
-    Args:
-        txs_collection          -   Mongo collection of censored transactions
-        validators_collection   -   Mongo collection of validators
-        target_collection       -   Mongo collection to store prepared metrics
-    """
-
-    percentage = get_censored_percentage(
-        txs_collection, validators_collection, "last_month"
-    )
-    record = {"metrics": "censored_percentage", "values": percentage}
-
-    target_collection.delete_one({"metrics": "censored_percentage"})
-    target_collection.insert_one(record)
-
-
-def update_censored_average_latency(
-    txs_collection: Collection,
-    validators_collection: Collection,
-    target_collection: Collection,
+    logger: Logger,
 ) -> None:
     """
     Update percentage of censored transactions
@@ -100,19 +91,67 @@ def update_censored_average_latency(
         txs_collection          -   Mongo collection of censored transactions
         validators_collection   -   Mongo collection of validators
         target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
     """
+
+    logger.info("Calculating percentage of censored transactions")
+
+    percentage = get_censored_percentage(
+        txs_collection, validators_collection, "last_month"
+    )
+    record = {"metrics": "censored_percentage", "values": percentage}
+
+    logger.info("Percentage of censored transactions has been calculated")
+
+    logger.info("Updating percentage of censored transactions")
+
+    target_collection.delete_one({"metrics": "censored_percentage"})
+    target_collection.insert_one(record)
+
+    logger.info("Percentage of censored transactions has been updated")
+
+
+def update_censored_average_latency(
+    txs_collection: Collection,
+    validators_collection: Collection,
+    target_collection: Collection,
+    logger: Logger,
+) -> None:
+    """
+    Update average latency for censored transactions
+
+    Args:
+        txs_collection          -   Mongo collection of censored transactions
+        validators_collection   -   Mongo collection of validators
+        target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
+    """
+
+    logger.info("Calculating average latency for censored transactions")
 
     latency = get_censored_latency(
         txs_collection, validators_collection, "average"
     )
     record = {"metrics": "censored_average_latency", "values": latency}
 
+    logger.info(
+        "Average latency for censored transactions has been calculated"
+    )
+
+    logger.info("Updating average latency for censored transactions")
+
     target_collection.delete_one({"metrics": "censored_average_latency"})
     target_collection.insert_one(record)
 
+    logger.info(
+        "Average latency for censored transactions has been updated"
+    )
+
 
 def update_lido_vs_rest_censorship_resistance_index(
-    metrics_collection: Collection, target_collection: Collection
+    metrics_collection: Collection,
+    target_collection: Collection,
+    logger: Logger,
 ) -> None:
     """
     Update lido vs rest censorship resistance index
@@ -120,10 +159,28 @@ def update_lido_vs_rest_censorship_resistance_index(
     Args:
         metrics_collection      -   Mongo collection of raw metrics
         target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
     """
+
+    logger.info(
+        "Calculating Lido vs Rest censorship resistance index over last week"
+    )
+
     lw_resistance_index = get_lido_vs_rest(metrics_collection, "last_week")
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last week has been calculated"
+    )
+    logger.info(
+        "Calculating Lido vs Rest censorship resistance index over last month"
+    )
+
     lm_resistance_index = get_lido_vs_rest(
         metrics_collection, "last_month"
+    )
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last month has been calculated"
     )
 
     lw_record = {
@@ -136,19 +193,36 @@ def update_lido_vs_rest_censorship_resistance_index(
         "values": lm_resistance_index,
     }
 
+    logger.info(
+        "Updating Lido vs Rest censorship resistance index over last week"
+    )
+
     target_collection.delete_one(
         {"metrics": "last_week_lido_vs_rest_censorship_resistance_index"}
     )
     target_collection.insert_one(lw_record)
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last week has been updated"
+    )
+    logger.info(
+        "Updating Lido vs Rest censorship resistance index over last month"
+    )
 
     target_collection.delete_one(
         {"metrics": "last_month_lido_vs_rest_censorship_resistance_index"}
     )
     target_collection.insert_one(lm_record)
 
+    logger.info(
+        "Lido vs Rest censorship resistance index over last month has been updated"
+    )
+
 
 def update_validators_censorship_resistance_index(
-    metrics_collection: Collection, target_collection: Collection
+    metrics_collection: Collection,
+    target_collection: Collection,
+    logger: Logger,
 ) -> None:
     """
     Update validators censorship resistance index
@@ -156,12 +230,30 @@ def update_validators_censorship_resistance_index(
     Args:
         metrics_collection      -   Mongo collection of raw metrics
         target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
     """
+
+    logger.info(
+        "Calculating validators censorship resistance index over last week"
+    )
+
     lw_resistance_index = get_lido_validators_metrics(
         metrics_collection, "last_week", True
     )
+
+    logger.info(
+        "Validators censorship resistance index over last week has been calculated"
+    )
+    logger.info(
+        "Calculating validators censorship resistance index over last month"
+    )
+
     lm_resistance_index = get_lido_validators_metrics(
         metrics_collection, "last_month", True
+    )
+
+    logger.info(
+        "Validators censorship resistance index over last month has been calculated"
     )
 
     lw_record = {
@@ -174,19 +266,36 @@ def update_validators_censorship_resistance_index(
         "values": lm_resistance_index,
     }
 
+    logger.info(
+        "Updating validators censorship resistance index over last week"
+    )
+
     target_collection.delete_one(
         {"metrics": "last_week_validators_censorship_resistance_index"}
     )
     target_collection.insert_one(lw_record)
+
+    logger.info(
+        "Validators censorship resistance index over last week has been updated"
+    )
+    logger.info(
+        "Updating validators censorship resistance index over last month"
+    )
 
     target_collection.delete_one(
         {"metrics": "last_month_validators_censorship_resistance_index"}
     )
     target_collection.insert_one(lm_record)
 
+    logger.info(
+        "Validators censorship resistance index over last month has been updated"
+    )
+
 
 def update_validators_compliance_ratio(
-    metrics_collection: Collection, target_collection: Collection
+    metrics_collection: Collection,
+    target_collection: Collection,
+    logger: Logger,
 ) -> None:
     """
     Update validators compliance ratio
@@ -194,12 +303,26 @@ def update_validators_compliance_ratio(
     Args:
         metrics_collection      -   Mongo collection of raw metrics
         target_collection       -   Mongo collection to store prepared metrics
+        logger                  -   Logger
     """
+
+    logger.info("Calculating validators compliance ratio over last week")
+
     lw_ratio = get_lido_validators_metrics(
         metrics_collection, "last_week", False
     )
+
+    logger.info(
+        "Validators compliance ratio over last week has been calculated"
+    )
+    logger.info("Calculating validators compliance ratio over last month")
+
     lm_ratio = get_lido_validators_metrics(
         metrics_collection, "last_month", False
+    )
+
+    logger.info(
+        "Validators compliance ratio over last month has been calculated"
     )
 
     lw_record = {
@@ -212,15 +335,26 @@ def update_validators_compliance_ratio(
         "values": lm_ratio,
     }
 
+    logger.info("Updating validators compliance ratio over last week")
+
     target_collection.delete_one(
         {"metrics": "last_week_validators_compliance_ratio"}
     )
     target_collection.insert_one(lw_record)
 
+    logger.info(
+        "Validators compliance ratio over last week has been updated"
+    )
+    logger.info("Updating validators compliance ratio over last month")
+
     target_collection.delete_one(
         {"metrics": "last_month_validators_compliance_ratio"}
     )
     target_collection.insert_one(lm_record)
+
+    logger.info(
+        "Validators compliance ratio index over last month has been updated"
+    )
 
 
 def _get_validators_metrics(
