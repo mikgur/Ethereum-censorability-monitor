@@ -32,6 +32,7 @@ validators = db["validators"]
 validators_metrics = db["validators_metrics"]
 censored_txs = db["censored_txs"]
 ofac_list = db["ofac_addresses"]
+prepared_metrics = db["prepared_metrics"]
 
 
 @app.get("/metrics/lido_validators_share/{period}")
@@ -39,7 +40,7 @@ async def get_lido_validators_share(period: str) -> JSONResponse:
     # Query examples: /metrics/lido_validators_share/last_week
     # Query examples: /metrics/lido_validators_share/last_month
     try:
-        metrics = get_lido_validators_metrics(validators_metrics, period, False)
+        metrics = get_lido_validators_metrics(prepared_metrics, period, False)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -54,7 +55,7 @@ async def get_lido_validators_ratio(period: str) -> JSONResponse:
     # Query examples: /metrics/get_lido_validators_ratio/last_week
     # Query examples: /metrics/get_lido_validators_ratio/last_month
     try:
-        metrics = get_lido_validators_metrics(validators_metrics, period, True)
+        metrics = get_lido_validators_metrics(prepared_metrics, period, True)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -69,9 +70,48 @@ async def get_total_validators_ratio(period: str) -> JSONResponse:
     # Query examples: /metrics/lido_vs_rest_share/last_week
     # Query examples: /metrics/lido_vs_rest_share/last_month
     try:
-        metrics = metrics = get_lido_vs_rest(validators_metrics, period)
+        metrics = metrics = get_lido_vs_rest(prepared_metrics, period)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/metrics/overall_latency")
+async def get_latency() -> JSONResponse:
+    # Query example: /metrics/overall_latency
+    # Query example: /metrics/overall_latency
+    try:
+        metrics = get_overall_latency(prepared_metrics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/metrics/censored_latency/{mean_type}")
+async def get_censorship_latency(mean_type: str) -> JSONResponse:
+    # Query example: /metrics/censored_latency/average
+    # Query example: /metrics/censored_latency/median
+    try:
+        metrics = get_censored_latency(prepared_metrics)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    res = jsonable_encoder(metrics)
+    return JSONResponse(res)
+
+
+@app.get("/metrics/censored_percentage/{period}")
+async def get_censorship_percentage(period: str) -> JSONResponse:
+    # Query example: /metrics/censorship_percentage/last_week
+    # Query example: /metrics/censorship_percentage/last_month
+    try:
+        metrics = get_censored_percentage(prepared_metrics)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -221,45 +261,6 @@ async def get_metrics_by_validators_by_daterange(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    res = jsonable_encoder(metrics)
-    return JSONResponse(res)
-
-
-@app.get("/metrics/overall_latency")
-async def get_latency() -> JSONResponse:
-    # Query example: /metrics/overall_latency
-    # Query example: /metrics/overall_latency
-    try:
-        metrics = get_overall_latency(censored_txs, validators)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    res = jsonable_encoder(metrics)
-    return JSONResponse(res)
-
-
-@app.get("/metrics/censored_latency/{mean_type}")
-async def get_censorship_latency(mean_type: str) -> JSONResponse:
-    # Query example: /metrics/censored_latency/average
-    # Query example: /metrics/censored_latency/median
-    try:
-        metrics = get_censored_latency(censored_txs, validators, mean_type)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    res = jsonable_encoder(metrics)
-    return JSONResponse(res)
-
-
-@app.get("/metrics/censored_percentage/{period}")
-async def get_censorship_percentage(period: str) -> JSONResponse:
-    # Query example: /metrics/censorship_percentage/last_week
-    # Query example: /metrics/censorship_percentage/last_month
-    try:
-        metrics = get_censored_percentage(censored_txs, validators, period)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
