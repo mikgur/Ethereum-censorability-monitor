@@ -186,6 +186,9 @@ class CensorshipMonitor:
             except Exception as e:
                 logger.error(f'Error with block {block_number}: {type(e)} {e}')
                 raise e
+        if n_attempt == 100:
+            logger.error(f'More than 100 attempts {block_number}')
+            raise Exception()
         # Save block_number to db
         mongo_analytics_client = self.get_mongo_analytics_client()
         db_analytics = mongo_analytics_client[self.analytics_db_name]
