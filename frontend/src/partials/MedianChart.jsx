@@ -25,7 +25,7 @@ function MedianChart() {
 
   const getMedianData = async () => {
     const data = await getMedian();
-    setMedianState(data.data);
+    setMedianState(data.data.slice(-8));
   };
 
   return (
@@ -144,7 +144,7 @@ function MedianChart() {
               }
             />
             <VictoryAxis
-              style={{ tickLabels: { fontSize: 13, fill: "#FFFFFF" } }}
+              style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
               label="DATE"
               axisLabelComponent={
                 <VictoryLabel
