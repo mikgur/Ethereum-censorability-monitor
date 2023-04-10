@@ -1,27 +1,8 @@
-# Use root/example as user/password credentials
 version: '3.1'
 
 services:
 
-  mongo:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: test_pass
-    ports:
-      - 27017:27017
-    volumes:
-      - type : bind
-        source : /home/mikhail/Documents/Ethereum-censorability-monitor/mongo_data
-        target : /data/db
-
-  mongo-express:
-    image: mongo-express
-    restart: always
-    ports:
-      - 8897:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: test_pass
-      ME_CONFIG_MONGODB_URL: mongodb://root:test_pass:27017/
+  data_collector:
+    build:
+        context: .
+        dockerfile: data_collector.Dockerfile
