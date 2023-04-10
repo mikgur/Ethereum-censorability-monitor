@@ -6,3 +6,4 @@ services:
     build:
         context: .
         dockerfile: data_collector.Dockerfile
+    tty: true
