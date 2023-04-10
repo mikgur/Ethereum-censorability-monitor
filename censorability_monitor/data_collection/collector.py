@@ -151,7 +151,7 @@ class MempoolCollector(DataCollector):
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
-                logger.warning((f'Slow collector: {current_process().name}'
+                logger.warning((f'Slow collector: {current_process().name} - '
                                 f'{t2 - t1:0.2f} of {self.interval} sec'))
             i += 1
             if i % 20 == 0:
@@ -303,7 +303,7 @@ class BlockCollector(DataCollector):
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
-                logger.warning((f'Slow collector: {current_process().name}'
+                logger.warning((f'Slow collector: {current_process().name} - '
                                 f'{t2 - t1:0.2f} of {self.interval} sec'))
             await asyncio.sleep(max(time_left, 0))
 
@@ -696,7 +696,7 @@ class MemPoolGasEstimator(DataCollector):
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
-                logger.warning((f'Slow collector: {current_process().name}'
+                logger.warning((f'Slow collector: {current_process().name} - '
                                 f'{t2 - t1:0.2f} of {self.interval} sec'))
             # logger.info(f'Will wait for {max(time_left, 0)}')
             await asyncio.sleep(max(time_left, 0))
