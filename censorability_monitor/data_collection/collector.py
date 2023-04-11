@@ -688,8 +688,18 @@ class MemPoolGasEstimator(DataCollector):
             if current_block > last_gas_est_block:
                 for block_number in range(last_gas_est_block + 1,
                                           current_block + 1):
-                    await self.estimate_gas_for_mempool(
-                        block_number, w3, mongo_client)
+                    completed = False
+                    n_attempt = 0
+                    while not completed and n_attempt < 5:
+                        n_attempt += 1
+                        try:
+                            await asyncio.wait_for(self.estimate_gas_for_mempool(
+                                block_number, w3, mongo_client),
+                                timeout=40)
+                            completed = True
+                        except asyncio.TimeoutError:
+                            logger.error((f"Unable to estimate gas for block {block_number}"
+                                          f" attempt: {n_attempt}"))
                     processed_blocks.insert_one(
                         {'block_gas_estimated': block_number})
                 last_gas_est_block = current_block
@@ -736,17 +746,32 @@ class MemPoolGasEstimator(DataCollector):
         t_2 = time.time()
         for i in range(0, len(chunks), num_workers):
             current_chunks = chunks[i:i + num_workers]
-            collection_tasks = [
-                event_loop.run_in_executor(
-                    process_executor,
-                    estimator.estimate_chunk_gas,
-                    chunk,
-                    block_number - 1
-                )
-                for estimator, chunk in zip(self.gas_estimators,
-                                            current_chunks)
-            ]
-            data = await asyncio.gather(*collection_tasks)
+            n_attempt = 0
+            completed = False
+            while not completed and n_attempt < 5:
+                n_attempt += 1
+                collection_tasks = [
+                    event_loop.run_in_executor(
+                        process_executor,
+                        estimator.estimate_chunk_gas,
+                        chunk,
+                        block_number - 1
+                    )
+                    for estimator, chunk in zip(self.gas_estimators,
+                                                current_chunks)
+                ]
+                try: 
+                    data = await asyncio.wait_for(
+                        asyncio.gather(*collection_tasks),
+                        timeout=30)
+                    completed = True
+                except asyncio.TimeoutError:
+                    logger.error(f"Timeout for gas estimation: {n_attempt}")
+                except Exception:
+                    logger.error(f"Error while gas estimation: {n_attempt}")
+            if not completed:
+                logger.info(f"Unable to complete gas estimation!")
+                return
             for d in data:
                 estimated_gas.update(d)
         logger.info(f'Estimation: {time.time() - t_2:0.2f} sec')
