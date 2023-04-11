@@ -700,6 +700,8 @@ class MemPoolGasEstimator(DataCollector):
                         except asyncio.TimeoutError:
                             logger.error((f"Unable to estimate gas for block {block_number}"
                                           f" attempt: {n_attempt}"))
+                        except Exception as e:
+                            logger.error(f"Error while estimating gas {block_number} - {n_attempt}")
                     processed_blocks.insert_one(
                         {'block_gas_estimated': block_number})
                 last_gas_est_block = current_block

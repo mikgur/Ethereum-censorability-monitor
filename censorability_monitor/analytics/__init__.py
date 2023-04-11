@@ -638,6 +638,10 @@ class CensorshipMonitor:
         ofac_db = ofac_addresses_collection.find(
             {'timestamp': {'$lte': block_ts}}
         ).sort('timestamp', -1).limit(1)
+        ofac_db = [a for a in ofac_db]
+        if len(ofac_db) == 0:
+            # Get latest
+            ofac_db = ofac_addresses_collection.find({}).sort('timestamp', -1).limit(1) # noqa E501
         ofac_addresses = set([a['addresses'] for a in ofac_db][0])
         return ofac_addresses
 
