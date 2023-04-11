@@ -63,6 +63,9 @@ class CensorshipMonitor:
             w3 = Web3(Web3.IPCProvider(self.web3_url))
             # logger.info(f'Connected to ETH node: {w3.isConnected()}')
             return w3
+        if self.web3_type == 'http':
+            w3 = Web3(Web3.HTTPProvider(self.web3_url))
+            return w3
         else:
             msg = f'Unexpected web3 connection type: {self.web3_type}'
             logger.error(msg)
