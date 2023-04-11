@@ -7,3 +7,9 @@ services:
         context: .
         dockerfile: data_collector.Dockerfile
     tty: true
+  
+  censorship_analytics:
+    build:
+        context: .
+        dockerfile: censorship_analytics.Dockerfile
+    tty: true
