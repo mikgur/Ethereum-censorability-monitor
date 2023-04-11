@@ -767,8 +767,8 @@ class MemPoolGasEstimator(DataCollector):
                     completed = True
                 except asyncio.TimeoutError:
                     logger.error(f"Timeout for gas estimation: {n_attempt}")
-                except Exception:
-                    logger.error(f"Error while gas estimation: {n_attempt}")
+                except Exception as e:
+                    logger.error(f"Error {type(e)} {e} while gas estimation: {n_attempt}")
             if not completed:
                 logger.info(f"Unable to complete gas estimation!")
                 return
