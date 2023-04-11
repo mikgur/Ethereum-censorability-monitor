@@ -666,11 +666,11 @@ class CensorshipMonitor:
         need_to_update = len(ofac_lists) == 0
         if len(ofac_lists) > 0:
             last_update_ts = ofac_lists[0]['timestamp']
-        # update once in 12 hours
-        if time.time() - last_update_ts > 12 * 60 * 60:
-            need_to_update = True
-        if not need_to_update:
-            return
+            # update once in 12 hours
+            if time.time() - last_update_ts > 12 * 60 * 60:
+                need_to_update = True
+            if not need_to_update:
+                return
 
         # update ofac list
         logger.info('Fetching OFAC data')
