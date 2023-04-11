@@ -700,8 +700,10 @@ class MemPoolGasEstimator(DataCollector):
                         except asyncio.TimeoutError:
                             logger.error((f"Unable to estimate gas for block {block_number}"
                                           f" attempt: {n_attempt}"))
+                            w3 = self.get_web3_client()
                         except Exception as e:
-                            logger.error(f"Error while estimating gas {block_number} - {n_attempt}")
+                            logger.error(f"Error while estimating gas {block_number} - {n_attempt} {type(e)} {e}")
+                            w3 = self.get_web3_client()
                     processed_blocks.insert_one(
                         {'block_gas_estimated': block_number})
                 last_gas_est_block = current_block
@@ -769,8 +771,10 @@ class MemPoolGasEstimator(DataCollector):
                     completed = True
                 except asyncio.TimeoutError:
                     logger.error(f"Timeout for gas estimation: {n_attempt}")
+                    w3 = self.get_web3_client()
                 except Exception as e:
-                    logger.error(f"Error {type(e)} {e} while gas estimation: {n_attempt}")
+                    logger.error(f"Error {type(e)} {e} while gas estimation: {n_attempt} {type(e)} {e}")
+                    w3 = self.get_web3_client()
             if not completed:
                 logger.info(f"Unable to complete gas estimation!")
                 return
