@@ -38,11 +38,16 @@ class MempoolCollector(DataCollector):
         while True:
             t1 = time.time()
             new_transactions = [tx.hex() for tx in tx_filter.get_new_entries()]
+            t_eth_get_filter_update = time.time() - t1
+            t_current = time.time()
             n = len(new_transactions)
-            # Find new transactions
+            # Find new transactions            
             found_in_db = first_seen_collection.find(
                 {"hash": {"$in": new_transactions}})
             existing_hashes = [d['hash'] for d in found_in_db]
+            t = time.time()
+            t_mongo_get_existing_from_mongo = t - t_current
+            t_current = t
 
             # Return dropped txes
             first_seen_collection.update_many(
@@ -50,6 +55,7 @@ class MempoolCollector(DataCollector):
                 {'$set': {'dropped': False},
                  '$unset': {'block_number': ''}}
             )
+            t_mongo_return_dropped = time.time() - t_current
 
             new_hashes = set([h for h in new_transactions
                               if h not in existing_hashes])
@@ -59,6 +65,7 @@ class MempoolCollector(DataCollector):
             # Add details to new transactions
             details_not_found = 0
             new_transactions_details = []
+            t_current = time.time()
             for tx in new_transactions_first_seen:
                 try:
                     tx_data = w3.eth.getTransaction(tx['hash'])
@@ -79,29 +86,43 @@ class MempoolCollector(DataCollector):
                     continue
             n_new_txs = len(new_transactions_first_seen)
             details_found = n_new_txs - details_not_found
+            t_eth_get_new_details = time.time() - t_current
 
             # Insert new transactions
+            t_eth_insert_new_txs = 0
             if new_transactions_first_seen:
+                t_current = time.time()
                 first_seen_collection.insert_many(new_transactions_first_seen)
+                t_eth_insert_new_txs = time.time() - t_current
             n_inserted = len(new_transactions_first_seen)
             if self.verbose:
                 logger.info((f'Inserted {n_inserted} new txs, '
                              f'found {details_found}/{n_new_txs}'
                              f'txs from {n} total'))
             # Insert details
+            t_eth_insert_new_txs_details = 0
             if new_transactions_details:
                 try:
+                    t_current = time.time()
                     tx_details_collection.insert_many(
                         new_transactions_details, ordered=False)
                 except BulkWriteError as bwe:
                     for err_details in bwe.details['writeErrors']:
                         if err_details['code'] != 11000:
                             raise bwe
+                finally:
+                    t_eth_insert_new_txs_details = time.time() - t_current
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
                 logger.warning((f'Slow collector: {current_process().name} - '
                                 f'{t2 - t1:0.2f} of {self.interval} sec'))
+                logger.warning(f't_eth_get_filter_update: {t_eth_get_filter_update:0.2f}')
+                logger.warning(f't_mongo_get_existing_from_mongo: {t_mongo_get_existing_from_mongo:0.2f}')
+                logger.warning(f't_mongo_return_dropped: {t_mongo_return_dropped:0.2f}')
+                logger.warning(f't_eth_get_new_details: {t_eth_get_new_details:0.2f}')
+                logger.warning(f't_eth_insert_new_txs: {t_eth_insert_new_txs:0.2f}')
+                logger.warning(f't_eth_insert_new_txs_details: {t_eth_insert_new_txs_details:0.2f}')
             i += 1
             if i % 20 == 0:
                 logger.info('Mempool collector alive!')
