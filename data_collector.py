@@ -43,14 +43,14 @@ def main():
                 db_name=db_col_name,
                 web3_type=web3_connection_type,
                 web3_url=web3_url,
-                interval=3,
+                interval=6,
                 verbose=True)
     mempool_gas_estimator = MemPoolGasEstimator(
                 mongo_url=mongo_url,
                 db_name=db_col_name,
                 web3_type=web3_connection_type,
                 web3_url=web3_url,
-                interval=3,
+                interval=6,
                 verbose=True)
     collectors = [mempool_collecotr, block_collector, mempool_gas_estimator]
 
