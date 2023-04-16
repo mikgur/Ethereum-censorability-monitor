@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+import traceback
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import current_process
 
@@ -50,7 +51,7 @@ class BlockCollector(DataCollector):
                         await self.process_block_data(
                             block_number, w3, mongo_client)
                     except Exception as e:
-                        logger.error(f'Block {block_number} - {type(e)} {e}')
+                        logger.error(f'Block {block_number} - {type(e)} {e} {traceback.format_exc()}')
                 last_processed_block = current_block
             t2 = time.time()
             time_left = self.interval - (t2 - t1)
@@ -71,9 +72,11 @@ class BlockCollector(DataCollector):
         block_ts = block['timestamp']
         # Get transactions from mempool that are not in the blocks
         # and update their from accounts data
+        t_current = time.time()
         transactions = first_seen_collection.find(
             {'timestamp': {'$lte': block_ts},
              'block_number': {'$exists': False}})
+        t_mongo_find_first_seen = time.time() - t_current
         # Get mempool accounts and remove old txs without details
         no_details = 0
         n_mempool_txs = 0
@@ -85,6 +88,7 @@ class BlockCollector(DataCollector):
         # Try to find deails for txs without details
         # Get list of addresses with txs with enough gas price
         found_details = []
+        t_current = time.time()
         for tx in transactions:
             n_mempool_txs += 1
             if 'from' not in tx:
@@ -119,9 +123,11 @@ class BlockCollector(DataCollector):
                 low_fee_txs += 1
                 continue
             mempool_accounts.add(tx['from'])
+        t_eth_find_details = time.time() - t_current
         logger.info(f'Found {old_txs_found} old transactions')
 
         # Put found details to db
+        t_current = time.time()
         if found_details:
             try:
                 tx_details_collection.insert_many(
@@ -130,17 +136,20 @@ class BlockCollector(DataCollector):
                 for err_details in bwe.details['writeErrors']:
                     if err_details['code'] != 11000:
                         raise bwe
+        t_mongo_update_details = time.time() - t_current
         n_removed = len(remove_from_mempool)
 
         # Remove old enough txs without details
+        t_current = time.time()
         first_seen_collection.delete_many(
             {'hash': {'$in': remove_from_mempool}})
         logger.info((f'Found {no_details}/{n_mempool_txs} txs without '
                      f'details, remove {n_removed} from mempool. '))
+        t_mongo_remove_old_without_details = time.time() - t_current
         logger.info(f'Interesting accs in mempool: {len(mempool_accounts)}')
 
         # Update accounts info:
-        t2 = time.time()
+        t_current = time.time()
         batch_size = 1000
         num_workers = min(len(mempool_accounts) // batch_size + 1,
                           self.max_workers)
@@ -163,7 +172,9 @@ class BlockCollector(DataCollector):
             data = await asyncio.gather(*collection_tasks)
             for d in data:
                 address_data.update(d)
+        t_eth_get_address_data = time.time() - t_current
         # Save accounts info to db
+        t_current = time.time()
         accounts_collection = db['addresses_info']
         accounts_collection.create_index('address', unique=True)
         accounts_in_db = accounts_collection.find(
@@ -173,8 +184,13 @@ class BlockCollector(DataCollector):
                         if a not in existing_accounts]
         insert_records = [{'address': a, str(block_number - 1): address_data[a]
                            } for a in new_accounts]
-        if len(insert_records) > 0:
-            accounts_collection.insert_many(insert_records)
+        try:
+            if len(insert_records) > 0:
+                accounts_collection.insert_many(insert_records)  # TODO Check types!
+        except Exception as e:
+            for r in insert_records:
+                logger.error(r)
+            raise e
 
         update_documents = [
             UpdateOne(
@@ -188,20 +204,21 @@ class BlockCollector(DataCollector):
         ]
         if len(update_documents) > 0:
             accounts_collection.bulk_write(update_documents)
+        t_mongo_save_address_info = time.time() - t_current
 
         # Add block number to transactions included in the current block
+        t_current = time.time()
         block_hashes = [h.hex() for h in block['transactions']]
         result = first_seen_collection.update_many(
             {'hash': {'$in': block_hashes}},
             {'$set': {'block_number': block_number}})
+        t_mongo_update_txs_block_number = time.time() - t_current
         logger.info((f'Updated {result.modified_count} transactions of '
                      f'{len(block["transactions"])} in block'))
-        logger.info((f'Processing with {num_workers} workers addresses '
-                     f'took {int(time.time() - t2)} s'))
 
         # Remove reverted transactions from future queries
         # We will set block_number -1 for them
-
+        t_current = time.time()
         transactions = first_seen_collection.find(
             {'timestamp': {'$lte': block_ts},
              'block_number': {'$exists': False}})
@@ -240,9 +257,10 @@ class BlockCollector(DataCollector):
                 {'hash': {'$in': list(reverted_tx_hashes)}},
                 {'$set': {'block_number': -1}}
             )
+        t_mongo_reverted_txs = time.time() - t_current
 
         # Drop transactions that are not in mempool currently
-        t_drop = time.time()
+        t_current = time.time()
         mempool = w3.geth.txpool.content()
         mempool_hashes = []
         for _, v in mempool['queued'].items():
@@ -251,7 +269,9 @@ class BlockCollector(DataCollector):
         for _, v in mempool['pending'].items():
             for _, w in v.items():
                 mempool_hashes.append(w['hash'])
+        t_eth_get_mempool_content = time.time() - t_current
         # Transactions older than hour without block
+        t_current = time.time()
         transactions = first_seen_collection.find(
             {'timestamp': {'$lte': time.time() - 3600},
              'block_number': {'$exists': False}
@@ -264,7 +284,7 @@ class BlockCollector(DataCollector):
             {'hash': {'$in': transactions_to_drop}},
             {'$set': {'block_number': -2, 'dropped': True}}
         )
-        logger.info(f'Dropping txes took {time.time() - t_drop:0.2f} sec')
+        t_mongo_drop = time.time() - t_current
 
         # Add blocknumber to processed blocks
         processed_blocks_collection = db['processed_blocks']
@@ -272,3 +292,14 @@ class BlockCollector(DataCollector):
             {'block_info_saved': block_number})
 
         logger.info(f'Block processing took {int(time.time() - t1)} s')
+        if time.time() - t1 > self.interval:
+            logger.warning(f't_mongo_find_first_seen: {t_mongo_find_first_seen:0.2f}')
+            logger.warning(f't_eth_find_details: {t_eth_find_details:0.2f}')
+            logger.warning(f't_mongo_update_details: {t_mongo_update_details:0.2f}')
+            logger.warning(f't_mongo_remove_old_without_details: {t_mongo_remove_old_without_details:0.2f}')
+            logger.warning(f't_eth_get_address_data: {t_eth_get_address_data:0.2f}')
+            logger.warning(f't_mongo_save_address_info: {t_mongo_save_address_info:0.2f}')
+            logger.warning(f't_mongo_update_txs_block_number: {t_mongo_update_txs_block_number:0.2f}')
+            logger.warning(f't_mongo_reverted_txs: {t_mongo_reverted_txs:0.2f}')
+            logger.warning(f't_eth_get_mempool_content: {t_eth_get_mempool_content:0.2f}')
+            logger.warning(f't_mongo_drop: {t_mongo_drop:0.2f}')
