@@ -35,13 +35,18 @@ class GasEstimator:
             raise Exception(msg)
 
     def estimate_chunk_gas(self, chunk, block_number):
+        logger = logging.getLogger("MemPoolGasEstimator")
         w3 = self.get_web3_client()
         gas_estimates = {}
+        times = []
         for tx_details in chunk:
             tx_hash = tx_details['hash']
+            t1 = time.time()
             result = self.estimate_tx_gas(tx_details, block_number, w3)
             gas_estimates[tx_hash] = {'block_number': block_number,
                                       'gas': result}
+            times.append(time.time() - t1)
+        logger.info(f"Gas estimation: n = {len(times)} avg {sum(times)/len(times):0.4f} total {sum(times):0.2f}")
         return gas_estimates
 
     def estimate_tx_gas(self, tx_details, block_number, w3):
@@ -84,18 +89,21 @@ class GasEstimator:
 
 
 def get_transactions_for_gas_estimation(db, block_number, w3):
+    logger = logging.getLogger("MemPoolGasEstimator")
     first_seen_collection = db['tx_first_seen_ts']
     tx_details_collection = db['tx_details']
     block = w3.eth.getBlock(block_number)
     block_ts = block['timestamp']
     # Get transactions from mempool that are not in the blocks
     # and update their from accounts data
-    # t1 = time.time()
+    t1 = time.time()
+    t_current = time.time()
     transactions = first_seen_collection.find(
         {'timestamp': {'$lte': block_ts},
          '$or': [{'block_number': {'$exists': False}},
                  {'block_number': {'$gte': block_number}}]
          })
+    t_mongo_all_mempool = time.time() - t_current
     # Get mempool accounts and remove old txs without details
     n_mempool_txs = 0
     # Get list of interesting transactions
@@ -110,18 +118,17 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
             continue
         # Put into list for gas estimation
         txs_for_gas_estimate.add(tx['hash'])
-    # t2 = time.time()
-    # print(f'Interval 1: {t2 - t1:0.2f} - found {len(txs_for_gas_estimate)}')
 
     # Get details
+    t_current = time.time()
     tx_details_collection = db['tx_details']
     tx_details_db = tx_details_collection.find(
         {'hash': {'$in': list(txs_for_gas_estimate)}})
     tx_details = {tx['hash']: tx for tx in tx_details_db}
-    # t3 = time.time()
-    # print(f'Interval 2: {t3 - t2:0.2f}')
+    t_mongo_get_details = time.time() - t_current
 
     # Fetch address info
+    t_current = time.time()
     addresses = set()
     for _, tx in tx_details.items():
         addresses.add(tx['from'])
@@ -137,11 +144,10 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
                        }
         for a in accounts_details_db
         if str(block_number - 1) in a}
-    # print(f'Accounts: {len(block_accounts_info)}')
-    # t4 = time.time()
-    # print(f'Interval 3: {t4 - t3:0.2f}')
+    t_mongo_accounts = time.time() - t_current
 
     # Make df for nonce analysis
+    t_current = time.time()
     records = []
     for _, tx in tx_details.items():
         records.append({'hash': tx['hash'],
@@ -152,9 +158,6 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
     if len(records) == 0:
         return []
     tx_grouped = tx_df.groupby(['from', 'hash']).agg({'nonce': 'first'})
-
-    # t5 = time.time()
-    # print(f'Interval 4: {t5 - t4:0.2f}')
 
     # Remove transactions that can't be included to block due to high nonce
     all_nonce_blocked = set()
@@ -177,11 +180,10 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
 
     non_blocked = tx_df[~tx_df['hash'].isin(all_nonce_blocked)]
     non_blocked_hashes = non_blocked['hash'].values
-
-    # t6 = time.time()
-    # print(f'Interval 5: {t6 - t5:0.2f}')
+    t_pandas_df_nonce = time.time() - t_current
 
     # Remove transactions with not enough value to transfer
+    t_current = time.time()
     eligible_transactions = []
     for tx_hash in non_blocked_hashes:
         if tx_hash not in tx_details:
@@ -196,8 +198,13 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
             if value >= block_accounts_info[addr]['eth']:
                 continue
         eligible_transactions.append(tx_hash)
-    # t7 = time.time()
-    # print(f'Interval 6: {t7 - t6:0.2f}')
+    t_remove_txs = time.time() - t_current
+    if time.time() - t1 > 2:
+        logger.warning(f"t_mongo_all_mempool {t_mongo_all_mempool:0.2f}")
+        logger.warning(f"t_mongo_get_details {t_mongo_get_details:0.2f}")
+        logger.warning(f"t_mongo_accounts {t_mongo_accounts:0.2f}")
+        logger.warning(f"t_pandas_df_nonce {t_pandas_df_nonce:0.2f}")
+        logger.warning(f"t_remove_txs {t_remove_txs:0.2f}")
     return eligible_transactions
 
 
@@ -262,9 +269,11 @@ class MemPoolGasEstimator(DataCollector):
                             logger.error((f"Unable to estimate gas for block {block_number}"
                                           f" attempt: {n_attempt}"))
                             w3 = self.get_web3_client()
+                            mongo_client = self.get_mongo_client()
                         except Exception as e:
                             logger.error(f"Error while estimating gas {block_number} - {n_attempt} {type(e)} {e}")
                             w3 = self.get_web3_client()
+                            mongo_client = self.get_mongo_client()
                     processed_blocks.insert_one(
                         {'block_gas_estimated': block_number})
                 last_gas_est_block = current_block
@@ -296,19 +305,21 @@ class MemPoolGasEstimator(DataCollector):
         logger.info(f'Complete gathering list: {time.time() - t1:0.2f} sec')
 
         # Estimate gas for txs
+        t_current = time.time()
         tx_details_collection = db['tx_details']
         transactions_details = tx_details_collection.find(
             {'hash': {'$in': list(txs_for_gas_estimate)}}
         )
+        t_mongo_get_txs = time.time() - t_current
         transactions_details = [d for d in transactions_details]
-        batch_size = 1000
+        batch_size = 100
         num_workers = min(len(transactions_details) // batch_size + 1,
                           self.max_workers)
         process_executor = ProcessPoolExecutor(max_workers=num_workers)
         event_loop = asyncio.get_event_loop()
         chunks = list(split_on_chunks(list(transactions_details), batch_size))
         estimated_gas = {}
-        t_2 = time.time()
+        t_current = time.time()
         for i in range(0, len(chunks), num_workers):
             current_chunks = chunks[i:i + num_workers]
             n_attempt = 0
@@ -339,8 +350,10 @@ class MemPoolGasEstimator(DataCollector):
                 return
             for d in data:
                 estimated_gas.update(d)
-        logger.info(f'Estimation: {time.time() - t_2:0.2f} sec')
+        t_eth_estimate_gas = time.time() - t_current
+
         # Save gas estimation to Mongo DB
+        t_current = time.time()
         tx_gas_collection = db['tx_estimated_gas']
         tx_gas_collection.create_index('hash')
         updates = []
@@ -352,6 +365,11 @@ class MemPoolGasEstimator(DataCollector):
             ))
         if len(updates) > 0:
             tx_gas_collection.bulk_write(updates)
+        t_mongo_save_gas_estimates = time.time() - t_current
+        if time.time() - t1 > 4:
+            logger.warning(f"t_mongo_get_txs {t_mongo_get_txs:0.2f}")
+            logger.warning(f"t_eth_estimate_gas {t_eth_estimate_gas:0.2f}")
+            logger.warning(f"t_mongo_save_gas_estimates {t_mongo_save_gas_estimates:0.2f}")
         logger.info((f'Gas estimation took {int(time.time() - t1)} '
                      f'seconds - got {len(estimated_gas)} of '
                      f'{len(txs_for_gas_estimate)}'))
