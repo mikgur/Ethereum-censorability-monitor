@@ -5,13 +5,14 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import current_process
 
+import numpy as np
 import pandas as pd
 from pymongo import MongoClient, UpdateOne
 from web3.auto import Web3
 from web3.exceptions import ContractLogicError
 
 from .data_collector import DataCollector
-from .utils import split_on_chunks
+from .utils import split_on_equal_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -214,10 +215,10 @@ class MemPoolGasEstimator(DataCollector):
                  interval: float = 3, verbose: bool = True):
         super().__init__(mongo_url, db_name, web3_type, web3_url,
                          interval, verbose, 'MemPoolGasEstimator')
-        self.max_workers = 256
+        self.workers = 8
         self.gas_estimators = [
             GasEstimator(web3_type, web3_url)
-            for _ in range(self.max_workers)
+            for _ in range(self.workers)
         ]
 
     async def collect(self):
@@ -312,39 +313,38 @@ class MemPoolGasEstimator(DataCollector):
         )
         t_mongo_get_txs = time.time() - t_current
         transactions_details = [d for d in transactions_details]
-        batch_size = 100
-        num_workers = min(len(transactions_details) // batch_size + 1,
-                          self.max_workers)
-        process_executor = ProcessPoolExecutor(max_workers=num_workers)
+        min_batch_size = 50
+        max_workers = int(np.ceil(len(transactions_details) / min_batch_size))
+        workers = min(self.workers, max(max_workers, 1))
+        logger.info(f"Max_workers: {max_workers} workers: {workers}")
+
+        process_executor = ProcessPoolExecutor(max_workers=workers)
         event_loop = asyncio.get_event_loop()
-        chunks = list(split_on_chunks(list(transactions_details), batch_size))
+        chunks = list(split_on_equal_chunks(list(transactions_details), workers))
         estimated_gas = {}
         t_current = time.time()
-        for i in range(0, len(chunks), num_workers):
-            current_chunks = chunks[i:i + num_workers]
-            n_attempt = 0
-            completed = False
-            while not completed and n_attempt < 5:
-                n_attempt += 1
-                collection_tasks = [
-                    event_loop.run_in_executor(
-                        process_executor,
-                        estimator.estimate_chunk_gas,
-                        chunk,
-                        block_number - 1
-                    )
-                    for estimator, chunk in zip(self.gas_estimators,
-                                                current_chunks)
-                ]
-                try: 
-                    data = await asyncio.wait_for(
-                        asyncio.gather(*collection_tasks),
-                        timeout=30)
-                    completed = True
-                except asyncio.TimeoutError:
-                    logger.error(f"Timeout for gas estimation: {n_attempt}")
-                except Exception as e:
-                    logger.error(f"Error {type(e)} {e} while gas estimation: {n_attempt} {type(e)} {e}")
+        n_attempt = 0
+        completed = False
+        while not completed and n_attempt < 5:
+            n_attempt += 1
+            collection_tasks = [
+                event_loop.run_in_executor(
+                    process_executor,
+                    estimator.estimate_chunk_gas,
+                    chunk,
+                    block_number - 1
+                )
+                for estimator, chunk in zip(self.gas_estimators, chunks)
+            ]
+            try: 
+                data = await asyncio.wait_for(
+                    asyncio.gather(*collection_tasks),
+                    timeout=30)
+                completed = True
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout for gas estimation: {n_attempt}")
+            except Exception as e:
+                logger.error(f"Error {type(e)} {e} while gas estimation: {n_attempt} {type(e)} {e}")
             if not completed:
                 logger.info(f"Unable to complete gas estimation!")
                 return
