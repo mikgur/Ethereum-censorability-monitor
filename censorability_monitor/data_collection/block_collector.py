@@ -76,8 +76,8 @@ class BlockCollector(DataCollector):
         transactions = first_seen_collection.find(
             {'timestamp': {'$lte': block_ts},
              'block_number': {'$exists': False}})
+        mongo_transactions = list(transactions)
         t_mongo_find_first_seen = time.time() - t_current
-        # Get mempool accounts and remove old txs without details
         no_details = 0
         n_mempool_txs = 0
         remove_from_mempool = []
@@ -89,7 +89,7 @@ class BlockCollector(DataCollector):
         # Get list of addresses with txs with enough gas price
         found_details = []
         t_current = time.time()
-        for tx in transactions:
+        for tx in mongo_transactions:
             n_mempool_txs += 1
             if 'from' not in tx:
                 try:
@@ -219,12 +219,8 @@ class BlockCollector(DataCollector):
         # Remove reverted transactions from future queries
         # We will set block_number -1 for them
         t_current = time.time()
-        transactions = first_seen_collection.find(
-            {'timestamp': {'$lte': block_ts},
-             'block_number': {'$exists': False}})
-        # Get list of interesting transactions
         tx_details = []
-        for tx in transactions:
+        for tx in mongo_transactions:
             if 'from' not in tx:
                 continue
             tx_details.append(tx)
@@ -272,13 +268,11 @@ class BlockCollector(DataCollector):
         t_eth_get_mempool_content = time.time() - t_current
         # Transactions older than hour without block
         t_current = time.time()
-        transactions = first_seen_collection.find(
-            {'timestamp': {'$lte': time.time() - 3600},
-             'block_number': {'$exists': False}
-             })
+        t_threshold = time.time() - 3600
         transactions_to_drop = []
-        for tx in transactions:
-            if tx['hash'] not in mempool_hashes:
+        for tx in mongo_transactions:
+            if (tx['hash'] not in mempool_hashes
+                and tx['timestamp'] < t_threshold):
                 transactions_to_drop.append(tx['hash'])
         first_seen_collection.update_many(
             {'hash': {'$in': transactions_to_drop}},
