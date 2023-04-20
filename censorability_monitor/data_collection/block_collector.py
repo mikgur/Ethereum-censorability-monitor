@@ -5,6 +5,7 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import current_process
 
+import numpy as np
 import pandas as pd
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import BulkWriteError
@@ -14,7 +15,7 @@ from web3.exceptions import TransactionNotFound
 from .address_collector import AddressDataCollector
 from .data_collector import DataCollector
 from .gas_estimation import GasEstimator
-from .utils import split_on_chunks
+from .utils import split_on_equal_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class BlockCollector(DataCollector):
                  interval: float = 3, verbose: bool = True):
         super().__init__(mongo_url, db_name, web3_type, web3_url,
                          interval, verbose, 'BlockCollector')
-        self.max_workers = 256
+        self.max_workers = 8
         self.address_data_collectors = [
             AddressDataCollector(web3_type, web3_url)
             for _ in range(self.max_workers)
@@ -150,28 +151,32 @@ class BlockCollector(DataCollector):
 
         # Update accounts info:
         t_current = time.time()
-        batch_size = 1000
-        num_workers = min(len(mempool_accounts) // batch_size + 1,
-                          self.max_workers)
-        process_executor = ProcessPoolExecutor(max_workers=num_workers)
+        min_batch_size = 50
+        max_workers = int(np.ceil(len(mempool_accounts) / min_batch_size))
+        workers = min(self.max_workers, max(max_workers, 1))
+
+        logger.info(f"Max_workers: {max_workers} workers: {workers}")
+        process_executor = ProcessPoolExecutor(max_workers=workers)
         event_loop = asyncio.get_event_loop()
-        chunks = list(split_on_chunks(list(mempool_accounts), batch_size))
+        chunks = list(split_on_equal_chunks(list(mempool_accounts), workers))
+
         address_data = {}
-        for i in range(0, len(chunks), num_workers):
-            current_chunks = chunks[i:i + num_workers]
-            collection_tasks = [
-                event_loop.run_in_executor(
-                    process_executor,
-                    collector.get_address_data,
-                    chunk,
-                    block_number - 1
-                )
-                for collector, chunk in zip(self.address_data_collectors,
-                                            current_chunks)
-            ]
+        collection_tasks = [
+            event_loop.run_in_executor(
+                process_executor,
+                collector.get_address_data,
+                chunk,
+                block_number - 1
+            )
+            for collector, chunk in zip(self.address_data_collectors,
+                                        chunks)
+        ]
+        try:
             data = await asyncio.gather(*collection_tasks)
             for d in data:
                 address_data.update(d)
+        except Exception as e:
+            logger.warning(f"Error collecting address data: {e} {type(e)}")
         t_eth_get_address_data = time.time() - t_current
         # Save accounts info to db
         t_current = time.time()
@@ -183,7 +188,7 @@ class BlockCollector(DataCollector):
         new_accounts = [a for a in mempool_accounts
                         if a not in existing_accounts]
         insert_records = [{'address': a, str(block_number - 1): address_data[a]
-                           } for a in new_accounts]
+                           } for a in new_accounts if a in address_data]
         try:
             if len(insert_records) > 0:
                 accounts_collection.insert_many(insert_records)  # TODO Check types!
