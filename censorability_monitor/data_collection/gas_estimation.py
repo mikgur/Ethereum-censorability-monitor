@@ -12,9 +12,49 @@ from web3.auto import Web3
 from web3.exceptions import ContractLogicError
 
 from .data_collector import DataCollector
-from .utils import split_on_equal_chunks
+from .utils import split_on_equal_chunks, retry_on_exception
 
 logger = logging.getLogger(__name__)
+
+
+@retry_on_exception(5)
+def estimate_tx_gas(tx_details, block_number, w3):
+    try:
+        tx_data = tx_details.copy()
+        del tx_data['_id']
+        del tx_data['hash']
+        del tx_data['blockHash']
+        del tx_data['blockNumber']
+        del tx_data['r']
+        del tx_data['s']
+        if 'gasPrice' in tx_data and 'maxFeePerGas' in tx_data:
+            del tx_data['gasPrice']
+        json_tx = w3.toJSON(tx_data)
+        json_tx = json.loads(json_tx)
+        est_gas = w3.eth.estimate_gas(
+            json_tx, block_number)
+        return est_gas
+    except ContractLogicError:
+        return 'contract_logic_error'
+    except ValueError as e:
+        if e.args[0]['message'].startswith(
+                'err: max fee per gas less than block base fee'):
+            return 'low maxFeePerGass'
+        elif e.args[0]['message'] == 'insufficient funds for transfer':
+            return 'not enough eth'
+        elif e.args[0]['message'].startswith(
+                'invalid opcode'):
+            return 'invalid opcode'
+        elif e.args[0]['message'].startswith(
+                'gas required exceeds allowance'):
+            return 'low gas limit'
+        elif e.args[0]['message'].startswith(
+                'invalid jump destination'):
+            return 'invalid jump'
+        elif e.args[0]['message'].startswith(
+                'contract creation code storage out of gas'):
+            return 'contract creation error'
+        return 'unknown value error'
 
 
 class GasEstimator:
@@ -43,50 +83,18 @@ class GasEstimator:
         for tx_details in chunk:
             tx_hash = tx_details['hash']
             t1 = time.time()
-            result = self.estimate_tx_gas(tx_details, block_number, w3)
-            gas_estimates[tx_hash] = {'block_number': block_number,
-                                      'gas': result}
+            try:
+                result = estimate_tx_gas(tx_details, block_number, w3)
+                gas_estimates[tx_hash] = {'block_number': block_number,
+                                        'gas': result}
+            except Exception as e:
+                logger.warning(f"Unable to estimate gas in {block_number}: {type(e)} {e}")
             times.append(time.time() - t1)
-        logger.info(f"Gas estimation: n = {len(times)} avg {sum(times)/len(times):0.4f} total {sum(times):0.2f}")
+        if len(times) > 0:
+            logger.info(f"Gas estimation: n = {len(times)} avg {sum(times)/len(times):0.4f} total {sum(times):0.2f}")
+        else:
+            logger.info(f"Gas estimation: n = {len(times)} total {sum(times):0.2f}")
         return gas_estimates
-
-    def estimate_tx_gas(self, tx_details, block_number, w3):
-        try:
-            tx_data = tx_details.copy()
-            del tx_data['_id']
-            del tx_data['hash']
-            del tx_data['blockHash']
-            del tx_data['blockNumber']
-            del tx_data['r']
-            del tx_data['s']
-            if 'gasPrice' in tx_data and 'maxFeePerGas' in tx_data:
-                del tx_data['gasPrice']
-            json_tx = w3.toJSON(tx_data)
-            json_tx = json.loads(json_tx)
-            est_gas = w3.eth.estimate_gas(
-                json_tx, block_number)
-            return est_gas
-        except ContractLogicError:
-            return 'contract_logic_error'
-        except ValueError as e:
-            if e.args[0]['message'].startswith(
-                    'err: max fee per gas less than block base fee'):
-                return 'low maxFeePerGass'
-            elif e.args[0]['message'] == 'insufficient funds for transfer':
-                return 'not enough eth'
-            elif e.args[0]['message'].startswith(
-                    'invalid opcode'):
-                return 'invalid opcode'
-            elif e.args[0]['message'].startswith(
-                    'gas required exceeds allowance'):
-                return 'low gas limit'
-            elif e.args[0]['message'].startswith(
-                    'invalid jump destination'):
-                return 'invalid jump'
-            elif e.args[0]['message'].startswith(
-                    'contract creation code storage out of gas'):
-                return 'contract creation error'
-            return 'unknown value error'
 
 
 def get_transactions_for_gas_estimation(db, block_number, w3):
