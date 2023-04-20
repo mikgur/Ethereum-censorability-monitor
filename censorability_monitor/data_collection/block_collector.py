@@ -97,7 +97,7 @@ class BlockCollector(DataCollector):
                     tx_data = w3.eth.getTransaction(tx['hash'])
                     found_tx = {}
                     found_tx['from'] = tx_data['from']
-                    found_tx['nonce'] = tx_data['nonce'] // 10 ** 9
+                    found_tx['nonce'] = tx_data['nonce'] % 10 ** 9
                     if 'maxFeePerGas' in tx_data:
                         found_tx['maxFeePerGas'] = tx_data['maxFeePerGas']
                     else:
