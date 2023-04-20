@@ -205,7 +205,7 @@ class BlockCollector(DataCollector):
                      f'{block_number - 1}.eth': address_data[a]['eth']}
                  }
             )
-            for a in existing_accounts
+            for a in existing_accounts if a in address_data
         ]
         if len(update_documents) > 0:
             try:
