@@ -208,7 +208,11 @@ class BlockCollector(DataCollector):
             for a in existing_accounts
         ]
         if len(update_documents) > 0:
-            accounts_collection.bulk_write(update_documents)
+            try:
+                accounts_collection.bulk_write(update_documents)
+            except Exception as e:
+                logger.error(f"Error saving accounts: {e} {type(e)}")
+                logger.error(f"{update_documents}")
         t_mongo_save_address_info = time.time() - t_current
 
         # Add block number to transactions included in the current block
