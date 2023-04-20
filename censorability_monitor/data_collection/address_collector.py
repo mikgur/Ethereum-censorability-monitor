@@ -33,7 +33,7 @@ class AddressDataCollector:
                     address, block_number)
                 eth_account = w3.eth.get_balance(
                     address, block_number) / 10 ** 18
-                result[address] = {'n_txs': n_transactions,
+                result[address] = {'n_txs': n_transactions // 10 ** 9,
                                    'eth': eth_account}
             except ValueError:
                 pass

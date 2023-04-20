@@ -97,7 +97,7 @@ class BlockCollector(DataCollector):
                     tx_data = w3.eth.getTransaction(tx['hash'])
                     found_tx = {}
                     found_tx['from'] = tx_data['from']
-                    found_tx['nonce'] = tx_data['nonce']
+                    found_tx['nonce'] = tx_data['nonce'] // 10 ** 9
                     if 'maxFeePerGas' in tx_data:
                         found_tx['maxFeePerGas'] = tx_data['maxFeePerGas']
                     else:
@@ -201,7 +201,7 @@ class BlockCollector(DataCollector):
             UpdateOne(
                 {'address': {'$eq': a}},
                 {'$set':
-                    {f'{block_number - 1}.n_txs': address_data[a]['n_txs'] // 10 ** 9,
+                    {f'{block_number - 1}.n_txs': address_data[a]['n_txs'],
                      f'{block_number - 1}.eth': address_data[a]['eth']}
                  }
             )

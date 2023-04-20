@@ -71,7 +71,7 @@ class MempoolCollector(DataCollector):
                 try:
                     tx_data = w3.eth.getTransaction(tx['hash'])
                     tx['from'] = tx_data['from']
-                    tx['nonce'] = tx_data['nonce']
+                    tx['nonce'] = tx_data['nonce'] // 10 ** 9
                     if 'maxFeePerGas' in tx_data:
                         tx['maxFeePerGas'] = tx_data['maxFeePerGas']
                     else:

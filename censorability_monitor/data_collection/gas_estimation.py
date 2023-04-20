@@ -86,7 +86,7 @@ class GasEstimator:
             try:
                 result = estimate_tx_gas(tx_details, block_number, w3)
                 gas_estimates[tx_hash] = {'block_number': block_number,
-                                        'gas': result}
+                                          'gas': result}
             except Exception as e:
                 logger.warning(f"Unable to estimate gas in {block_number}: {type(e)} {e}")
             times.append(time.time() - t1)
