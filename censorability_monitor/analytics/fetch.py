@@ -88,7 +88,7 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
             'nonce', ascending=True
         ).reset_index()
         for i, row in transactions_from_addr.iterrows():
-            if row['nonce'] > n_txs:
+            if row['nonce'] // 10 ** 9 > n_txs:
                 block_txs = True
                 break
             n_txs += 1

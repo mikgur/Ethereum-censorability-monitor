@@ -201,7 +201,7 @@ class BlockCollector(DataCollector):
             UpdateOne(
                 {'address': {'$eq': a}},
                 {'$set':
-                    {f'{block_number - 1}.n_txs': address_data[a]['n_txs'],
+                    {f'{block_number - 1}.n_txs': address_data[a]['n_txs'] // 10 ** 9,
                      f'{block_number - 1}.eth': address_data[a]['eth']}
                  }
             )
