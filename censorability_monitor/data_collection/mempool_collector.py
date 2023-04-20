@@ -32,6 +32,7 @@ class MempoolCollector(DataCollector):
         first_seen_collection = db['tx_first_seen_ts']
         tx_details_collection = db['tx_details']
         first_seen_collection.create_index('hash', unique=True)
+        first_seen_collection.create_index('block_number', unique=False)
         tx_details_collection.create_index('hash', unique=True)
         tx_filter = w3.eth.filter('pending')
         i = 0
