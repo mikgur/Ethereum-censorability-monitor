@@ -176,7 +176,7 @@ class BlockCollector(DataCollector):
                 address_data.update(d)
         except Exception as e:
             logger.warning(f"Error collecting address data: {e} {type(e)}")
-        logger.info(f"Got infor for {len(address_data)} / {len(mempool_accounts)}")
+        logger.info(f"Got info for {len(address_data)} / {len(mempool_accounts)} addresses")
         t_eth_get_address_data = time.time() - t_current
         # Save accounts info to db
         t_current = time.time()
