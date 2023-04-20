@@ -147,7 +147,6 @@ class BlockCollector(DataCollector):
         logger.info((f'Found {no_details}/{n_mempool_txs} txs without '
                      f'details, remove {n_removed} from mempool. '))
         t_mongo_remove_old_without_details = time.time() - t_current
-        logger.info(f'Interesting accs in mempool: {len(mempool_accounts)}')
 
         # Update accounts info:
         t_current = time.time()
@@ -155,7 +154,7 @@ class BlockCollector(DataCollector):
         max_workers = int(np.ceil(len(mempool_accounts) / min_batch_size))
         workers = min(self.max_workers, max(max_workers, 1))
 
-        logger.info(f"Max_workers: {max_workers} workers: {workers}")
+        logger.info(f"Accs: max_workers: {max_workers}, workers: {workers}")
         process_executor = ProcessPoolExecutor(max_workers=workers)
         event_loop = asyncio.get_event_loop()
         chunks = list(split_on_equal_chunks(list(mempool_accounts), workers))
@@ -177,6 +176,7 @@ class BlockCollector(DataCollector):
                 address_data.update(d)
         except Exception as e:
             logger.warning(f"Error collecting address data: {e} {type(e)}")
+        logger.info(f"Got infor for {len(address_data)} / {len(mempool_accounts)}")
         t_eth_get_address_data = time.time() - t_current
         # Save accounts info to db
         t_current = time.time()
