@@ -1,10 +1,10 @@
-from pymongo.collection import Collection
-import pandas as pd
-
+from datetime import datetime, timedelta, timezone
 from typing import List
-from datetime import timezone, datetime, timedelta
 
-from utils import str_date_repr
+import pandas as pd
+from pymongo.collection import Collection
+
+from .utils import str_date_repr
 
 
 def _get_daterange(start_date: str, end_date: str) -> List[str]:
@@ -19,21 +19,20 @@ def _get_daterange(start_date: str, end_date: str) -> List[str]:
         List of dates in dd-mm-yy format between two days (inclusively)
 
     """
-    format = "%d-%m-%y"
+    date_format = "%d-%m-%y"
     try:
-        start_date = datetime.strptime(start_date, format)
+        start_date = datetime.strptime(start_date, date_format)
     except:
-        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
     try:
-        end_date = datetime.strptime(end_date, format)
+        end_date = datetime.strptime(end_date, date_format)
     except:
-        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
 
     daydiff = (end_date - start_date).days + 1
 
     daterange = [
-        str_date_repr(start_date + timedelta(days=diff))
-        for diff in range(daydiff)
+        str_date_repr(start_date + timedelta(days=diff)) for diff in range(daydiff)
     ]
 
     return daterange
@@ -244,7 +243,7 @@ def get_censored_transactions_by_day(collection: Collection, date: str) -> List[
     try:
         start_dt = datetime.strptime(date, "%d-%m-%y")
     except:
-        raise ValueError("Date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("Date has wrong date_format. Required date_format is dd-mm-yy")
 
     end_dt = start_dt + timedelta(days=1)
 
@@ -288,12 +287,12 @@ def get_censored_transactions_by_daterange(
     try:
         start_dt = datetime.strptime(start_date, "%d-%m-%y")
     except:
-        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
 
     try:
         end_dt = datetime.strptime(end_date, "%d-%m-%y") + timedelta(days=1)
     except:
-        raise ValueError("End date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("End date has wrong date_format. Required date_format is dd-mm-yy")
 
     start_ts = int(start_dt.replace(tzinfo=timezone.utc).timestamp())
     end_ts = int(end_dt.replace(tzinfo=timezone.utc).timestamp())
@@ -333,7 +332,7 @@ def get_ofac_list_by_day(collection: Collection, date: str) -> List[dict]:
     try:
         start_dt = datetime.strptime(date, "%d-%m-%y")
     except:
-        raise ValueError("Date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("Date has wrong date_format. Required date_format is dd-mm-yy")
 
     end_dt = start_dt + timedelta(days=1)
 
@@ -371,12 +370,12 @@ def get_ofac_list_by_daterange(
     try:
         start_dt = datetime.strptime(start_date, "%d-%m-%y")
     except:
-        raise ValueError("Start date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
 
     try:
         end_dt = datetime.strptime(end_date, "%d-%m-%y") + timedelta(days=1)
     except:
-        raise ValueError("End date has wrong format. Required format is dd-mm-yy")
+        raise ValueError("End date has wrong date_format. Required date_format is dd-mm-yy")
 
     start_ts = int(start_dt.replace(tzinfo=timezone.utc).timestamp())
     end_ts = int(end_dt.replace(tzinfo=timezone.utc).timestamp())
