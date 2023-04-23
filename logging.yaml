@@ -8,7 +8,7 @@ handlers:
   console:
     class: logging.StreamHandler
     level: DEBUG
-    formatter: filebeat_esc
+    formatter: simple
     stream: ext://sys.stdout
 loggers:
   console_json_logger:
