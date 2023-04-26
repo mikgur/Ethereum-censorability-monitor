@@ -7,6 +7,7 @@ from multiprocessing import current_process
 
 import numpy as np
 import pandas as pd
+from prometheus_client import Gauge, Summary
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import BulkWriteError
 from web3.auto import Web3
@@ -18,6 +19,21 @@ from .gas_estimation import GasEstimator
 from .utils import split_on_equal_chunks
 
 logger = logging.getLogger(__name__)
+
+
+p_summary = Summary("BlockCollector", "BlockCollector processing time", ["operation"])
+p_summary.labels(operation="processing")
+p_summary.labels(operation="mongo_find_first_seen")
+p_summary.labels(operation="geth_find_details")
+p_summary.labels(operation="mongo_update_details")
+p_summary.labels(operation="mongo_remove_old_without_details")
+p_summary.labels(operation="geth_get_address_data")
+p_summary.labels(operation="mongo_save_address_info")
+p_summary.labels(operation="mongo_reverted_txs")
+p_summary.labels(operation="eth_get_mempool_content")
+p_summary.labels(operation="mongo_drop")
+
+p_gauge = Gauge("BlockCollector_blocknumber", "block number processed by block collector")
 
 
 class BlockCollector(DataCollector):
@@ -295,6 +311,19 @@ class BlockCollector(DataCollector):
             {'block_info_saved': block_number})
 
         logger.info(f'Block processing took {int(time.time() - t1)} s')
+
+        p_gauge.set(block_number)
+        p_summary.labels(operation="processing").observe(int(time.time() - t1))
+        p_summary.labels(operation="mongo_find_first_seen").observe(t_mongo_find_first_seen)
+        p_summary.labels(operation="geth_find_details").observe(t_eth_find_details)
+        p_summary.labels(operation="mongo_update_details").observe(t_mongo_update_details)
+        p_summary.labels(operation="mongo_remove_old_without_details").observe(t_mongo_remove_old_without_details)
+        p_summary.labels(operation="geth_get_address_data").observe(t_eth_get_address_data)
+        p_summary.labels(operation="mongo_save_address_info").observe(t_mongo_save_address_info)
+        p_summary.labels(operation="mongo_reverted_txs").observe(t_mongo_reverted_txs)
+        p_summary.labels(operation="eth_get_mempool_content").observe(t_eth_get_mempool_content)
+        p_summary.labels(operation="mongo_drop").observe(t_mongo_drop)
+
         if time.time() - t1 > self.interval:
             logger.warning(f't_mongo_find_first_seen: {t_mongo_find_first_seen:0.2f}')
             logger.warning(f't_eth_find_details: {t_eth_find_details:0.2f}')

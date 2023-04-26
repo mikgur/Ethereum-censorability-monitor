@@ -7,14 +7,21 @@ from multiprocessing import current_process
 
 import numpy as np
 import pandas as pd
+from prometheus_client import Summary
 from pymongo import MongoClient, UpdateOne
 from web3.auto import Web3
 from web3.exceptions import ContractLogicError
 
 from .data_collector import DataCollector
-from .utils import split_on_equal_chunks, retry_on_exception
+from .utils import retry_on_exception, split_on_equal_chunks
 
 logger = logging.getLogger(__name__)
+
+p_summary = Summary("MempoolGasEstimator", "MempoolGasEstimator processing time", ["operation"])
+p_summary.labels(operation="processing")
+p_summary.labels(operation="mongo_get_txs")
+p_summary.labels(operation="geth_estimate_gas")
+p_summary.labels(operation="mongo_save_gas_estimates")
 
 
 @retry_on_exception(5)
@@ -374,10 +381,17 @@ class MemPoolGasEstimator(DataCollector):
         if len(updates) > 0:
             tx_gas_collection.bulk_write(updates)
         t_mongo_save_gas_estimates = time.time() - t_current
-        if time.time() - t1 > 4:
+        total_time = time.time() - t1
+
+        p_summary.labels(operation="processing").observe(total_time)
+        p_summary.labels(operation="mongo_get_txs").observe(t_mongo_get_txs)
+        p_summary.labels(operation="geth_estimate_gas").observe(t_eth_estimate_gas)
+        p_summary.labels(operation="mongo_save_gas_estimates").observe(t_mongo_save_gas_estimates)
+
+        if total_time > 4:
             logger.warning(f"t_mongo_get_txs {t_mongo_get_txs:0.2f}")
             logger.warning(f"t_eth_estimate_gas {t_eth_estimate_gas:0.2f}")
             logger.warning(f"t_mongo_save_gas_estimates {t_mongo_save_gas_estimates:0.2f}")
-        logger.info((f'Gas estimation took {int(time.time() - t1)} '
+        logger.info((f'Gas estimation took {total_time} '
                      f'seconds - got {len(estimated_gas)} of '
                      f'{len(txs_for_gas_estimate)}'))
