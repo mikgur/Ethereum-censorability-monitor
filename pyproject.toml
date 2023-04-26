@@ -21,6 +21,7 @@ catboost = "^1.1.1"
 scikit-learn = "^1.2.1"
 python-dotenv = "^0.21.1"
 ecs-logging = "^2.0.0"
+prometheus-client = "^0.16.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"

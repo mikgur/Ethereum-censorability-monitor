@@ -1,15 +1,14 @@
 import asyncio
 import logging
 import logging.config
+from pathlib import Path
 import os
 
 import yaml
 from dotenv import load_dotenv
+from prometheus_client import start_http_server
 
-from censorability_monitor.data_collection import (BlockCollector,
-                                                   CollectorManager,
-                                                   MempoolCollector,
-                                                   MemPoolGasEstimator)
+from censorability_monitor.data_collection import BlockCollector
 
 load_dotenv()
 
@@ -18,6 +17,8 @@ with open('logging.yaml', 'r') as f:
     logging.config.dictConfig(config)
 
 logger = logging.getLogger(__name__)
+
+start_http_server(8898)
 
 
 def main():
@@ -31,13 +32,6 @@ def main():
     db_col_name = os.environ.get('db_collector_name', 'ethereum_mempool')
     mongo_url = f'mongodb://{db_col_usr}:{db_col_pass}@{db_col_url}:{db_col_port}/' # noqa E501
 
-    mempool_collecotr = MempoolCollector(
-                mongo_url=mongo_url,
-                db_name=db_col_name,
-                web3_type=web3_connection_type,
-                web3_url=web3_url,
-                interval=0.5,
-                verbose=False)
     block_collector = BlockCollector(
                 mongo_url=mongo_url,
                 db_name=db_col_name,
@@ -45,17 +39,7 @@ def main():
                 web3_url=web3_url,
                 interval=6,
                 verbose=True)
-    mempool_gas_estimator = MemPoolGasEstimator(
-                mongo_url=mongo_url,
-                db_name=db_col_name,
-                web3_type=web3_connection_type,
-                web3_url=web3_url,
-                interval=6,
-                verbose=True)
-    collectors = [mempool_collecotr, block_collector, mempool_gas_estimator]
-
-    data_collector = CollectorManager(collectors)
-    asyncio.run(data_collector.start())
+    asyncio.run(block_collector.collect())
 
 
 if __name__ == '__main__':

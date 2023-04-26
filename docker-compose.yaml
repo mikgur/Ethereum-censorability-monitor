@@ -2,12 +2,24 @@ version: '3.1'
 
 services:
 
-  data_collector:
+  mempool_collector:
     build:
         context: .
-        dockerfile: data_collector.Dockerfile
+        dockerfile: mempool_collector.Dockerfile
     tty: true
   
+  block_collector:
+    build:
+        context: .
+        dockerfile: block_collector.Dockerfile
+    tty: true
+
+  mempool_gas_estimator:
+    build:
+        context: .
+        dockerfile: mempool_gas_estimator.Dockerfile
+    tty: true
+
   censorship_analytics:
     build:
         context: .
