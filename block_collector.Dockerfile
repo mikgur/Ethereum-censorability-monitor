@@ -18,5 +18,4 @@ RUN apt update && apt install -y python3-pip                                  \
     && apt autoremove --purge -y                                              \
     && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/*.list
 
-
-CMD python mempool_collector.py
+CMD python block_collector.py

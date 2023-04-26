@@ -18,7 +18,7 @@ with open('logging.yaml', 'r') as f:
 
 logger = logging.getLogger(__name__)
 
-start_http_server(8898)
+start_http_server(8000)
 
 
 def main():

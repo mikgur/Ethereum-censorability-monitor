@@ -6,22 +6,30 @@ services:
     build:
         context: .
         dockerfile: mempool_collector.Dockerfile
+    ports:
+      - 8000:8000
     tty: true
   
   block_collector:
     build:
         context: .
         dockerfile: block_collector.Dockerfile
+    ports:
+      - 8001:8000
     tty: true
 
   mempool_gas_estimator:
     build:
         context: .
         dockerfile: mempool_gas_estimator.Dockerfile
+    ports:
+      - 8002:8000
     tty: true
 
   censorship_analytics:
     build:
         context: .
         dockerfile: censorship_analytics.Dockerfile
+    ports:
+      - 8003:8000
     tty: true
