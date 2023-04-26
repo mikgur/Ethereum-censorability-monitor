@@ -3,12 +3,23 @@ import logging
 import time
 from multiprocessing import current_process
 
+from prometheus_client import Summary
 from pymongo.errors import BulkWriteError
 from web3.exceptions import TransactionNotFound
 
 from .data_collector import DataCollector
 
 logger = logging.getLogger(__name__)
+
+
+p_summary = Summary("MempoolCollector", "MempoolCollector processing time", ["operation"])
+p_summary.labels(operation="full_update")
+p_summary.labels(operation="geth_filter_update")
+p_summary.labels(operation="mongo_get_txs")
+p_summary.labels(operation="mongo_return_dropped")
+p_summary.labels(operation="geth_get_new_details")
+p_summary.labels(operation="mongo_insert_new_txs")
+p_summary.labels(operation="mongo_insert_new_details")
 
 
 class MempoolCollector(DataCollector):
@@ -114,6 +125,13 @@ class MempoolCollector(DataCollector):
                 finally:
                     t_eth_insert_new_txs_details = time.time() - t_current
             t2 = time.time()
+            p_summary.labels(operation="full_update").observe(t2 - t1)
+            p_summary.labels(operation="geth_filter_update").observe(t_eth_get_filter_update)
+            p_summary.labels(operation="mongo_get_txs").observe(t_mongo_get_existing_from_mongo)
+            p_summary.labels(operation="mongo_return_dropped").observe(t_mongo_return_dropped)
+            p_summary.labels(operation="geth_get_new_details").observe(t_eth_get_new_details)
+            p_summary.labels(operation="mongo_insert_new_txs").observe(t_eth_insert_new_txs)
+            p_summary.labels(operation="mongo_insert_new_details").observe(t_eth_insert_new_txs_details)
             time_left = self.interval - (t2 - t1)
             if time_left < 0:
                 logger.warning((f'Slow collector: {current_process().name} - '
