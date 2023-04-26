@@ -34,7 +34,7 @@ p_summary.labels(operation="eth_get_mempool_content")
 p_summary.labels(operation="mongo_drop")
 
 p_gauge = Gauge("BlockCollector_blocknumber", "block number processed by block collector")
-
+p_gauge_update_timestamp = Gauge("BlockCollector_blocknumber", "block number processed by block collector")
 
 class BlockCollector(DataCollector):
     def __init__(self, mongo_url: str, db_name: str,
@@ -313,6 +313,7 @@ class BlockCollector(DataCollector):
         logger.info(f'Block processing took {int(time.time() - t1)} s')
 
         p_gauge.set(block_number)
+        p_gauge_update_timestamp.set(time.time())
         p_summary.labels(operation="processing").observe(int(time.time() - t1))
         p_summary.labels(operation="mongo_find_first_seen").observe(t_mongo_find_first_seen)
         p_summary.labels(operation="geth_find_details").observe(t_eth_find_details)
