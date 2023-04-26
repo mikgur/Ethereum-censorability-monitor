@@ -33,7 +33,7 @@ p_summary.labels(operation="mongo_reverted_txs")
 p_summary.labels(operation="eth_get_mempool_content")
 p_summary.labels(operation="mongo_drop")
 
-p_gauge = Gauge("BlockCollector_blocknumber", "block number processed by block collector")
+p_gauge = Gauge("BlockCollector_timestamp", "block number processed by block collector")
 p_gauge_update_timestamp = Gauge("BlockCollector_blocknumber", "block number processed by block collector")
 
 class BlockCollector(DataCollector):
