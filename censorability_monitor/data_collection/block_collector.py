@@ -66,7 +66,7 @@ class BlockCollector(DataCollector):
                 for block_number in range(last_processed_block + 1,
                                           current_block + 1):
                     try:
-                        p_gauge_blocks_behind.set(current_block - block_number)
+                        p_gauge_blocks_behind.set(w3.eth.blockNumber - block_number)
                         await self.process_block_data(
                             block_number, w3, mongo_client)
                     except Exception as e:
