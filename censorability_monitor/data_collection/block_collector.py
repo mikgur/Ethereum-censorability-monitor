@@ -35,6 +35,7 @@ p_summary.labels(operation="mongo_drop")
 
 p_gauge = Gauge("BlockCollector_time_stamp", "block number processed by block collector")
 p_gauge_update_timestamp = Gauge("BlockCollector_block_number", "block number processed by block collector")
+p_gauge_blocks_behind = Gauge("BlockCollector_block_behind", "how many blocks we are behind blockchain")
 
 class BlockCollector(DataCollector):
     def __init__(self, mongo_url: str, db_name: str,
@@ -65,6 +66,7 @@ class BlockCollector(DataCollector):
                 for block_number in range(last_processed_block + 1,
                                           current_block + 1):
                     try:
+                        p_gauge_blocks_behind.set(current_block - block_number)
                         await self.process_block_data(
                             block_number, w3, mongo_client)
                     except Exception as e:
