@@ -19,11 +19,18 @@ def setup_asyncio(thread_name_prefix: str) -> None:
 
 
 def init_app() -> FastAPI:
+    outer_app = FastAPI()
+    inner_app = FastAPI()
+    monitoring_app = FastAPI()
     app = FastAPI()
 
     setup_asyncio(thread_name_prefix="Neutrality Watch API")
     load_mongo_collections()
-    add_routing(app)
-    add_middlewares(app)
+    add_middlewares(outer_app, inner_app, monitoring_app)
+    add_routing(outer_app, inner_app)
+
+    app.mount("/api", outer_app)
+    app.mount("/metrics", inner_app)
+    app.mount("/monitoring", monitoring_app)
 
     return app

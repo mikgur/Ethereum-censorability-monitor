@@ -17,10 +17,12 @@ from .mongo import get_collection
 
 AUTH_KEY = os.environ["AUTH_KEY"]
 
-router = APIRouter()
+inner_router = APIRouter()
+outer_router = APIRouter()
+monitoring_router = APIRouter()
 
 
-@router.get("/metrics/lido_validators_share/{period}")
+@inner_router.get("/lido_validators_share/{period}")
 async def _get_lido_validators_share(period: str) -> JSONResponse:
     # Query examples: /metrics/lido_validators_share/last_week
     # Query examples: /metrics/lido_validators_share/last_month
@@ -37,7 +39,7 @@ async def _get_lido_validators_share(period: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/metrics/lido_validators_ratio/{period}")
+@inner_router.get("/lido_validators_ratio/{period}")
 async def _get_lido_validators_ratio(period: str) -> JSONResponse:
     # Query examples: /metrics/get_lido_validators_ratio/last_week
     # Query examples: /metrics/get_lido_validators_ratio/last_month
@@ -54,7 +56,7 @@ async def _get_lido_validators_ratio(period: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/metrics/lido_vs_rest_share/{period}")
+@inner_router.get("/lido_vs_rest_share/{period}")
 async def _get_total_validators_ratio(period: str) -> JSONResponse:
     # Query examples: /metrics/lido_vs_rest_share/last_week
     # Query examples: /metrics/lido_vs_rest_share/last_month
@@ -71,7 +73,7 @@ async def _get_total_validators_ratio(period: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/metrics/overall_latency")
+@inner_router.get("/overall_latency")
 async def _get_latency() -> JSONResponse:
     # Query example: /metrics/overall_latency
     # Query example: /metrics/overall_latency
@@ -86,7 +88,7 @@ async def _get_latency() -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/metrics/censored_latency/{mean_type}")
+@inner_router.get("/censored_latency/{mean_type}")
 async def _get_censorship_latency(mean_type: str) -> JSONResponse:
     # Query example: /metrics/censored_latency/average
     # Query example: /metrics/censored_latency/median
@@ -101,7 +103,7 @@ async def _get_censorship_latency(mean_type: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/metrics/censored_percentage/{period}")
+@inner_router.get("/censored_percentage/{period}")
 async def _get_censorship_percentage(period: str) -> JSONResponse:
     # Query example: /metrics/censorship_percentage/last_week
     # Query example: /metrics/censorship_percentage/last_month
@@ -116,7 +118,7 @@ async def _get_censorship_percentage(period: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/validators")
+@outer_router.get("/data/validators")
 async def _get_validators(api_key: str) -> JSONResponse:
     # Query example: /data/validators?api_key=123
     validators = get_collection("validators")
@@ -134,7 +136,7 @@ async def _get_validators(api_key: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/metrics")
+@outer_router.get("/data/metrics")
 async def _get_metrics(api_key: str) -> JSONResponse:
     # Query example: /data/metrics?api_key=123
     validators_metrics = get_collection("validators_metrics")
@@ -150,7 +152,7 @@ async def _get_metrics(api_key: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/metrics_by_day")
+@outer_router.get("/data/metrics_by_day")
 async def _get_metrics_by_date(api_key: str, date: str) -> JSONResponse:
     # Query example: /data/metrics_by_day?api_key=123&date=17-02-23
     validators_metrics = get_collection("validators_metrics")
@@ -168,7 +170,7 @@ async def _get_metrics_by_date(api_key: str, date: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/metrics_by_validators")
+@outer_router.get("/data/metrics_by_validators")
 async def _get_metrics_by_validators(
     api_key: str, names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
@@ -186,7 +188,7 @@ async def _get_metrics_by_validators(
     return JSONResponse(res)
 
 
-@router.get("/data/metrics_by_daterange")
+@outer_router.get("/data/metrics_by_daterange")
 async def _get_metrics_by_daterange(
     api_key: str, start_date: str, end_date: str
 ) -> JSONResponse:
@@ -206,7 +208,7 @@ async def _get_metrics_by_daterange(
     return JSONResponse(res)
 
 
-@router.get("/data/metrics_by_validators_by_day")
+@outer_router.get("/data/metrics_by_validators_by_day")
 async def _get_metrics_by_validators_by_day(
     api_key: str, date: str, names: Union[List[str], None] = Query(default=None)
 ) -> JSONResponse:
@@ -226,7 +228,7 @@ async def _get_metrics_by_validators_by_day(
     return JSONResponse(res)
 
 
-@router.get("/data/metrics_by_validators_by_daterange")
+@outer_router.get("/data/metrics_by_validators_by_daterange")
 async def _get_metrics_by_validators_by_daterange(
     api_key: str,
     start_date: str,
@@ -251,7 +253,7 @@ async def _get_metrics_by_validators_by_daterange(
     return JSONResponse(res)
 
 
-@router.get("/data/censored_transactions")
+@outer_router.get("/data/censored_transactions")
 async def _get_transactions(api_key: str) -> JSONResponse:
     # Query example: /data/censored_transactions?api_key=123
     censored_txs = get_collection("censored_txs")
@@ -267,7 +269,7 @@ async def _get_transactions(api_key: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/censored_transactions_by_day")
+@outer_router.get("/data/censored_transactions_by_day")
 async def _get_transactions_by_day(api_key: str, date: str) -> JSONResponse:
     # Query example: /data/censored_transactions_by_day?api_key=123&date=17-02-23
     censored_txs = get_collection("censored_txs")
@@ -285,7 +287,7 @@ async def _get_transactions_by_day(api_key: str, date: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/censored_transactions_by_daterange")
+@outer_router.get("/data/censored_transactions_by_daterange")
 async def _get_transactions_by_daterange(
     api_key: str, start_date: str, end_date: str
 ) -> JSONResponse:
@@ -305,7 +307,7 @@ async def _get_transactions_by_daterange(
     return JSONResponse(res)
 
 
-@router.get("/data/ofac_addresses")
+@outer_router.get("/data/ofac_addresses")
 async def _get_ofac_list(api_key: str) -> JSONResponse:
     # Query example: /data/ofac_addresses?api_key=123
     ofac_list = get_collection("ofac_list")
@@ -321,7 +323,7 @@ async def _get_ofac_list(api_key: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/ofac_addresses_by_day")
+@outer_router.get("/data/ofac_addresses_by_day")
 async def _get_ofac_list_by_day(api_key: str, date: str) -> JSONResponse:
     # Query example: /data/ofac_addresses?api_key=123&date=17-02-23
     ofac_list = get_collection("ofac_list")
@@ -339,7 +341,7 @@ async def _get_ofac_list_by_day(api_key: str, date: str) -> JSONResponse:
     return JSONResponse(res)
 
 
-@router.get("/data/ofac_addresses_by_daterange")
+@outer_router.get("/data/ofac_addresses_by_daterange")
 async def _get_ofac_list_by_daterange(
     api_key: str, start_date: str, end_date: str
 ) -> JSONResponse:
@@ -359,5 +361,6 @@ async def _get_ofac_list_by_daterange(
     return JSONResponse(res)
 
 
-def add_routing(app: FastAPI):
-    app.include_router(router)
+def add_routing(outer_app: FastAPI, inner_app: FastAPI):
+    outer_app.include_router(outer_router)
+    inner_app.include_router(inner_router)
