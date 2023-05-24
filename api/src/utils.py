@@ -1,5 +1,5 @@
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
-from datetime import timezone, datetime, timedelta
 
 
 def str_date_repr(dt: timedelta) -> str:

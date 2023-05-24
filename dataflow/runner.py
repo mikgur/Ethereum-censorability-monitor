@@ -19,7 +19,7 @@ if __name__ == "__main__":
     client = MongoClient(mongo_url)
     logger.info("Connection has been established")
 
-    db = client["censorred"]
+    db = client["ethereum_censorship_monitor"]
     validators = db["validators"]
     validators_metrics = db["validators_metrics"]
     censored_txs = db["censored_txs"]

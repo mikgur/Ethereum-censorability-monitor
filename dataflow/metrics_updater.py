@@ -398,7 +398,8 @@ def _get_ofac_compliant_count(row: pd.Series, dates: List[str]) -> int:
     count = 0
     for day in dates:
         if day in row.keys():
-            count += row[day].get("num_ofac_compliant_txs", 0)
+            if isinstance(row[day], dict):
+                count += row[day].get("num_ofac_compliant_txs", 0)
 
     return count
 
@@ -417,7 +418,8 @@ def _get_ofac_non_compliant_count(row: pd.Series, dates: List[str]) -> int:
     count = 0
     for day in dates:
         if day in row.keys():
-            count += len(row[day].get("non_ofac_compliant_txs", []))
+            if isinstance(row[day], dict):
+                count += len(row[day].get("non_ofac_compliant_txs", []))
 
     return count
 
