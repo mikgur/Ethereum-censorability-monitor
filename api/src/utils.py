@@ -20,21 +20,19 @@ def get_last_dates(period_start: int, period_end: int) -> List[str]:
     Get last n dates
 
     Args:
-        period_start    -   Day difference between today and the last date of the date range
-        period_end      -   Day difference between today and the first date of the date range
+        period_start    -   Day difference between today and the
+                            last date of the date range
+        period_end      -   Day difference between today and the
+                            first date of the date range
 
     Returns:
-        List of dates that started period_end days ago and finished period_end days ago
+        List of dates that started period_end days ago
+        and finished period_end days ago
     """
-    return [
-        str_date_repr(datetime.utcnow().date() - timedelta(days=i))
-        for i in range(period_start, period_end)
-    ]
+    return [str_date_repr(datetime.utcnow().date() - timedelta(days=i)) for i in range(period_start, period_end)]
 
 
-def get_shifted_week(
-    monday: datetime, sunday: datetime, shift: int
-) -> Tuple[int, int, str, str]:
+def get_shifted_week(monday: datetime, sunday: datetime, shift: int) -> Tuple[int, int, str, str]:
     """
     Get shifted week
 
@@ -65,7 +63,8 @@ def get_week(ts: int) -> Tuple[int, int]:
         ts  -   Timestamp of the specific datetime
 
     Returns:
-        Week's monday and sunday timestamps and dates corresponding to the given timestamp
+        Week's monday and sunday timestamps and dates
+        corresponding to the given timestamp
     """
     today = datetime.utcfromtimestamp(ts)
     this_week_monday = today - timedelta(

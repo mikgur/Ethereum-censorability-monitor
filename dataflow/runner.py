@@ -1,8 +1,7 @@
 import os
 
-from pymongo import MongoClient
-
 from metrics_updater import update_metrics
+from pymongo import MongoClient
 from utils import init_logger
 
 if __name__ == "__main__":
@@ -16,7 +15,7 @@ if __name__ == "__main__":
     mongo_url = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/"
 
     logger.info("Trying to connect to Mongo")
-    client = MongoClient(mongo_url)
+    client: MongoClient = MongoClient(mongo_url)
     logger.info("Connection has been established")
 
     db = client["ethereum_censorship_monitor"]

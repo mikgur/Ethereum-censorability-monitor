@@ -20,7 +20,7 @@ def load_mongo_collections() -> None:
     Connect to MongoDB and load collections
     """
     mongo_url = f"mongodb://{MONGO_USER}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/"
-    client = MongoClient(mongo_url)
+    client: MongoClient = MongoClient(mongo_url)
 
     db = client["ethereum_censorship_monitor"]
     collections["validators"] = db["validators"]

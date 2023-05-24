@@ -3,6 +3,7 @@ from typing import List
 
 import pandas as pd
 from pymongo.collection import Collection
+from pymongo.errors import OperationFailure
 
 from .utils import str_date_repr
 
@@ -21,19 +22,17 @@ def _get_daterange(start_date: str, end_date: str) -> List[str]:
     """
     date_format = "%d-%m-%y"
     try:
-        start_date = datetime.strptime(start_date, date_format)
-    except:
+        _start_date = datetime.strptime(start_date, date_format)
+    except ValueError:
         raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
     try:
-        end_date = datetime.strptime(end_date, date_format)
-    except:
+        _end_date = datetime.strptime(end_date, date_format)
+    except ValueError:
         raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
 
-    daydiff = (end_date - start_date).days + 1
+    daydiff = (_end_date - _start_date).days + 1
 
-    daterange = [
-        str_date_repr(start_date + timedelta(days=diff)) for diff in range(daydiff)
-    ]
+    daterange = [str_date_repr(_start_date + timedelta(days=diff)) for diff in range(daydiff)]
 
     return daterange
 
@@ -48,11 +47,10 @@ def get_collection_keys(collection: Collection) -> List[str]:
     Returns:
         List of collection keys
     """
-    # TODO: there might be more efficient way to obtain a list of collection keys
     try:
         records = collection.find({})
-    except:
-        raise Exception("Failed to fetch data from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch data from db")
     keys = set()
     for record in records:
         for key in record.keys():
@@ -73,8 +71,8 @@ def get_metrics(collection: Collection) -> List[dict]:
     """
     try:
         cursor = collection.find({}, {"_id": 0})
-    except:
-        raise Exception("Failed to fetch metrics from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch metrics from db")
     return list(cursor)
 
 
@@ -96,8 +94,8 @@ def get_metrics_by_day(collection: Collection, date: str) -> List[dict]:
 
     try:
         cursor = collection.find({}, cols)
-    except:
-        raise Exception("Failed to fetch metrics from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch metrics from db")
 
     return list(cursor)
 
@@ -115,15 +113,13 @@ def get_metrics_by_validators(collection: Collection, names: List[str]) -> List[
     """
     try:
         cursor = collection.find({"name": {"$in": names}}, {"_id": 0})
-    except:
-        raise Exception("Failed to fetch metrics from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch metrics from db")
 
     return list(cursor)
 
 
-def get_metrics_by_daterange(
-    collection: Collection, start_date: str, end_date: str
-) -> List[dict]:
+def get_metrics_by_daterange(collection: Collection, start_date: str, end_date: str) -> List[dict]:
     """
     Get all metrics for the date range
 
@@ -143,14 +139,12 @@ def get_metrics_by_daterange(
 
     try:
         cursor = collection.find({}, cols)
-    except:
-        raise Exception("Failed to fetch metrics from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch metrics from db")
     return list(cursor)
 
 
-def get_metrics_by_validators_by_day(
-    collection: Collection, names: List[str], date: str
-) -> List[dict]:
+def get_metrics_by_validators_by_day(collection: Collection, names: List[str], date: str) -> List[dict]:
     """
     Get all metrics for multiple validators for the single day
 
@@ -170,8 +164,8 @@ def get_metrics_by_validators_by_day(
 
     try:
         cursor = collection.find({"name": {"$in": names}}, cols)
-    except:
-        raise Exception("Failed to fetch metrics from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch metrics from db")
 
     return list(cursor)
 
@@ -200,8 +194,8 @@ def get_metrics_by_validators_by_daterange(
 
     try:
         cursor = collection.find({"name": {"$in": names}}, cols)
-    except:
-        raise Exception("Failed to fetch metrics from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch metrics from db")
 
     return list(cursor)
 
@@ -218,13 +212,11 @@ def get_censored_transactions(collection: Collection) -> List[dict]:
     """
     try:
         cursor = collection.find({"non_ofac_compliant": True}, {"_id": 0})
-    except:
-        raise Exception("Failed to fetch transactions data from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch transactions data from db")
 
     txs_df = pd.DataFrame(cursor)
-    txs_df["censored"] = txs_df["censored"].apply(
-        lambda cl: cl if isinstance(cl, list) else []
-    )
+    txs_df["censored"] = txs_df["censored"].apply(lambda cl: cl if isinstance(cl, list) else [])
 
     return txs_df.dropna().to_dict(orient="records")
 
@@ -238,11 +230,12 @@ def get_censored_transactions_by_day(collection: Collection, date: str) -> List[
         date        -   Date to get censored transactions
 
     Returns:
-        List of all records in the censored transactions collection for the chosen day
+        List of all records in the censored transactions
+        collection for the chosen day
     """
     try:
         start_dt = datetime.strptime(date, "%d-%m-%y")
-    except:
+    except ValueError:
         raise ValueError("Date has wrong date_format. Required date_format is dd-mm-yy")
 
     end_dt = start_dt + timedelta(days=1)
@@ -259,20 +252,16 @@ def get_censored_transactions_by_day(collection: Collection, date: str) -> List[
             },
             {"_id": 0},
         )
-    except:
-        raise Exception("Failed to fetch transactions data from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch transactions data from db")
 
     txs_df = pd.DataFrame(cursor)
-    txs_df["censored"] = txs_df["censored"].apply(
-        lambda cl: cl if isinstance(cl, list) else []
-    )
+    txs_df["censored"] = txs_df["censored"].apply(lambda cl: cl if isinstance(cl, list) else [])
 
     return txs_df.to_dict(orient="records")
 
 
-def get_censored_transactions_by_daterange(
-    collection: Collection, start_date: str, end_date: str
-) -> List[dict]:
+def get_censored_transactions_by_daterange(collection: Collection, start_date: str, end_date: str) -> List[dict]:
     """
     Get all censored transactions for the date range
 
@@ -282,16 +271,17 @@ def get_censored_transactions_by_daterange(
         end_date    -   Right bound of the date range
 
     Returns:
-        List of all records in the censored transactions collection for the date range
+        List of all records in the censored transactions
+        collection for the date range
     """
     try:
         start_dt = datetime.strptime(start_date, "%d-%m-%y")
-    except:
+    except ValueError:
         raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
 
     try:
         end_dt = datetime.strptime(end_date, "%d-%m-%y") + timedelta(days=1)
-    except:
+    except ValueError:
         raise ValueError("End date has wrong date_format. Required date_format is dd-mm-yy")
 
     start_ts = int(start_dt.replace(tzinfo=timezone.utc).timestamp())
@@ -307,13 +297,11 @@ def get_censored_transactions_by_daterange(
             },
             {"_id": 0},
         )
-    except:
-        raise Exception("Failed to fetch transactions data from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch transactions data from db")
 
     txs_df = pd.DataFrame(cursor)
-    txs_df["censored"] = txs_df["censored"].apply(
-        lambda cl: cl if isinstance(cl, list) else []
-    )
+    txs_df["censored"] = txs_df["censored"].apply(lambda cl: cl if isinstance(cl, list) else [])
 
     return txs_df.to_dict(orient="records")
 
@@ -331,7 +319,7 @@ def get_ofac_list_by_day(collection: Collection, date: str) -> List[dict]:
     """
     try:
         start_dt = datetime.strptime(date, "%d-%m-%y")
-    except:
+    except ValueError:
         raise ValueError("Date has wrong date_format. Required date_format is dd-mm-yy")
 
     end_dt = start_dt + timedelta(days=1)
@@ -347,15 +335,13 @@ def get_ofac_list_by_day(collection: Collection, date: str) -> List[dict]:
             },
             {"_id": 0},
         )
-    except:
-        raise Exception("Failed to fetch transactions data from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch transactions data from db")
 
     return list(cursor)
 
 
-def get_ofac_list_by_daterange(
-    collection: Collection, start_date: str, end_date: str
-) -> List[dict]:
+def get_ofac_list_by_daterange(collection: Collection, start_date: str, end_date: str) -> List[dict]:
     """
     Get OFAC list for the date range
 
@@ -369,12 +355,12 @@ def get_ofac_list_by_daterange(
     """
     try:
         start_dt = datetime.strptime(start_date, "%d-%m-%y")
-    except:
+    except ValueError:
         raise ValueError("Start date has wrong date_format. Required date_format is dd-mm-yy")
 
     try:
         end_dt = datetime.strptime(end_date, "%d-%m-%y") + timedelta(days=1)
-    except:
+    except ValueError:
         raise ValueError("End date has wrong date_format. Required date_format is dd-mm-yy")
 
     start_ts = int(start_dt.replace(tzinfo=timezone.utc).timestamp())
@@ -389,7 +375,7 @@ def get_ofac_list_by_daterange(
             },
             {"_id": 0},
         )
-    except:
-        raise Exception("Failed to fetch transactions data from db")
+    except OperationFailure:
+        raise OperationFailure("Failed to fetch transactions data from db")
 
     return list(cursor)
