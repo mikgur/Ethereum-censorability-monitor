@@ -597,12 +597,17 @@ def get_lido_validators_metrics(
     Returns:
         List of dicts with metrics for each Lido validator
     """
-    if period == "last_week":
-        dates = get_last_dates(0, 7)
-    elif period == "last_month":
-        dates = get_last_dates(0, 30)
-    else:
-        raise ValueError("Wrong period")
+    match period:
+        case "last_week":
+            dates = get_last_dates(0, 7)
+        case "last_month":
+            dates = get_last_dates(0, 30)
+        case "last_half_year":
+            dates = get_last_dates(0, 180)
+        case "last_year":
+            dates = get_last_dates(0, 365)        
+        case _:
+            raise ValueError("Wrong period")
 
     metrics_df = _get_validators_metrics(collection, dates)
     metrics_df = _prepare_share_df(metrics_df, dates)
@@ -630,12 +635,17 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
     Returns:
         List of dicts with metrics for Lido and other pools
     """
-    if period == "last_week":
-        dates = get_last_dates(0, 7)
-    elif period == "last_month":
-        dates = get_last_dates(0, 30)
-    else:
-        raise ValueError("Wrong period")
+    match period:
+        case "last_week":
+            dates = get_last_dates(0, 7)
+        case "last_month":
+            dates = get_last_dates(0, 30)
+        case "last_half_year":
+            dates = get_last_dates(0, 180)
+        case "last_year":
+            dates = get_last_dates(0, 365)        
+        case _:
+            raise ValueError("Wrong period")
 
     # Prepare dataframe to calculate metrics for pools
     metrics_df = _get_validators_metrics(collection, dates)
@@ -886,12 +896,17 @@ def get_censored_percentage(
         Percentage of censored transactions
     """
     # Find min and max timestamps in censored transactions' mongo collection
-    if period == "last_week":
-        dates = get_last_dates(0, 7)
-    elif period == "last_month":
-        dates = get_last_dates(0, 30)
-    else:
-        raise ValueError("Wrong period")
+    match period:
+        case "last_week":
+            dates = get_last_dates(0, 7)
+        case "last_month":
+            dates = get_last_dates(0, 30)
+        case "last_half_year":
+            dates = get_last_dates(0, 180)
+        case "last_year":
+            dates = get_last_dates(0, 365)        
+        case _:
+            raise ValueError("Wrong period")
 
     start_date = datetime.strptime(dates[-1], "%d-%m-%y")
     end_date = datetime.strptime(dates[-0], "%d-%m-%y")
