@@ -18,8 +18,10 @@ import { getLatency } from "./DataAccessLayer";
 
 function LatencyChart() {
   const [latencyState, setLatencyState] = useState();
-  const [startDate, setStartDate] = useState(null); // Состояние для хранения выбранной даты начала окна
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [filteredData, setFilteredData] = useState([]);
+
 
   useEffect(() => {
     getLatencyData();
@@ -30,17 +32,24 @@ function LatencyChart() {
     setLatencyState(data.data.slice(-8));
   };
 
-  const handleStartDateChange = (date) => {
-    if (date.getDay() === 1) {
-      setStartDate(date);
-    }
-  };
+  useEffect(() => {
+        const filtered = latencyState.filter(item => {
+            let itemDate = new Date(item.date);
+            return itemDate >= startDate && itemDate <= endDate;
+        });
+        setFilteredData(filtered);
+    }, [startDate, endDate, latencyState]);
+  // const handleStartDateChange = (date) => {
+  //   if (date.getDay() === 1) {
+  //     setStartDate(date);
+  //   }
+  // };
 
-  const handleEndDateChange = (date) => {
-    if (date.getDay() === 0) {
-      setEndDate(date);
-    }
-  };
+  // const handleEndDateChange = (date) => {
+  //   if (date.getDay() === 0) {
+  //     setEndDate(date);
+  //   }
+  // };
 
   // // Фильтрация данных на основе выбранных дат
   // const filteredData = data.filter((item) => {
@@ -56,26 +65,22 @@ function LatencyChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-        <div>
-          <label className="text-white">Start Date:</label>
-          <DatePicker
-          selected={startDate}
-          onChange={handleStartDateChange}
-          filterDate={(date) => date.getDay() === 1}
-          dateFormat="dd.MM.yyyy"
-          placeholderText="Выберите понедельник"
-        />
-        </div>
-        <div>
-          <label className="text-white">End Date:</label>
-          <DatePicker
-          selected={endDate}
-          onChange={handleEndDateChange}
-          filterDate={(date) => date.getDay() === 0}
-          dateFormat="dd.MM.yyyy"
-          placeholderText="Выберите воскресенье"
-        />
-        </div>
+      <div className="datePickerContainer">
+                <DatePicker
+                    selected={startDate}
+                    onChange={date => setStartDate(date)}
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
+                />
+                <DatePicker
+                    selected={endDate}
+                    onChange={date => setEndDate(date)}
+                    selectsEnd
+                    endDate={endDate}
+                    minDate={startDate}
+                />
+            </div>
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
           <VictoryChart
             height={600}
@@ -116,7 +121,7 @@ function LatencyChart() {
             <VictoryLine
               alignment="middle"
               style={{ data: { stroke: "#c43a31" } }}
-              data={latencyState}
+              data={filteredData}
               x="start_date"
               y="overall_censorship_latency_without_lido_censorship"
             />
@@ -124,12 +129,12 @@ function LatencyChart() {
               alignment="middle"
               style={{ data: { stroke: "#1e90ff" } }}
               // labels={({ datum }) => datum.y}
-              data={latencyState}
+              data={filteredData}
               x="start_date"
               y="overall_censorship_latency"
             />
             <VictoryScatter
-              data={latencyState}
+              data={filteredData}
               x="start_date"
               y="overall_censorship_latency"
               size={7}
@@ -149,7 +154,7 @@ function LatencyChart() {
               }
             />
             <VictoryScatter
-              data={latencyState}
+              data={filteredData}
               x="start_date"
               y="overall_censorship_latency_without_lido_censorship"
               size={7}
