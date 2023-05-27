@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from "react";
 import {
-  VictoryBar,
   VictoryChart,
   VictoryLabel,
-  VictoryGroup,
   VictoryAxis,
   VictoryContainer,
   VictoryLegend,
-  VictoryArea,
   VictoryTheme,
   VictoryLine,
   VictoryScatter,
   VictoryTooltip,
 } from "victory";
 
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
 import { getLatency } from "./DataAccessLayer";
 
 function LatencyChart() {
   const [latencyState, setLatencyState] = useState();
+  const [startDate, setStartDate] = useState(null); // Состояние для хранения выбранной даты начала окна
+  const [endDate, setEndDate] = useState(null);
 
   useEffect(() => {
     getLatencyData();
@@ -28,6 +30,25 @@ function LatencyChart() {
     setLatencyState(data.data.slice(-8));
   };
 
+  const handleStartDateChange = (date) => {
+    if (date.getDay() === 1) {
+      setStartDate(date);
+    }
+  };
+
+  const handleEndDateChange = (date) => {
+    if (date.getDay() === 0) {
+      setEndDate(date);
+    }
+  };
+
+  // // Фильтрация данных на основе выбранных дат
+  // const filteredData = data.filter((item) => {
+  //   if (!startDate || !endDate) {
+  //     return true; // Вернуть все данные, если даты не выбраны
+  //   }
+  // });
+
   return (
     <div>
       <div class="h3 text-center">
@@ -35,6 +56,26 @@ function LatencyChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
+        <div>
+          <label className="text-white">Start Date:</label>
+          <DatePicker
+          selected={startDate}
+          onChange={handleStartDateChange}
+          filterDate={(date) => date.getDay() === 1}
+          dateFormat="dd.MM.yyyy"
+          placeholderText="Выберите понедельник"
+        />
+        </div>
+        <div>
+          <label className="text-white">End Date:</label>
+          <DatePicker
+          selected={endDate}
+          onChange={handleEndDateChange}
+          filterDate={(date) => date.getDay() === 0}
+          dateFormat="dd.MM.yyyy"
+          placeholderText="Выберите воскресенье"
+        />
+        </div>
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
           <VictoryChart
             height={600}
