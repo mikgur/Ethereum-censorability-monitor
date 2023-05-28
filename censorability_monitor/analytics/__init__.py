@@ -126,9 +126,12 @@ class CensorshipMonitor:
         logger.info('Select starting block')
         last_processed_block = self.get_last_processed_block_number(
             db_analytics)
+        logger.info(f'Last processed block: {last_processed_block}')
 
         first_ready_block = await self.get_first_ready_block_number(
             db_collector)
+        logger.info(f'First ready block: {first_ready_block}')
+
         if self.start_block > 1:
             first_ready_block = max(self.start_block - 1, first_ready_block)
 
