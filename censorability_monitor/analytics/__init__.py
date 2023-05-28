@@ -137,6 +137,7 @@ class CensorshipMonitor:
 
         last_ready_block = await self.get_last_ready_block_number(
             db_collector)
+        logger.info(f'Last ready block: {last_ready_block}')
 
         if last_processed_block > last_ready_block:
             logger.error(('Last processed block is higher than first ready '
