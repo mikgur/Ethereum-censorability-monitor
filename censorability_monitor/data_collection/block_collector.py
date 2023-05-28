@@ -96,6 +96,22 @@ class BlockCollector(DataCollector):
             {'timestamp': {'$lte': block_ts},
              'block_number': {'$exists': False}})
         mongo_transactions = list(transactions)
+
+        # This can be due to a crash situation when mempool collector was working, while block collector was down
+        if len(mongo_transactions) > 20000:
+            # Drop all transaction older than 1 hour
+            logger.warning(f'Dropping {len(mongo_transactions)} transactions older than 1 hour')
+            first_seen_collection.update_many(
+                {'timestamp': {'$lte': block_ts - 3600},
+                 'block_number': {'$exists': False}},
+                {'$set': {'block_number': -2,
+                          'dropped': True}}
+            )
+            transactions = first_seen_collection.find(
+                {'timestamp': {'$lte': block_ts},
+                 'block_number': {'$exists': False}})
+            mongo_transactions = list(transactions)
+
         t_mongo_find_first_seen = time.time() - t_current
         no_details = 0
         n_mempool_txs = 0
