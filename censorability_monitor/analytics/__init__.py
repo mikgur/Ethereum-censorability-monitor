@@ -134,6 +134,8 @@ class CensorshipMonitor:
 
         if self.start_block > 1:
             first_ready_block = max(self.start_block - 1, first_ready_block)
+        
+        logger.info(f'First ready/start block: {first_ready_block}')
 
         last_ready_block = await self.get_last_ready_block_number(
             db_collector)
@@ -146,11 +148,13 @@ class CensorshipMonitor:
 
         # Set current block
         current_block = max(first_ready_block, last_processed_block) + 1
+        logger.info(f'Starting from block: {current_block}')
         while True:
             while current_block > last_ready_block:
                 await asyncio.sleep(1)
                 last_ready_block = await self.get_last_ready_block_number(
                     db_collector)
+                print(f'Last ready block in loop: {last_ready_block}')
             while current_block <= last_ready_block:
                 block_processed = False
                 while not block_processed:
