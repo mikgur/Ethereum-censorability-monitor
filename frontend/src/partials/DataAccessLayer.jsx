@@ -18,7 +18,7 @@ export const getAllPool = async (period) => {
 export const getLatency = async () => {
     const data = await axios.get(`https://eth.neutralitywatch.com:443/metrics/overall_latency`)
     for (let i = 0; i < data.data.length; i++) {
-        data.data[i]['start_date'] = data.data[i]['start_date'] + '\n — \n' + data.data[i]['end_date']
+        data.data[i]['range_date'] = data.data[i]['start_date'] + '\n — \n' + data.data[i]['end_date']
     }
     return data
 }

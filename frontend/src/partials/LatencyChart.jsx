@@ -14,49 +14,65 @@ import {
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+import '../css/latency.css'
+
 import { getLatency } from "./DataAccessLayer";
 
 function LatencyChart() {
-  const [latencyState, setLatencyState] = useState();
+  const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
-  const [filteredData, setFilteredData] = useState([]);
+  
 
+  // const [filteredData, setFilteredData] = useState();
+
+  
 
   useEffect(() => {
     getLatencyData();
-  }, []);
+  }, [startDate, endDate]);
 
   const getLatencyData = async () => {
     const data = await getLatency();
-    setLatencyState(data.data.slice(-8));
+    console.log("anime1")
+    console.log(data.data.end_date)
+    console.log(data.data.map(d => {
+      var dateString = d.end_date;
+      var parts = dateString.split("-");
+      var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
+      const date = new Date(formattedDateString);
+      return date;
+    }))
+    // Фильтруем данные на основе выбранных дат
+    const filteredData = data.data.filter(d => {
+      var dateString = d.end_date;
+      var parts = dateString.split("-");
+      var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
+      const date = new Date(formattedDateString);
+      return date >= new Date(startDate) && date <= new Date(endDate);
+    });
+
+    setLatencyState(filteredData);
+    console.log("anime")
+    console.log(filteredData)
+    console.log(startDate)
+    console.log(endDate)
   };
 
+  const generateTickValues = () => {
+    if (latencyState.length > 7) {
+      return [];
+    } else {
+      return latencyState.map(data => data.range_date);
+    }
+  };
+  const [tickValues, setTickValues] = useState(generateTickValues());
   useEffect(() => {
-        const filtered = latencyState.filter(item => {
-            let itemDate = new Date(item.date);
-            return itemDate >= startDate && itemDate <= endDate;
-        });
-        setFilteredData(filtered);
-    }, [startDate, endDate, latencyState]);
-  // const handleStartDateChange = (date) => {
-  //   if (date.getDay() === 1) {
-  //     setStartDate(date);
-  //   }
-  // };
+    setTickValues(generateTickValues());
+  }, [latencyState]);
 
-  // const handleEndDateChange = (date) => {
-  //   if (date.getDay() === 0) {
-  //     setEndDate(date);
-  //   }
-  // };
-
-  // // Фильтрация данных на основе выбранных дат
-  // const filteredData = data.filter((item) => {
-  //   if (!startDate || !endDate) {
-  //     return true; // Вернуть все данные, если даты не выбраны
-  //   }
-  // });
+  
+  
 
   return (
     <div>
@@ -65,22 +81,33 @@ function LatencyChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-      <div className="datePickerContainer">
-                <DatePicker
-                    selected={startDate}
-                    onChange={date => setStartDate(date)}
-                    selectsStart
-                    startDate={startDate}
-                    endDate={endDate}
-                />
-                <DatePicker
-                    selected={endDate}
-                    onChange={date => setEndDate(date)}
-                    selectsEnd
-                    endDate={endDate}
-                    minDate={startDate}
-                />
-            </div>
+      <div className="mb-4">
+        <label className="block text-sm mb-2">Select Date Range:</label>
+        <DatePicker
+        
+          selected={startDate}
+          onChange={(date) => setStartDate(date)}
+          selectsStart
+          startDate={startDate}
+          endDate={endDate}
+          filterDate={(date) => date.getDay() === 1}
+          weekStartsOn={2}
+          dateFormat="dd-MM-yy"
+          className="bg-gray-600 p-2 rounded text-white"
+        />
+        <DatePicker
+          selected={endDate}
+          onChange={(date) => setEndDate(date)}
+          selectsEnd
+          startDate={startDate}
+          endDate={endDate}
+          minDate={startDate}
+          filterDate={(date) => date.getDay() === 0}
+          weekStartsOn={2}
+          dateFormat="dd-MM-yy"
+          className="bg-gray-600 p-2 rounded text-white ml-4"
+        />
+      </div>
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
           <VictoryChart
             height={600}
@@ -121,21 +148,21 @@ function LatencyChart() {
             <VictoryLine
               alignment="middle"
               style={{ data: { stroke: "#c43a31" } }}
-              data={filteredData}
-              x="start_date"
+              data={latencyState}
+              x="range_date"
               y="overall_censorship_latency_without_lido_censorship"
             />
             <VictoryLine
               alignment="middle"
               style={{ data: { stroke: "#1e90ff" } }}
               // labels={({ datum }) => datum.y}
-              data={filteredData}
-              x="start_date"
+              data={latencyState}
+              x="range_date"
               y="overall_censorship_latency"
             />
             <VictoryScatter
-              data={filteredData}
-              x="start_date"
+              data={latencyState}
+              x="range_date"
               y="overall_censorship_latency"
               size={7}
               style={{
@@ -154,8 +181,8 @@ function LatencyChart() {
               }
             />
             <VictoryScatter
-              data={filteredData}
-              x="start_date"
+              data={latencyState}
+              x="range_date"
               y="overall_censorship_latency_without_lido_censorship"
               size={7}
               style={{
@@ -179,6 +206,7 @@ function LatencyChart() {
               dependentAxis
               // tickFormat={(t) => `${t}%`}
               style={{ tickLabels: { fontSize: 19, fill: "#FFFFFF" } }}
+              
               label="LATENCY"
               tickFormat={(t) => `${t}s`}
               axisLabelComponent={
@@ -191,6 +219,7 @@ function LatencyChart() {
             />
             <VictoryAxis
               style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
+              tickValues={tickValues}
               label="DATE"
               axisLabelComponent={
                 <VictoryLabel

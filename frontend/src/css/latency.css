@@ -1,0 +1,24 @@
+.react-datepicker__day--selected {
+    background-color: #34D399;
+    border-color: #34D399;
+}
+
+.react-datepicker {
+    background-color: #00aaf3f6; /* или любой другой темный цвет */
+}
+
+.react-datepicker__header {
+    background-color: #111827;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker__time-name {
+    color: #F3F4F6;
+}
+
+.react-datepicker__day--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
