@@ -1,14 +1,14 @@
 .react-datepicker__day--selected {
-    background-color: #34D399;
+    background-color: #470585;
     border-color: #34D399;
 }
 
 .react-datepicker {
-    background-color: #00aaf3f6; /* или любой другой темный цвет */
+    background-color: #677a82f6; /* или любой другой темный цвет */
 }
 
 .react-datepicker__header {
-    background-color: #111827;
+    background-color: #545e74;
 }
 
 .react-datepicker__current-month,
@@ -22,3 +22,17 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.react-datepicker__day--outside-month {
+    color: transparent !important;
+    pointer-events: none;
+  }
+
+.react-datepicker__day--highlighted-custom:first-of-type {
+    color: #e20f0f;
+  }
+
+.react-datepicker__day--in-range {
+    background-color: rgb(17, 255, 0); /* Замените на желаемый цвет */
+    color: white; /* Замените на желаемый цвет текста */
+  }

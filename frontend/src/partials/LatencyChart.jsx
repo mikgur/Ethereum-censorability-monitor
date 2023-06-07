@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   VictoryChart,
   VictoryLabel,
@@ -13,7 +13,10 @@ import {
 
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-
+import { FiCalendar } from 'react-icons/fi';
+import Popover from '@material-ui/core/Popover';
+import DateRangeIcon from '@material-ui/icons/DateRange';
+import { IconButton, ButtonGroup, Button } from '@material-ui/core';
 import '../css/latency.css'
 
 import { getLatency } from "./DataAccessLayer";
@@ -22,10 +25,18 @@ function LatencyChart() {
   const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+  const [isOpen, setIsOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const buttonRef = useRef(null);
+  const [activeButton, setActiveButton] = useState('');
   
 
   // const [filteredData, setFilteredData] = useState();
-
+  const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
+    <button className="bg-gray-600 p-2 rounded text-white ml-4" onClick={onClick} ref={ref}>
+      <FiCalendar/> {value}
+    </button>
+  ));
   
 
   useEffect(() => {
@@ -71,7 +82,57 @@ function LatencyChart() {
     setTickValues(generateTickValues());
   }, [latencyState]);
 
-  
+  const onDatesChange = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+  };
+
+  const isMonday = date => {
+    const day = date.getDay();
+    return day === 1;
+  };
+
+  const isSunday = date => {
+    const day = date.getDay();
+    return day === 0;
+  };
+
+  const setLastMonth = () => {
+    const now = new Date();
+    const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
+    setStartDate(oneMonthAgo);
+    setEndDate(new Date());
+    setActiveButton('1m');
+  };
+
+  const setLastHalfYear = () => {
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
+    setStartDate(sixMonthsAgo);
+    setEndDate(new Date());
+    setActiveButton('6m');
+  };
+
+  const setLastYear = () => {
+    const now = new Date();
+    const oneYearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+    setStartDate(oneYearAgo);
+    setEndDate(new Date());
+    setActiveButton('1y');
+  };
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+    setActiveButton('custom');
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? 'simple-popover' : undefined;
   
 
   return (
@@ -83,30 +144,67 @@ function LatencyChart() {
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
       <div className="mb-4">
         <label className="block text-sm mb-2">Select Date Range:</label>
-        <DatePicker
-        
-          selected={startDate}
-          onChange={(date) => setStartDate(date)}
-          selectsStart
-          startDate={startDate}
-          endDate={endDate}
-          filterDate={(date) => date.getDay() === 1}
-          weekStartsOn={2}
-          dateFormat="dd-MM-yy"
-          className="bg-gray-600 p-2 rounded text-white"
-        />
-        <DatePicker
-          selected={endDate}
-          onChange={(date) => setEndDate(date)}
-          selectsEnd
-          startDate={startDate}
-          endDate={endDate}
-          minDate={startDate}
-          filterDate={(date) => date.getDay() === 0}
-          weekStartsOn={2}
-          dateFormat="dd-MM-yy"
-          className="bg-gray-600 p-2 rounded text-white ml-4"
-        />
+        {/* <IconButton aria-describedby={id} variant="contained" color="primary" onClick={handleClick}>
+          <DateRangeIcon />
+        </IconButton> */}
+        <Popover
+          id={id}
+          open={open}
+          anchorEl={anchorEl}
+          onClose={handleClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+        >
+          <DatePicker
+            selected={startDate}
+            onChange={onDatesChange}
+            startDate={startDate}
+            endDate={endDate}
+            shouldUnregister={true}
+            selectsRange
+            inline
+            calendarStartDay={1}
+            portalId="root-portal"
+            filterDate={date => (startDate && !endDate ? isSunday(date) : isMonday(date))}
+            className="bg-gray-600 p-2 rounded text-white"
+          />
+        </Popover>
+        <div className="mb-4">
+        <label className="block text-sm mb-2">Select Date Range:</label>
+        <ButtonGroup variant="contained" color="primary" aria-label="contained primary button group">
+          <Button
+            variant={activeButton === 'custom' ? "contained" : "outlined"}
+            color="primary"
+            onClick={handleClick}
+            startIcon={<DateRangeIcon />}
+          >
+          </Button>
+          <Button
+            variant={activeButton === '1m' ? "contained" : "outlined"}
+            onClick={setLastMonth}
+          >
+            1m
+          </Button>
+          <Button
+            variant={activeButton === '6m' ? "contained" : "outlined"}
+            onClick={setLastHalfYear}
+          >
+            6m
+          </Button>
+          <Button
+            variant={activeButton === '1y' ? "contained" : "outlined"}
+            onClick={setLastYear}
+          >
+            1y
+          </Button>
+        </ButtonGroup>
+      </div>
       </div>
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
           <VictoryChart
