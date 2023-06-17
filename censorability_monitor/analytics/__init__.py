@@ -48,6 +48,8 @@ class CensorshipMonitor:
         self.beacon_url = beacon_url
         self.ofac_cache = None
         self.classifier_dataset_path = classifier_dataset_path
+        if self.classifier_dataset_path is not None:
+            self.classifier_dataset_path.mkdir(parents=True, exist_ok=True)
         with open(model_path, 'rb') as f:
             self.model = pickle.load(f)
 
