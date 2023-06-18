@@ -48,6 +48,8 @@ class CensorshipMonitor:
         self.beacon_url = beacon_url
         self.ofac_cache = None
         self.classifier_dataset_path = classifier_dataset_path
+        if self.classifier_dataset_path is not None:
+            self.classifier_dataset_path.mkdir(parents=True, exist_ok=True)
         with open(model_path, 'rb') as f:
             self.model = pickle.load(f)
 
@@ -62,6 +64,9 @@ class CensorshipMonitor:
         if self.web3_type == 'ipc':
             w3 = Web3(Web3.IPCProvider(self.web3_url))
             # logger.info(f'Connected to ETH node: {w3.isConnected()}')
+            return w3
+        if self.web3_type == 'http':
+            w3 = Web3(Web3.HTTPProvider(self.web3_url))
             return w3
         else:
             msg = f'Unexpected web3 connection type: {self.web3_type}'
@@ -123,14 +128,20 @@ class CensorshipMonitor:
         logger.info('Select starting block')
         last_processed_block = self.get_last_processed_block_number(
             db_analytics)
+        logger.info(f'Last processed block: {last_processed_block}')
 
         first_ready_block = await self.get_first_ready_block_number(
             db_collector)
+        logger.info(f'First ready block: {first_ready_block}')
+
         if self.start_block > 1:
             first_ready_block = max(self.start_block - 1, first_ready_block)
+        
+        logger.info(f'First ready/start block: {first_ready_block}')
 
         last_ready_block = await self.get_last_ready_block_number(
             db_collector)
+        logger.info(f'Last ready block: {last_ready_block}')
 
         if last_processed_block > last_ready_block:
             logger.error(('Last processed block is higher than first ready '
@@ -139,11 +150,13 @@ class CensorshipMonitor:
 
         # Set current block
         current_block = max(first_ready_block, last_processed_block) + 1
+        logger.info(f'Starting from block: {current_block}')
         while True:
             while current_block > last_ready_block:
                 await asyncio.sleep(1)
                 last_ready_block = await self.get_last_ready_block_number(
                     db_collector)
+                print(f'Last ready block in loop: {last_ready_block}')
             while current_block <= last_ready_block:
                 block_processed = False
                 while not block_processed:
@@ -186,6 +199,9 @@ class CensorshipMonitor:
             except Exception as e:
                 logger.error(f'Error with block {block_number}: {type(e)} {e}')
                 raise e
+        if n_attempt == 100:
+            logger.error(f'More than 100 attempts {block_number}')
+            raise Exception()
         # Save block_number to db
         mongo_analytics_client = self.get_mongo_analytics_client()
         db_analytics = mongo_analytics_client[self.analytics_db_name]
@@ -632,6 +648,10 @@ class CensorshipMonitor:
         ofac_db = ofac_addresses_collection.find(
             {'timestamp': {'$lte': block_ts}}
         ).sort('timestamp', -1).limit(1)
+        ofac_db = [a for a in ofac_db]
+        if len(ofac_db) == 0:
+            # Get latest
+            ofac_db = ofac_addresses_collection.find({}).sort('timestamp', -1).limit(1) # noqa E501
         ofac_addresses = set([a['addresses'] for a in ofac_db][0])
         return ofac_addresses
 
@@ -660,11 +680,11 @@ class CensorshipMonitor:
         need_to_update = len(ofac_lists) == 0
         if len(ofac_lists) > 0:
             last_update_ts = ofac_lists[0]['timestamp']
-        # update once in 12 hours
-        if time.time() - last_update_ts > 12 * 60 * 60:
-            need_to_update = True
-        if not need_to_update:
-            return
+            # update once in 12 hours
+            if time.time() - last_update_ts > 12 * 60 * 60:
+                need_to_update = True
+            if not need_to_update:
+                return
 
         # update ofac list
         logger.info('Fetching OFAC data')
