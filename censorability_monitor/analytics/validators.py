@@ -14,24 +14,24 @@ def get_slot_by_block_number(block_number: int,
                              block_ts: int,
                              beacon: Beacon,
                              db: Database) -> int:
-    slots_collection = db['block_numbers_slots']
+    slots_collection = db["block_numbers_slots"]
     result = slots_collection.find().sort(
-        'block_number', -1).limit(1)
+        "block_number", -1).limit(1)
     block_db = [r for r in result]
     if len(block_db) > 0:
-        base_slot = block_db[0]['slot_number']
+        base_slot = block_db[0]["slot_number"]
     else:
-        base_slot = beacon.get_beacon_state()['data']['latest_block_header']['slot'] # noqa E501
+        base_slot = beacon.get_beacon_state()["data"]["latest_block_header"]["slot"] # noqa E501
     try:
         base_ts = int(beacon.get_block(
             base_slot
-        )['data']['message']['body']['execution_payload']['timestamp'])
+        )["data"]["message"]["body"]["execution_payload"]["timestamp"])
     except HTTPError:
         base_slot = beacon.get_beacon_state(
-            )['data']['latest_block_header']['slot']
+            )["data"]["latest_block_header"]["slot"]
         base_ts = int(beacon.get_block(
             base_slot
-        )['data']['message']['body']['execution_payload']['timestamp'])
+        )["data"]["message"]["body"]["execution_payload"]["timestamp"])
 
     ts_diff = base_ts - block_ts
     expected_slot = int(base_slot) - ts_diff // 12
@@ -44,7 +44,7 @@ def get_slot_by_block_number(block_number: int,
         try:
             expected_block_number = int(beacon.get_block(
                 expected_slot
-            )['data']['message']['body']['execution_payload']['block_number'])
+            )["data"]["message"]["body"]["execution_payload"]["block_number"])
             found_correct_slot = True
         except HTTPError:
             expected_slot -= 1
@@ -54,7 +54,7 @@ def get_slot_by_block_number(block_number: int,
         try:
             expected_block_number = int(beacon.get_block(
                 expected_slot
-            )['data']['message']['body']['execution_payload']['block_number'])
+            )["data"]["message"]["body"]["execution_payload"]["block_number"])
         except HTTPError:
             pass
     while expected_block_number < block_number:
@@ -62,7 +62,7 @@ def get_slot_by_block_number(block_number: int,
         try:
             expected_block_number = int(beacon.get_block(
                 expected_slot
-            )['data']['message']['body']['execution_payload']['block_number'])
+            )["data"]["message"]["body"]["execution_payload"]["block_number"])
         except HTTPError:
             pass
     assert block_number == expected_block_number
@@ -74,18 +74,18 @@ def get_slot_with_cache(block_number: int,
                         beacon: Beacon,
                         w3: Web3,
                         db: Database) -> int:
-    slots_collection = db['block_numbers_slots']
-    result = slots_collection.find({'block_number': {'$eq': block_number}})
+    slots_collection = db["block_numbers_slots"]
+    result = slots_collection.find({"block_number": {"$eq": block_number}})
     result_db = [r for r in result]
     if len(result_db) > 0:
-        return result_db[0]['slot_number']
+        return result_db[0]["slot_number"]
 
     block = w3.eth.getBlock(block_number)
-    block_ts = block['timestamp']
+    block_ts = block["timestamp"]
 
     slot = get_slot_by_block_number(block_number, block_ts, beacon, db)
-    slots_collection.insert_one({'block_number': block_number,
-                                 'slot_number': slot})
+    slots_collection.insert_one({"block_number": block_number,
+                                 "slot_number": slot})
     return slot
 
 
@@ -99,32 +99,32 @@ def get_validator_pubkey(block_number: int,
     try:
         beacon_block = beacon.get_block(slot)
     except requests.exceptions.HTTPError:
-        return ''
-    beacon_message = beacon_block['data']['message']
+        return ""
+    beacon_message = beacon_block["data"]["message"]
     assert block_number == int(
-        beacon_message['body']['execution_payload']['block_number'])
-    validator_index = beacon_message['proposer_index']
-    validator = beacon.get_validator(validator_index)['data']['validator']
-    validator_pubkey = validator['pubkey']
+        beacon_message["body"]["execution_payload"]["block_number"])
+    validator_index = beacon_message["proposer_index"]
+    validator = beacon.get_validator(validator_index)["data"]["validator"]
+    validator_pubkey = validator["pubkey"]
     return validator_pubkey
 
 
 def get_validator_info(validator_pubkey, db: Database) -> Tuple[str, str]:
-    validators_collection = db['validators']
-    validators_collection.create_index('pubkey', unique=True)
-    result = validators_collection.find({'pubkey': {'$eq': validator_pubkey}})
+    validators_collection = db["validators"]
+    validators_collection.create_index("pubkey", unique=True)
+    result = validators_collection.find({"pubkey": {"$eq": validator_pubkey}})
     db_validators = [v for v in result]
     if len(db_validators) == 0:
-        validator_pool = 'Other'
-        validator_name = 'Other'
+        validator_pool = "Other"
+        validator_name = "Other"
     elif len(db_validators) == 1:
-        validator_pool = 'Lido'
         validator_info = db_validators[0]
-        validator_name = validator_info['name']
+        validator_name = validator_info["name"]
+        validator_pool = validator_info["pool_name"]
     else:
-        validator_pool = 'Lido'
-        validator_names = [v['name'] for v in db_validators]
-        logger.warning((f'Many validators found!: {validator_names} '
-                        f'pubkey: {validator_pubkey}'))
-        validator_name = validator_names[0]
+        validators_info = [{"name": v["name"], "pool_name": v["pool_name"]} for v in db_validators]
+        logger.warning((f"Many validators found!: {len(validator_info)} "
+                        f"pubkey: {validator_pubkey}"))
+        validator_name = validators_info[0]["name"]
+        validator_pool = validators_info[0]["pool_name"]
     return validator_pool, validator_name
