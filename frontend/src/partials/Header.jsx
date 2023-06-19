@@ -1,34 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Dropdown from '../utils/Dropdown';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { faBars } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 function Header() {
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
-  const trigger = useRef(null);
-  const mobileNav = useRef(null);
-
-  // close the mobile menu on click outside
-  useEffect(() => {
-    const clickHandler = ({ target }) => {
-      if (!mobileNav.current || !trigger.current) return;
-      if (!mobileNavOpen || mobileNav.current.contains(target) || trigger.current.contains(target)) return;
-      setMobileNavOpen(false);
-    };
-    document.addEventListener('click', clickHandler);
-    return () => document.removeEventListener('click', clickHandler);
-  });
-
-  // close the mobile menu if the esc key is pressed
-  useEffect(() => {
-    const keyHandler = ({ keyCode }) => {
-      if (!mobileNavOpen || keyCode !== 27) return;
-      setMobileNavOpen(false);
-    };
-    document.addEventListener('keydown', keyHandler);
-    return () => document.removeEventListener('keydown', keyHandler);
-  });
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
   return (
     <header className="absolute w-full z-30">
@@ -40,21 +21,35 @@ function Header() {
             {/* Logo */}
           </div>
 
-         
-          {/* Mobile menu */}
-          {/* <div className="md:hidden">
+          {/* Navigation links */}
+          <nav className="hidden md:flex md:flex-grow items-center flex justify-end flex-wrap">
+            <Link to="/" className={`block text-white font-bold text-lg mr-4 hover:text-gray-400 ${location.pathname === '/' ? 'text-gray-400' : ''}`} style={{flexShrink: 0}}>
+              Home
+            </Link>
+            <Link to="/team" className={`block text-white font-bold text-lg mr-4 hover:text-gray-400 ${location.pathname === '/team' ? 'text-gray-400' : ''}`} style={{flexShrink: 0}}>
+              Team
+            </Link>
+          </nav>
 
-            Hamburger button
-            <button ref={trigger} className={`hamburger ${mobileNavOpen && 'active'}`} aria-controls="mobile-nav" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(!mobileNavOpen)}>
-              <span className="sr-only">Menu</span>
-              <svg className="w-6 h-6 fill-current text-gray-300 hover:text-gray-200 transition duration-150 ease-in-out" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <rect y="4" width="24" height="2" rx="1" />
-                <rect y="11" width="24" height="2" rx="1" />
-                <rect y="18" width="24" height="2" rx="1" />
+          {/* Mobile Navigation */}
+          <nav className="md:hidden block">
+            <button onClick={toggleMobileMenu} className="flex items-center justify-center text-white focus:outline-none">
+              <svg className="h-6 w-6 fill-current mr-2" viewBox="0 0 24 24">
+                <path className={`${mobileMenuOpen ? 'hidden' : 'block'}`} d="M4 6h16M4 12h16M4 18h16"></path>
+                <path className={`${mobileMenuOpen ? 'block' : 'hidden'}`} d="M6 18L18 6M6 6l12 12"></path>
               </svg>
+              <FontAwesomeIcon icon={faBars} className="h-6 w-6 fill-current mr-2 mt-8" />
+              
             </button>
-
-          </div> */}
+            <div className={`mt-2 ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+              <Link to="/" className={`block text-white font-bold text-lg mb-2 hover:text-gray-400 ${location.pathname === '/' ? 'text-gray-400' : ''}`}>
+                Home
+              </Link>
+              <Link to="/team" className={`block text-white font-bold text-lg mb-2 hover:text-gray-400 ${location.pathname === '/team' ? 'text-gray-400' : ''}`}>
+                Team
+              </Link>
+            </div>
+          </nav>
 
         </div>
       </div>
@@ -63,3 +58,4 @@ function Header() {
 }
 
 export default Header;
+

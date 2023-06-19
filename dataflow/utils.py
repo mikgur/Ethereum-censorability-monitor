@@ -1,3 +1,5 @@
+import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 
@@ -49,8 +51,12 @@ def get_shifted_week(
     shifted_monday = monday + timedelta(days=shift * 7)
     shifted_sunday = sunday + timedelta(days=shift * 7)
 
-    monday_ts = int(shifted_monday.replace(tzinfo=timezone.utc).timestamp())
-    sunday_ts = int(shifted_sunday.replace(tzinfo=timezone.utc).timestamp())
+    monday_ts = int(
+        shifted_monday.replace(tzinfo=timezone.utc).timestamp()
+    )
+    sunday_ts = int(
+        shifted_sunday.replace(tzinfo=timezone.utc).timestamp()
+    )
     monday_dt = datetime.strftime(shifted_monday, "%d-%m-%y")
     sunday_dt = datetime.strftime(shifted_sunday, "%d-%m-%y")
 
@@ -75,9 +81,48 @@ def get_week(ts: int) -> Tuple[int, int]:
         minutes=today.minute,
         hours=today.hour,
     )
-    this_week_sunday = this_week_monday + timedelta(days=7) - timedelta(microseconds=1)
+    this_week_sunday = (
+        this_week_monday + timedelta(days=7) - timedelta(microseconds=1)
+    )
 
-    monday_ts = int(this_week_monday.replace(tzinfo=timezone.utc).timestamp())
-    sunday_ts = int(this_week_sunday.replace(tzinfo=timezone.utc).timestamp())
+    monday_ts = int(
+        this_week_monday.replace(tzinfo=timezone.utc).timestamp()
+    )
+    sunday_ts = int(
+        this_week_sunday.replace(tzinfo=timezone.utc).timestamp()
+    )
 
     return monday_ts, sunday_ts
+
+
+def init_logger() -> logging.Logger:
+    """
+    Initialize logger
+
+    Returns:
+        Logger
+    """
+    logger = logging.getLogger("nwatch_logger")
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s \t [%(levelname)s | %(filename)s:%(lineno)s] > %(message)s"
+    )
+
+    now = datetime.now()
+    dirname = "./log"
+
+    if not os.path.isdir(dirname):
+        os.mkdir(dirname)
+    fileHandler = logging.FileHandler(
+        dirname + "/log_" + now.strftime("%Y-%m-%d") + ".log"
+    )
+
+    streamHandler = logging.StreamHandler()
+
+    fileHandler.setFormatter(formatter)
+    streamHandler.setFormatter(formatter)
+
+    logger.addHandler(fileHandler)
+    logger.addHandler(streamHandler)
+
+    return logger

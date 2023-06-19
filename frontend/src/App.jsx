@@ -11,6 +11,7 @@ import './css/style.css';
 import AOS from 'aos';
 
 import Home from './pages/Home';
+import Team from './pages/Team';
 
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
     <>
       <Routes>
         <Route exact path="/" element={<Home />} />
+        <Route exact path="/team" element={<Team/>}/>
       </Routes>
     </>
   );

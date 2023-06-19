@@ -25,7 +25,7 @@ function LatencyChart() {
 
   const getLatencyData = async () => {
     const data = await getLatency();
-    setLatencyState(data.data);
+    setLatencyState(data.data.slice(-8));
   };
 
   return (
@@ -144,7 +144,7 @@ function LatencyChart() {
               }
             />
             <VictoryAxis
-              style={{ tickLabels: { fontSize: 13, fill: "#FFFFFF" } }}
+              style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
               label="DATE"
               axisLabelComponent={
                 <VictoryLabel
