@@ -479,7 +479,7 @@ class CensorshipMonitor:
                 # TODO Save blocknumber for not found validators
                 if validator_pubkey == '':
                     logger.info('Validator not found!')
-                    return 'Unknown'
+                    return 'Unknown', 'Unknown'
                 return get_validator_info(
                     validator_pubkey, db_analytics)
             except Exception as e:
