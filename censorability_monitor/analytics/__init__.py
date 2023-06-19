@@ -5,7 +5,7 @@ import pickle
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 from pymongo import MongoClient, UpdateOne
@@ -233,8 +233,8 @@ class CensorshipMonitor:
         mongo_analytics_client = self.get_mongo_analytics_client()
         block_ts = block['timestamp']
 
-        # Get validator name
-        validator_name = await self.get_validator_name(block_number, block_ts)
+        # Get validator pool and name
+        validator_pool, validator_name = await self.get_validator_full_info(block_number, block_ts)
         # Transactions
         block_txs = [b.hex() for b in block['transactions']]
         db = mongo_client[self.collector_db_name]
@@ -344,7 +344,8 @@ class CensorshipMonitor:
                      f'compliant: {n_compliant_txs}'))
 
         validators_collection.update_one(
-            {'name': {'$eq': validator_name}},
+            {'name': {'$eq': validator_name},
+             'pool': {'$eq': validator_pool}},
             {'$inc': {
                 f'{block_date}.num_blocks': 1,
                 f'{block_date}.num_txs': len(df_block_txs),
@@ -368,7 +369,8 @@ class CensorshipMonitor:
                 {'$set': {'hash': row['hash'],
                           'first_seen': block_ts - row['already_waiting']},
                  '$push': {'censored': {'block_number': block_number,
-                                        'validator': validator_name}}},
+                                        'validator': validator_name,
+                                        'validator_pool': validator_pool}}},
                 upsert=True
             )
         logger.info((f'Found {len(suspicious_txs)} suspicious txs, '
@@ -381,7 +383,8 @@ class CensorshipMonitor:
             censored_txs_updates = []
             non_compliant_txs = df_block_txs[df_block_txs['status'] == -1].copy() # noqa E501
             validators_updates.append(UpdateOne(
-                filter={'name': {'$eq': validator_name}},
+                filter={'name': {'$eq': validator_name},
+                        'pool': {'$eq': validator_pool}},
                 update={'$addToSet': {
                     f'{block_date}.non_censored_blocks': block_number}
                  },
@@ -390,7 +393,8 @@ class CensorshipMonitor:
             for _, row in non_compliant_txs.iterrows():
                 tx_hash = row['hash']
                 validators_updates.append(UpdateOne(
-                    filter={'name': {'$eq': validator_name}},
+                    filter={'name': {'$eq': validator_name},
+                            'pool': {'$eq': validator_pool}},
                     update={'$addToSet': {
                         f'{block_date}.non_ofac_compliant_txs': tx_hash}
                      },
@@ -402,6 +406,7 @@ class CensorshipMonitor:
                                      'block_ts': block_ts,
                                      'date': block_date,
                                      'validator': validator_name,
+                                     'validator_pool': validator_pool,
                                      'non_ofac_compliant': True,
                                      'hash': tx_hash,
                                      'first_seen': block_ts - row['already_waiting']}, # noqa E501
@@ -446,6 +451,7 @@ class CensorshipMonitor:
                                  'block_ts': block_ts,
                                  'date': block_date,
                                  'validator': validator_name,
+                                 'validator_pool': validator_pool,
                                  'non_ofac_compliant': False,
                                  'hash': tx_hash,
                                  'first_seen': block_ts - row['already_waiting']}, # noqa E501
@@ -457,9 +463,9 @@ class CensorshipMonitor:
             total_updates = update_result.modified_count
             logger.info(f'Updated {total_updates} compliant suspicious txs')
 
-    async def get_validator_name(self,
-                                 block_number: int,
-                                 block_ts: int) -> str:
+    async def get_validator_full_info(self,
+                                      block_number: int,
+                                      block_ts: int) -> Tuple[str, str]:
         ''' Get block validator (try until success)'''
         logger = logging.getLogger(self.name)
         while True:
@@ -473,10 +479,9 @@ class CensorshipMonitor:
                 # TODO Save blocknumber for not found validators
                 if validator_pubkey == '':
                     logger.info('Validator not found!')
-                    return 'Unknown'
-                _, validator_name = get_validator_info(
+                    return 'Unknown', 'Unknown'
+                return get_validator_info(
                     validator_pubkey, db_analytics)
-                return validator_name
             except Exception as e:
                 logger.error(('Error while getting validator'
                               f'name: {type(e)} {e}'))
