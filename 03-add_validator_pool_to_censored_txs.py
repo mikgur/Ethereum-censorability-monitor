@@ -19,32 +19,27 @@ def main():
     mongo_client = MongoClient(mongo_analytics_url)
     db = mongo_client[db_anl_name]
     censored_txs = db["censored_txs"]
-    validators = set([el["validator"] for el in censored_txs.find() if "validator" in el])
-    pools = set([el["validator_pool"] for el in censored_txs.find() if "validator_pool" in el])
-    print(sorted(validators))
-    print(sorted(pools))
 
-    without_pool = censored_txs.find({"validator_pool": {"$exists": False}})
-    without_pool = list(without_pool)
-    print(f"Without pool: {len(without_pool)}")
+    print("unset")
+    censored_txs.update_many(
+        {},
+        {'$unset': {'validator_pool': 1}})
 
+    print("Adding Other")
     censored_txs.update_many(
         {"validator_pool": {"$exists": False},
          "validator": {"$eq": "Other"}},
         {'$set': {'validator_pool': "Other"}})
-    
+    print("Adding Unknown")
     censored_txs.update_many(
         {"validator_pool": {"$exists": False},
          "validator": {"$eq": "Unknown"}},
         {'$set': {'validator_pool': "Unknown"}})
-
+    print("Adding Lido")
     censored_txs.update_many(
-        {"validator_pool": {"$exists": False}},
+        {"validator_pool": {"$exists": False},
+         "validator": {"$exists": True}},
         {'$set': {'validator_pool': "Lido"}})
-    
-    without_pool = censored_txs.find({"validator_pool": {"$exists": False}})
-    without_pool = list(without_pool)
-    print(f"Without pool: {len(without_pool)}")
 
 
 if __name__ == "__main__":
