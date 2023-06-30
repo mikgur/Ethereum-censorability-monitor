@@ -8,8 +8,7 @@ from multiprocessing import current_process
 import numpy as np
 import pandas as pd
 from prometheus_client import Gauge, Summary
-import pymongo
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
 from web3.auto import Web3
 from web3.exceptions import TransactionNotFound
@@ -44,7 +43,7 @@ class BlockCollector(DataCollector):
                  interval: float = 3, verbose: bool = True):
         super().__init__(mongo_url, db_name, web3_type, web3_url,
                          interval, verbose, 'BlockCollector')
-        self.max_workers = 8
+        self.max_workers = 16
         self.address_data_collectors = [
             AddressDataCollector(web3_type, web3_url)
             for _ in range(self.max_workers)
@@ -217,7 +216,7 @@ class BlockCollector(DataCollector):
         t_current = time.time()
         # TODO CHANGE ADDRESS_INFO HERE
         accounts_collection = db["addresses_status"]
-        accounts_collection.create_index(["address", ("block_number", pymongo.DESCENDING)])
+        accounts_collection.create_index([("address", 1), ("block_number", -1)])
 
         new_records = [
             {"address": k,
