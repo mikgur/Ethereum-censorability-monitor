@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
+import pymongo
 from pymongo.database import Database
 from web3.auto import Web3
 
@@ -40,29 +41,31 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
     for _, tx in tx_details.items():
         addresses.add(tx['from'])
 
-    accounts_collection = db['addresses_info']
+    # TODO CHANGE ADDRESS_INFO HERE
+    accounts_collection = db["addresses_status"]
     accounts_details_db = accounts_collection.find(
-        {'address': {'$in': list(addresses)}})
+        {"address": {"$in": list(addresses)},
+         "block_number": {"$eq": block_number - 1}})
 
     # Берем информацию об аккаунте на предыдущий блок или
     # если недоступно, то на самый поздний из доступных
     block_accounts_info = {}
-    for a in accounts_details_db:
-        if str(block_number - 1) in a:
-            block_accounts_info[a['address']] = {
-                'eth': a[str(block_number - 1)]['eth'],
-                'n_txs': a[str(block_number - 1)]['n_txs']
-            }
-            continue
-        keys_available = np.array([int(k) for k in a.keys()
-                                  if k not in ['_id', 'address']])
-        keys = keys_available[keys_available <= block_number]
-        if len(keys) == 0:
-            continue
-        max_key = keys.max()
+    for a in accounts_details_db: 
         block_accounts_info[a['address']] = {
-                'eth': a[str(max_key)]['eth'],
-                'n_txs': a[str(max_key)]['n_txs']
+                'eth': a['eth'],
+                'n_txs': a['n_txs']
+            }
+    not_found = set(addresses) - set(block_accounts_info.keys())
+    for address in not_found:
+        result = accounts_collection.find_one(
+            {"address": address},
+            sort=[("block_number", pymongo.DESCENDING)]
+        )
+
+        if result is not None:
+            block_accounts_info[result['address']] = {
+                'eth': result['eth'],
+                'n_txs': result['n_txs']
             }
 
     # Make df for nonce analysis

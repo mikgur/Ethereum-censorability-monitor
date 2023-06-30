@@ -8,6 +8,7 @@ from multiprocessing import current_process
 import numpy as np
 import pandas as pd
 from prometheus_client import Gauge, Summary
+import pymongo
 from pymongo import MongoClient, UpdateOne
 from pymongo.errors import BulkWriteError
 from web3.auto import Web3
@@ -214,39 +215,24 @@ class BlockCollector(DataCollector):
         t_eth_get_address_data = time.time() - t_current
         # Save accounts info to db
         t_current = time.time()
-        accounts_collection = db['addresses_info']
-        accounts_collection.create_index('address', unique=True)
-        accounts_in_db = accounts_collection.find(
-            {'address': {'$in': list(mempool_accounts)}})
-        existing_accounts = {a['address']: a for a in accounts_in_db}
-        new_accounts = [a for a in mempool_accounts
-                        if a not in existing_accounts]
-        insert_records = [{'address': a, str(block_number - 1): address_data[a]
-                           } for a in new_accounts if a in address_data]
+        # TODO CHANGE ADDRESS_INFO HERE
+        accounts_collection = db["addresses_status"]
+        accounts_collection.create_index(["address", ("block_number", pymongo.DESCENDING)])
+
+        new_records = [
+            {"address": k,
+             "block_number": block_number - 1,
+             "n_txs": v["n_txs"],
+             "eth": v["eth"]
+             } for k, v in address_data.items()
+        ]
         try:
-            if len(insert_records) > 0:
-                accounts_collection.insert_many(insert_records)  # TODO Check types!
+            if len(new_records) > 0:
+                accounts_collection.insert_many(new_records)
         except Exception as e:
-            for r in insert_records:
+            for r in new_records:
                 logger.error(r)
             raise e
-
-        update_documents = [
-            UpdateOne(
-                {'address': {'$eq': a}},
-                {'$set':
-                    {f'{block_number - 1}.n_txs': address_data[a]['n_txs'],
-                     f'{block_number - 1}.eth': address_data[a]['eth']}
-                 }
-            )
-            for a in existing_accounts if a in address_data
-        ]
-        if len(update_documents) > 0:
-            try:
-                accounts_collection.bulk_write(update_documents)
-            except Exception as e:
-                logger.error(f"Error saving accounts: {e} {type(e)}")
-                logger.error(f"{update_documents}")
         t_mongo_save_address_info = time.time() - t_current
 
         # Add block number to transactions included in the current block
