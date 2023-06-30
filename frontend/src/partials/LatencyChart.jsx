@@ -9,6 +9,10 @@ import {
   VictoryLine,
   VictoryScatter,
   VictoryTooltip,
+  createContainer, 
+  VictoryCursorContainer, 
+  VictoryVoronoiContainer,
+  VictorySharedEvents
 } from "victory";
 
 import DatePicker from 'react-datepicker';
@@ -29,7 +33,8 @@ function LatencyChart() {
   const [anchorEl, setAnchorEl] = useState(null);
   const buttonRef = useRef(null);
   const [activeButton, setActiveButton] = useState('');
-  
+  const VoronoiCursorContainer = createContainer("voronoi", "cursor");
+
 
   // const [filteredData, setFilteredData] = useState();
   const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
@@ -131,6 +136,21 @@ function LatencyChart() {
     setAnchorEl(null);
   };
 
+  const getTooltipLabel = (datum) =>
+  `Date: ${datum.range_date}, ${datum.overall_censorship_latency.toFixed(4)},\n ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`;
+
+// Создайте два массива точек: один для каждого из ваших наборов данных
+const points1 = latencyState.map(item => ({
+  x: item.range_date,
+  y: item.overall_censorship_latency,
+  label: getTooltipLabel(item),
+}));
+
+const points2 = latencyState.map(item => ({
+  x: item.range_date,
+  y: item.overall_censorship_latency_without_lido_censorship,
+}));
+
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
   
@@ -142,70 +162,75 @@ function LatencyChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-      <div className="mb-4">
-        <label className="block text-sm mb-2">Select Date Range:</label>
-        {/* <IconButton aria-describedby={id} variant="contained" color="primary" onClick={handleClick}>
+        <div className="mb-4">
+          <label className="block text-sm mb-2">Select Date Range:</label>
+          {/* <IconButton aria-describedby={id} variant="contained" color="primary" onClick={handleClick}>
           <DateRangeIcon />
         </IconButton> */}
-        <Popover
-          id={id}
-          open={open}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'center',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'center',
-          }}
-        >
-          <DatePicker
-            selected={startDate}
-            onChange={onDatesChange}
-            startDate={startDate}
-            endDate={endDate}
-            shouldUnregister={true}
-            selectsRange
-            inline
-            calendarStartDay={1}
-            portalId="root-portal"
-            filterDate={date => (startDate && !endDate ? isSunday(date) : isMonday(date))}
-            className="bg-gray-600 p-2 rounded text-white"
-          />
-        </Popover>
-        <div className="mb-4">
-        <label className="block text-sm mb-2">Select Date Range:</label>
-        <ButtonGroup variant="contained" color="primary" aria-label="contained primary button group">
-          <Button
-            variant={activeButton === 'custom' ? "contained" : "outlined"}
-            color="primary"
-            onClick={handleClick}
-            startIcon={<DateRangeIcon />}
+          <Popover
+            id={id}
+            open={open}
+            anchorEl={anchorEl}
+            onClose={handleClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "center",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "center",
+            }}
           >
-          </Button>
-          <Button
-            variant={activeButton === '1m' ? "contained" : "outlined"}
-            onClick={setLastMonth}
-          >
-            1m
-          </Button>
-          <Button
-            variant={activeButton === '6m' ? "contained" : "outlined"}
-            onClick={setLastHalfYear}
-          >
-            6m
-          </Button>
-          <Button
-            variant={activeButton === '1y' ? "contained" : "outlined"}
-            onClick={setLastYear}
-          >
-            1y
-          </Button>
-        </ButtonGroup>
-      </div>
-      </div>
+            <DatePicker
+              selected={startDate}
+              onChange={onDatesChange}
+              startDate={startDate}
+              endDate={endDate}
+              shouldUnregister={true}
+              selectsRange
+              inline
+              calendarStartDay={1}
+              portalId="root-portal"
+              filterDate={(date) =>
+                startDate && !endDate ? isSunday(date) : isMonday(date)
+              }
+              className="bg-gray-600 p-2 rounded text-white"
+            />
+          </Popover>
+          <div className="mb-4">
+            <label className="block text-sm mb-2">Select Date Range:</label>
+            <ButtonGroup
+              variant="contained"
+              color="primary"
+              aria-label="contained primary button group"
+            >
+              <Button
+                variant={activeButton === "custom" ? "contained" : "outlined"}
+                color="primary"
+                onClick={handleClick}
+                startIcon={<DateRangeIcon />}
+              ></Button>
+              <Button
+                variant={activeButton === "1m" ? "contained" : "outlined"}
+                onClick={setLastMonth}
+              >
+                1m
+              </Button>
+              <Button
+                variant={activeButton === "6m" ? "contained" : "outlined"}
+                onClick={setLastHalfYear}
+              >
+                6m
+              </Button>
+              <Button
+                variant={activeButton === "1y" ? "contained" : "outlined"}
+                onClick={setLastYear}
+              >
+                1y
+              </Button>
+            </ButtonGroup>
+          </div>
+        </div>
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
           <VictoryChart
             height={600}
@@ -213,17 +238,37 @@ function LatencyChart() {
             padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
             minDomain={{ y: 0 }}
             maxDomain={{ y: 25 }}
-            theme={VictoryTheme.material}
             containerComponent={
-              <VictoryContainer
-                style={{
-                  // pointerEvents: "auto",
-                  userSelect: "auto",
-                  touchAction: "auto",
-                }}
-              />
+              <VictoryVoronoiContainer voronoiDimension="x" />
             }
           >
+            <VictoryScatter
+              data={points1}
+              size={({ active }) => (active ? 3 : 1)}
+              style={{
+                data: { fill: "white" },
+                labels: { fill: "white" },
+              }}
+              labelComponent={
+                <VictoryTooltip
+                  dy={5}
+                  cornerRadius={0} // Отключить закругление углов
+                  style={{ fill: "white", fontSize: 10, fontFamily: "Arial" }}
+                  flyoutStyle={{ fill: "#2d2d2d", stroke: "transparent" }}
+                  pointerLength={0} // Отключить стрелку
+                  pointerWidth={0} // Отключить стрелку
+                />
+              }
+            />
+
+            <VictoryScatter
+              data={points2}
+              size={({ active }) => (active ? 3 : 1)}
+              style={{
+                data: { fill: "white" },
+              }}
+            />
+
             <VictoryLegend
               x={50}
               y={0}
@@ -249,6 +294,10 @@ function LatencyChart() {
               data={latencyState}
               x="range_date"
               y="overall_censorship_latency_without_lido_censorship"
+              //     labels={({ datum }) =>
+              //   `latency: ${datum.overall_censorship_latency.toFixed(4)}`
+              // }
+              labelComponent={<VictoryTooltip />}
             />
             <VictoryLine
               alignment="middle"
@@ -257,54 +306,16 @@ function LatencyChart() {
               data={latencyState}
               x="range_date"
               y="overall_censorship_latency"
+              //     labels={({ datum }) =>
+              //   `without_latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`
+              // }
+              labelComponent={<VictoryTooltip />}
             />
-            <VictoryScatter
-              data={latencyState}
-              x="range_date"
-              y="overall_censorship_latency"
-              size={7}
-              style={{
-                data: { fill: "white" },
-                labels: { fill: "white" },
-              }}
-              labels={({ datum }) =>
-                `latency: ${datum.overall_censorship_latency.toFixed(4)}`
-              }
-              labelComponent={
-                <VictoryTooltip
-                  dy={0}
-                  style={{ fill: "black" }}
-                  flyoutWidth={150}
-                />
-              }
-            />
-            <VictoryScatter
-              data={latencyState}
-              x="range_date"
-              y="overall_censorship_latency_without_lido_censorship"
-              size={7}
-              style={{
-                data: { fill: "white" },
-                labels: { fill: "white" },
-              }}
-              labels={({ datum }) =>
-                `latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(
-                  4
-                )}`
-              }
-              labelComponent={
-                <VictoryTooltip
-                  dy={0}
-                  style={{ fill: "black" }}
-                  flyoutWidth={150}
-                />
-              }
-            />
+
             <VictoryAxis
               dependentAxis
               // tickFormat={(t) => `${t}%`}
               style={{ tickLabels: { fontSize: 19, fill: "#FFFFFF" } }}
-              
               label="LATENCY"
               tickFormat={(t) => `${t}s`}
               axisLabelComponent={
@@ -316,16 +327,36 @@ function LatencyChart() {
               }
             />
             <VictoryAxis
-              style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
-              tickValues={tickValues}
-              label="DATE"
-              axisLabelComponent={
-                <VictoryLabel
-                  dy={70}
-                  style={[{ fill: "#FFFFFF", fontSize: 30 }]}
-                />
-              }
-            />
+  tickFormat={(t, index, ticks) => {
+    if(ticks.length <= 8) {
+      return t; 
+    } else {
+      const date = endDate;
+      const month = date.getMonth();
+      console.log(date)
+      console.log(month)
+      const year = date.getFullYear();
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      if(index === 0 || index === ticks.length - 1) { 
+        return `${year}`; 
+      } else if (month % 2 === 0) {
+        return `${monthNames[month]}`; // отображаем название месяца, если он является четным
+      } else {
+        return '';
+      }
+    }
+  }}
+  style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
+  tickValues={tickValues}
+  label="DATE"
+  axisLabelComponent={
+    <VictoryLabel
+      dy={70}
+      style={[{ fill: "#FFFFFF", fontSize: 30 }]}
+    />
+  }
+/>
+
           </VictoryChart>
         </div>
         <div class="desktop:w-[500px] laptop:max-w-[500px] laptop:min-w-[300px] ">
@@ -344,13 +375,12 @@ function LatencyChart() {
           <br></br>
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b>
-            Average Censorship Latency if Lido was completely non-censoring 
+              Average Censorship Latency if Lido was completely non-censoring
             </b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            We also
-            compute a modified version of the Censorship Latency metric by
-            assuming that the Lido validators were completely non-censoring.
+            We also compute a modified version of the Censorship Latency metric
+            by assuming that the Lido validators were completely non-censoring.
             This adjusted metric helps to understand the impact of censorship by
             other validators on the overall network.
           </p>

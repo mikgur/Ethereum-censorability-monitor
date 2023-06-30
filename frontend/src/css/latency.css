@@ -33,6 +33,24 @@
   }
 
 .react-datepicker__day--in-range {
-    background-color: rgb(17, 255, 0); /* Замените на желаемый цвет */
+    background-color: rgb(0, 0, 0); /* Замените на желаемый цвет */
     color: white; /* Замените на желаемый цвет текста */
   }
+
+.selected {
+background-color: lightblue;
+}
+
+.react-datepicker__day--range-start {
+    border-top-left-radius: 50%;
+    border-bottom-left-radius: 50%;
+  }
+  
+  .react-datepicker__day--range-end {
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+  }
+
+  .VictoryContainer-cursor-crosshair {
+    stroke: red !important; 
+}
