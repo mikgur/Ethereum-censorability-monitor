@@ -40,10 +40,10 @@ function PoolChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-        <div class="desktop:w-[1200px] desktop:h-[200px] uwdesktop:w-[1600px] uwdesktop:h-[300px] tablet:w-[400px] tablet:h-[300px] laptop:w-[900px]">
+        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[600px] laptop:w-[900px] laptop:h-[700px]">
           <VictoryChart
-            height={170}
-            width={600}
+            height={1200}
+            width={800}
             padding={{ bottom: 50, left: 100, right: 100, top: 50 }}
             label="Lido vs rest ratio"
             containerComponent={
