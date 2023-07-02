@@ -135,7 +135,15 @@ function LatencyChart() {
   const handleClose = () => {
     setAnchorEl(null);
   };
+  let prevMonth = null;
 
+  const getDateOnStr = (strDate) => {
+    var parts = strDate.split("\n — \n");
+    var partsOneDate = parts[0].split('-')
+    var formattedDateString = "20" + partsOneDate[2] + "-" + partsOneDate[1] + "-" + partsOneDate[0];
+    const date = new Date(formattedDateString);
+    return date;
+  }
   const getTooltipLabel = (datum) =>
   `Date: ${datum.range_date}, ${datum.overall_censorship_latency.toFixed(4)},\n ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`;
 
@@ -331,16 +339,16 @@ const points2 = latencyState.map(item => ({
     if(ticks.length <= 8) {
       return t; 
     } else {
-      const date = endDate;
+      const date = getDateOnStr(t);
       const month = date.getMonth();
-      console.log(date)
       console.log(month)
       const year = date.getFullYear();
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       if(index === 0 || index === ticks.length - 1) { 
         return `${year}`; 
-      } else if (month % 2 === 0) {
-        return `${monthNames[month]}`; // отображаем название месяца, если он является четным
+      } else if (month !== prevMonth) {
+        prevMonth = month;
+        return `${monthNames[month]}`;
       } else {
         return '';
       }
