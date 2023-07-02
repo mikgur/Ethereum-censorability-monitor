@@ -35,10 +35,10 @@ function LatencyChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
+        <div class="desktop:w-[1200px] desktop:h-[1200px] uwdesktop:w-[1600px] uwdesktop:h-[1200px] tablet:w-[400px] tablet:h-[600px] laptop:w-[1000px] laptop:h-[1200px]">
           <VictoryChart
-            height={600}
-            width={600}
+            height={1200}
+            width={1000}
             padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
             minDomain={{ y: 0 }}
             maxDomain={{ y: 25 }}
