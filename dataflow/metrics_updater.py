@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from logging import Logger
 from typing import List
 
+import numpy as np
 import pandas as pd
 from pymongo.collection import Collection
 
@@ -171,6 +172,7 @@ def update_lido_vs_rest_censorship_resistance_index(
     logger.info(
         "Lido vs Rest censorship resistance index over last week has been calculated"
     )
+
     logger.info(
         "Calculating Lido vs Rest censorship resistance index over last month"
     )
@@ -183,6 +185,30 @@ def update_lido_vs_rest_censorship_resistance_index(
         "Lido vs Rest censorship resistance index over last month has been calculated"
     )
 
+    logger.info(
+        "Calculating Lido vs Rest censorship resistance index over last halfyear"
+    )
+
+    lh_resistance_index = get_lido_vs_rest(
+        metrics_collection, "last_half_year"
+    )
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last halfyear has been calculated"
+    )
+
+    logger.info(
+        "Calculating Lido vs Rest censorship resistance index over last year"
+    )
+
+    ly_resistance_index = get_lido_vs_rest(
+        metrics_collection, "last_year"
+    )
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last year has been calculated"
+    )
+
     lw_record = {
         "metrics": "last_week_lido_vs_rest_censorship_resistance_index",
         "values": lw_resistance_index,
@@ -191,6 +217,16 @@ def update_lido_vs_rest_censorship_resistance_index(
     lm_record = {
         "metrics": "last_month_lido_vs_rest_censorship_resistance_index",
         "values": lm_resistance_index,
+    }
+
+    lh_record = {
+        "metrics": "last_half_year_lido_vs_rest_censorship_resistance_index",
+        "values": lh_resistance_index,
+    }
+
+    ly_record = {
+        "metrics": "last_year_lido_vs_rest_censorship_resistance_index",
+        "values": ly_resistance_index,
     }
 
     logger.info(
@@ -216,6 +252,32 @@ def update_lido_vs_rest_censorship_resistance_index(
 
     logger.info(
         "Lido vs Rest censorship resistance index over last month has been updated"
+    )
+
+    logger.info(
+        "Updating Lido vs Rest censorship resistance index over last halfyear"
+    )
+
+    target_collection.delete_one(
+        {"metrics": "last_half_year_lido_vs_rest_censorship_resistance_index"}
+    )
+    target_collection.insert_one(lh_record)
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last halfyear has been updated"
+    )
+
+    logger.info(
+        "Updating Lido vs Rest censorship resistance index over last year"
+    )
+
+    target_collection.delete_one(
+        {"metrics": "last_year_lido_vs_rest_censorship_resistance_index"}
+    )
+    target_collection.insert_one(ly_record)
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last year has been updated"
     )
 
 
@@ -256,6 +318,30 @@ def update_validators_censorship_resistance_index(
         "Validators censorship resistance index over last month has been calculated"
     )
 
+    logger.info(
+        "Calculating validators censorship resistance index over last halfyear"
+    )
+
+    lh_resistance_index = get_lido_validators_metrics(
+        metrics_collection, "last_half_year", True
+    )
+
+    logger.info(
+        "Validators censorship resistance index over last halfyear has been calculated"
+    )
+
+    logger.info(
+        "Calculating validators censorship resistance index over last year"
+    )
+
+    ly_resistance_index = get_lido_validators_metrics(
+        metrics_collection, "last_year", True
+    )
+
+    logger.info(
+        "Validators censorship resistance index over last year has been calculated"
+    )
+
     lw_record = {
         "metrics": "last_week_validators_censorship_resistance_index",
         "values": lw_resistance_index,
@@ -264,6 +350,16 @@ def update_validators_censorship_resistance_index(
     lm_record = {
         "metrics": "last_month_validators_censorship_resistance_index",
         "values": lm_resistance_index,
+    }
+
+    lh_record = {
+        "metrics": "last_half_year_validators_censorship_resistance_index",
+        "values": lh_resistance_index,
+    }
+
+    ly_record = {
+        "metrics": "last_year_validators_censorship_resistance_index",
+        "values": ly_resistance_index,
     }
 
     logger.info(
@@ -289,6 +385,32 @@ def update_validators_censorship_resistance_index(
 
     logger.info(
         "Validators censorship resistance index over last month has been updated"
+    )
+
+    logger.info(
+        "Updating validators censorship resistance index over last halfyear"
+    )
+
+    target_collection.delete_one(
+        {"metrics": "last_half_year_validators_censorship_resistance_index"}
+    )
+    target_collection.insert_one(lh_record)
+
+    logger.info(
+        "Validators censorship resistance index over last halfyear has been updated"
+    )
+
+    logger.info(
+        "Updating validators censorship resistance index over last year"
+    )
+
+    target_collection.delete_one(
+        {"metrics": "last_year_validators_censorship_resistance_index"}
+    )
+    target_collection.insert_one(ly_record)
+
+    logger.info(
+        "Validators censorship resistance index over last year has been updated"
     )
 
 
@@ -325,6 +447,26 @@ def update_validators_compliance_ratio(
         "Validators compliance ratio over last month has been calculated"
     )
 
+    logger.info("Calculating validators compliance ratio over last halfyear")
+
+    lh_ratio = get_lido_validators_metrics(
+        metrics_collection, "last_half_year", False
+    )
+
+    logger.info(
+        "Validators compliance ratio over last halfyear has been calculated"
+    )
+
+    logger.info("Calculating validators compliance ratio over last year")
+
+    ly_ratio = get_lido_validators_metrics(
+        metrics_collection, "last_year", False
+    )
+
+    logger.info(
+        "Validators compliance ratio over last year has been calculated"
+    )
+
     lw_record = {
         "metrics": "last_week_validators_compliance_ratio",
         "values": lw_ratio,
@@ -333,6 +475,16 @@ def update_validators_compliance_ratio(
     lm_record = {
         "metrics": "last_month_validators_compliance_ratio",
         "values": lm_ratio,
+    }
+
+    lh_record = {
+        "metrics": "last_half_year_validators_compliance_ratio",
+        "values": lh_ratio,
+    }
+
+    ly_record = {
+        "metrics": "last_year_validators_compliance_ratio",
+        "values": ly_ratio,
     }
 
     logger.info("Updating validators compliance ratio over last week")
@@ -356,6 +508,27 @@ def update_validators_compliance_ratio(
         "Validators compliance ratio index over last month has been updated"
     )
 
+    logger.info("Updating validators compliance ratio over last halfyear")
+
+    target_collection.delete_one(
+        {"metrics": "last_half_year_validators_compliance_ratio"}
+    )
+    target_collection.insert_one(lh_record)
+
+    logger.info(
+        "Validators compliance ratio over last halfyear has been updated"
+    )
+    logger.info("Updating validators compliance ratio over last year")
+
+    target_collection.delete_one(
+        {"metrics": "last_year_validators_compliance_ratio"}
+    )
+    target_collection.insert_one(ly_record)
+
+    logger.info(
+        "Validators compliance ratio index over last year has been updated"
+    )
+
 
 def _get_validators_metrics(
     collection: Collection, dates: List[str]
@@ -374,6 +547,7 @@ def _get_validators_metrics(
     fields_dict = {date: 1 for date in dates}
     fields_dict["_id"] = 0
     fields_dict["name"] = 1
+    fields_dict["pool"] = 1
 
     try:
         cursor = collection.find({}, fields_dict)
@@ -424,60 +598,6 @@ def _get_ofac_non_compliant_count(row: pd.Series, dates: List[str]) -> int:
     return count
 
 
-def _get_ofac_compliant_share(row: pd.Series, df: pd.DataFrame) -> float:
-    """
-    Calculate the share of a particular validator in the validation of ofac compliant transactions inside Ethereum blockchain
-
-    Args:
-        row -   Pandas series corresconding to the specific validator
-        df  -   Whole dataframe with metrics
-
-    Returns:
-        Share of a particular validator in the validation of ofac compliant transactions inside Ethereum blockchain in percents
-    """
-    return (
-        100 * row["ofac_compliant_count"] / df.ofac_compliant_count.sum()
-    )
-
-
-def _get_ofac_non_compliant_share(
-    row: pd.Series, df: pd.DataFrame
-) -> float:
-    """
-    Calculate the share of a particular validator in the validation of ofac non compliant transactions inside Ethereum blockchain
-
-    Args:
-        row -   Pandas series corresconding to the specific validator
-        df  -   Whole dataframe with metrics
-
-    Returns:
-        Share of a particular validator in the validation of ofac non compliant transactions inside Ethereum blockchain in percents
-    """
-    return (
-        100
-        * row["ofac_non_compliant_count"]
-        / df.ofac_non_compliant_count.sum()
-    )
-
-
-def _get_ratio(row: pd.Series) -> float:
-    """
-    Calculate the ratio between validator's ofac non compliant share and validator's ofac compliant share
-
-    Args:
-        row -   Pandas series corresconding to the specific validator
-
-    Returns:
-        Ratio between validator's ofac non compliant share and validator's ofac compliant share
-    """
-    if row["ofac_compliant_share"] != 0:
-        return (
-            row["ofac_non_compliant_share"] / row["ofac_compliant_share"]
-        )
-    else:
-        return 1
-
-
 def _prepare_share_df(df: pd.DataFrame, dates: List[str]) -> pd.DataFrame:
     """
     Calculate "share metric" over dataframe
@@ -497,22 +617,22 @@ def _prepare_share_df(df: pd.DataFrame, dates: List[str]) -> pd.DataFrame:
     _df["ofac_non_compliant_count"] = _df.apply(
         _get_ofac_non_compliant_count, axis=1, args=(dates,)
     )
+    
+    compliant_count = _df.ofac_compliant_count.sum()
+    non_compliant_count = _df.ofac_non_compliant_count.sum()
 
-    _df["ofac_compliant_share"] = _df[df.name != "Other"].apply(
-        _get_ofac_compliant_share, axis=1, args=(_df,)
-    )
-    _df["ofac_non_compliant_share"] = _df[df.name != "Other"].apply(
-        _get_ofac_non_compliant_share, axis=1, args=(_df,)
-    )
+    _df["ofac_compliant_share"] = _df.ofac_compliant_count / compliant_count
+    _df["ofac_non_compliant_share"] = _df.ofac_non_compliant_count / non_compliant_count
 
     # Select only needed colunms
     _df = _df[
         [
             "name",
-            "ofac_compliant_count",
-            "ofac_non_compliant_count",
+            "pool",
             "ofac_compliant_share",
             "ofac_non_compliant_share",
+            "ofac_compliant_count",
+            "ofac_non_compliant_count"
         ]
     ]
 
@@ -532,7 +652,8 @@ def _prepare_ratio_df(share_df: pd.DataFrame) -> pd.DataFrame:
     """
     _df = share_df.copy()
 
-    _df["ratio"] = _df[_df.name != "Other"].apply(_get_ratio, axis=1)
+    _df["ratio"] = _df.ofac_non_compliant_share / _df.ofac_compliant_share
+    _df.ratio = _df.ratio.replace(np.inf, 1)
 
     _df = _df[["name", "ratio"]]
 
@@ -559,7 +680,9 @@ def _calc_lido_latency(
         # If we find validators of lido in the list of censors,
         # we will assume that he validated the transaction and
         # there was no further censorship
-        if censored_block["validator"] not in lido_vals:
+        if "validator_pool" in censored_block and censored_block["validator_pool"] != 'Lido':
+            latency += 12
+        elif censored_block["validator"] not in lido_vals:
             latency += 12
         else:
             break
@@ -597,15 +720,21 @@ def get_lido_validators_metrics(
     Returns:
         List of dicts with metrics for each Lido validator
     """
-    if period == "last_week":
+    if period == 'last_week':
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
-    else:
+    elif period ==  "last_half_year":
+        dates = get_last_dates(0, 180)
+    elif period ==  "last_year":
+        dates = get_last_dates(0, 365)        
+    else :
         raise ValueError("Wrong period")
 
     metrics_df = _get_validators_metrics(collection, dates)
     metrics_df = _prepare_share_df(metrics_df, dates)
+
+    metrics_df = metrics_df.query("pool == 'Lido'")
 
     metrics_df = metrics_df[
         ["name", "ofac_compliant_share", "ofac_non_compliant_share"]
@@ -613,8 +742,6 @@ def get_lido_validators_metrics(
 
     if calc_ratio:
         metrics_df = _prepare_ratio_df(metrics_df)
-
-    metrics_df = metrics_df[metrics_df.name != "Other"]
 
     return metrics_df.to_dict(orient="records")
 
@@ -630,58 +757,46 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
     Returns:
         List of dicts with metrics for Lido and other pools
     """
-    if period == "last_week":
+    if period == 'last_week':
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
-    else:
+    elif period ==  "last_half_year":
+        dates = get_last_dates(0, 180)
+    elif period ==  "last_year":
+        dates = get_last_dates(0, 365)        
+    else :
         raise ValueError("Wrong period")
 
     # Prepare dataframe to calculate metrics for pools
     metrics_df = _get_validators_metrics(collection, dates)
     metrics_df = _prepare_share_df(metrics_df, dates)
+    
+    #Group by pools
+    metrics_df = metrics_df.groupby('pool').agg({
+        'ofac_compliant_count': ['sum'],
+        'ofac_non_compliant_count': ['sum']
+    }).reset_index()
+    
+    metrics_df.columns = metrics_df.columns.droplevel(1)
+    
+    
     # Get count of transactions of both types
     total_ofac_compliant_count = metrics_df.ofac_compliant_count.sum()
     total_ofac_non_compliant_count = (
         metrics_df.ofac_non_compliant_count.sum()
     )
-
-    lido_ofac_compliant_count = metrics_df[
-        metrics_df.name != "Other"
-    ].ofac_compliant_count.sum()
-    lido_ofac_non_compliant_count = metrics_df[
-        metrics_df.name != "Other"
-    ].ofac_non_compliant_count.sum()
-    # Calculate share of Lido
-    lido_ofac_compliant_share = (
-        lido_ofac_compliant_count / total_ofac_compliant_count
-    )
-    lido_ofac_non_compliant_share = (
-        lido_ofac_non_compliant_count / total_ofac_non_compliant_count
-    )
-    # Calculate share of other pools together
-    other_ofac_compliant_share = (
-        metrics_df[metrics_df.name == "Other"].ofac_compliant_count.values[
-            0
-        ]
-        / total_ofac_compliant_count
-    )
-    other_ofac_non_compliant_share = (
-        metrics_df[
-            metrics_df.name == "Other"
-        ].ofac_non_compliant_count.values[0]
-        / total_ofac_non_compliant_count
+    
+    metrics_df.ofac_compliant_count /= total_ofac_compliant_count
+    metrics_df.ofac_non_compliant_count /= total_ofac_non_compliant_count
+    
+    metrics_df['ratio'] = (
+        metrics_df.ofac_non_compliant_count / metrics_df.ofac_compliant_count
     )
 
-    lido_ratio = lido_ofac_non_compliant_share / lido_ofac_compliant_share
-    other_ratio = (
-        other_ofac_non_compliant_share / other_ofac_compliant_share
-    )
-
-    lido_vs_rest = [
-        {"pool": "Lido", "ratio": lido_ratio},
-        {"pool": "Non Lido", "ratio": other_ratio},
-    ]
+    metrics_df.ratio = metrics_df.ratio.fillna(1)
+    
+    lido_vs_rest = metrics_df[['pool','ratio']].to_dict(orient = 'records')
 
     return lido_vs_rest
 
@@ -722,14 +837,14 @@ def get_overall_latency(
     week_diff = (last_monday - first_monday).days // 7
 
     latency = []
-    # List of Lido validators
+
     try:
         lido_vals = validators_collection.distinct(
             "name", {"pool_name": "Lido"}
         )
     except:
-        raise Exception("Failed to fetch validators data from db")
-
+        raise Exception("Failed to fetch validators data from db")    
+    
     for shift in range(week_diff + 1):
         # For each available week find it's boundaries
         monday_ts, sunday_ts, monday_dt, sunday_dt = get_shifted_week(
@@ -810,14 +925,14 @@ def get_censored_latency(
     week_diff = (last_monday - first_monday).days // 7
 
     latency = []
-    # List of Lido validators
+
     try:
         lido_vals = validators_collection.distinct(
             "name", {"pool_name": "Lido"}
         )
     except:
-        raise Exception("Failed to fetch validators data from db")
-
+        raise Exception("Failed to fetch validators data from db")    
+    
     for shift in range(week_diff + 1):
         # For each available week find it's boundaries
         monday_ts, sunday_ts, monday_dt, sunday_dt = get_shifted_week(
@@ -886,11 +1001,15 @@ def get_censored_percentage(
         Percentage of censored transactions
     """
     # Find min and max timestamps in censored transactions' mongo collection
-    if period == "last_week":
+    if period == 'last_week':
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
-    else:
+    elif period ==  "last_half_year":
+        dates = get_last_dates(0, 180)
+    elif period ==  "last_year":
+        dates = get_last_dates(0, 365)        
+    else :
         raise ValueError("Wrong period")
 
     start_date = datetime.strptime(dates[-1], "%d-%m-%y")
