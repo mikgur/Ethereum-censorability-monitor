@@ -498,6 +498,7 @@ class CensorshipMonitor:
                                 transactions: List[str],
                                 w3: Web3) -> Dict[str, List[str]]:
         ''' Get addressess touched by transactions from receipts'''
+        logger = logging.getLogger(self.name)
         while True:
             try:
                 block_txs_addresses = {}
@@ -507,6 +508,10 @@ class CensorshipMonitor:
                     block_txs_addresses[tx] = addresses
                 return block_txs_addresses
             except TransactionNotFound:
+                logger.info(f"Transaction not found {tx} - {time.time():0.2f}")
+                await asyncio.sleep(1)
+            except Exception as e:
+                logger.info(f"Exception {e} - {tx} - {time.time():0.2f}")
                 await asyncio.sleep(1)
 
     def find_txs_in_db(self, hashes_list: List[str], db: Database):
