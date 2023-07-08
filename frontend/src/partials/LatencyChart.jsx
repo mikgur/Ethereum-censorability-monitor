@@ -3,16 +3,12 @@ import {
   VictoryChart,
   VictoryLabel,
   VictoryAxis,
-  VictoryContainer,
   VictoryLegend,
-  VictoryTheme,
   VictoryLine,
   VictoryScatter,
   VictoryTooltip,
   createContainer, 
-  VictoryCursorContainer, 
   VictoryVoronoiContainer,
-  VictorySharedEvents
 } from "victory";
 
 import DatePicker from 'react-datepicker';
@@ -48,6 +44,7 @@ function LatencyChart() {
     getLatencyData();
   }, [startDate, endDate]);
 
+  
   const getLatencyData = async () => {
     const data = await getLatency();
     console.log("anime1")
@@ -145,7 +142,7 @@ function LatencyChart() {
     return date;
   }
   const getTooltipLabel = (datum) =>
-  `Date: ${datum.range_date}, ${datum.overall_censorship_latency.toFixed(4)},\n ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`;
+  `${datum.range_date.replace(/[\n]/g, '')}\n \n ${datum.overall_censorship_latency.toFixed(4)}\n ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`;
 
 // Создайте два массива точек: один для каждого из ваших наборов данных
 const points1 = latencyState.map(item => ({
@@ -170,202 +167,236 @@ const points2 = latencyState.map(item => ({
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-        <div className="mb-4">
-          <label className="block text-sm mb-2">Select Date Range:</label>
-          {/* <IconButton aria-describedby={id} variant="contained" color="primary" onClick={handleClick}>
-          <DateRangeIcon />
-        </IconButton> */}
-          <Popover
-            id={id}
-            open={open}
-            anchorEl={anchorEl}
-            onClose={handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center",
-            }}
-          >
-            <DatePicker
-              selected={startDate}
-              onChange={onDatesChange}
-              startDate={startDate}
-              endDate={endDate}
-              shouldUnregister={true}
-              selectsRange
-              inline
-              calendarStartDay={1}
-              portalId="root-portal"
-              filterDate={(date) =>
-                startDate && !endDate ? isSunday(date) : isMonday(date)
-              }
-              className="bg-gray-600 p-2 rounded text-white"
-            />
-          </Popover>
-          <div className="mb-4">
-            <label className="block text-sm mb-2">Select Date Range:</label>
-            <ButtonGroup
-              variant="contained"
-              color="primary"
-              aria-label="contained primary button group"
-            >
-              <Button
-                variant={activeButton === "custom" ? "contained" : "outlined"}
-                color="primary"
-                onClick={handleClick}
-                startIcon={<DateRangeIcon />}
-              ></Button>
-              <Button
-                variant={activeButton === "1m" ? "contained" : "outlined"}
-                onClick={setLastMonth}
-              >
-                1m
-              </Button>
-              <Button
-                variant={activeButton === "6m" ? "contained" : "outlined"}
-                onClick={setLastHalfYear}
-              >
-                6m
-              </Button>
-              <Button
-                variant={activeButton === "1y" ? "contained" : "outlined"}
-                onClick={setLastYear}
-              >
-                1y
-              </Button>
-            </ButtonGroup>
-          </div>
-        </div>
-        <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
-          <VictoryChart
-            height={600}
-            width={600}
-            padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
-            minDomain={{ y: 0 }}
-            maxDomain={{ y: 25 }}
-            containerComponent={
-              <VictoryVoronoiContainer voronoiDimension="x" />
-            }
-          >
-            <VictoryScatter
-              data={points1}
-              size={({ active }) => (active ? 3 : 1)}
-              style={{
-                data: { fill: "white" },
-                labels: { fill: "white" },
-              }}
-              labelComponent={
-                <VictoryTooltip
-                  dy={5}
-                  cornerRadius={0} // Отключить закругление углов
-                  style={{ fill: "white", fontSize: 10, fontFamily: "Arial" }}
-                  flyoutStyle={{ fill: "#2d2d2d", stroke: "transparent" }}
-                  pointerLength={0} // Отключить стрелку
-                  pointerWidth={0} // Отключить стрелку
-                />
-              }
-            />
-
-            <VictoryScatter
-              data={points2}
-              size={({ active }) => (active ? 3 : 1)}
-              style={{
-                data: { fill: "white" },
-              }}
-            />
-
-            <VictoryLegend
-              x={50}
-              y={0}
-              orientation="horizontal"
-              gutter={15}
-              style={{ labels: { fontSize: 15 } }}
-              data={[
-                {
-                  name: "Average Сensorship Latency",
-                  symbol: { fill: "#1e90ff" },
-                  labels: { fill: "#FFFFFF" },
-                },
-                {
-                  name: "Average Censorship Latency if Lido was\n completely non-censoring",
-                  symbol: { fill: "#c43a31" },
-                  labels: { fill: "#FFFFFF" },
-                },
-              ]}
-            />
-            <VictoryLine
-              alignment="middle"
-              style={{ data: { stroke: "#c43a31" } }}
-              data={latencyState}
-              x="range_date"
-              y="overall_censorship_latency_without_lido_censorship"
-              //     labels={({ datum }) =>
-              //   `latency: ${datum.overall_censorship_latency.toFixed(4)}`
-              // }
-              labelComponent={<VictoryTooltip />}
-            />
-            <VictoryLine
-              alignment="middle"
-              style={{ data: { stroke: "#1e90ff" } }}
-              // labels={({ datum }) => datum.y}
-              data={latencyState}
-              x="range_date"
-              y="overall_censorship_latency"
-              //     labels={({ datum }) =>
-              //   `without_latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`
-              // }
-              labelComponent={<VictoryTooltip />}
-            />
-
-            <VictoryAxis
-              dependentAxis
-              // tickFormat={(t) => `${t}%`}
-              style={{ tickLabels: { fontSize: 19, fill: "#FFFFFF" } }}
-              label="LATENCY"
-              tickFormat={(t) => `${t}s`}
-              axisLabelComponent={
-                <VictoryLabel
-                  style={[{ fill: "#FFFFFF", fontSize: 30 }]}
-                  dy={-60}
-                  padding={100}
-                />
-              }
-            />
-            <VictoryAxis
-  tickFormat={(t, index, ticks) => {
-    if(ticks.length <= 8) {
-      return t; 
-    } else {
-      const date = getDateOnStr(t);
-      const month = date.getMonth();
-      console.log(month)
-      const year = date.getFullYear();
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      if(index === 0 || index === ticks.length - 1) { 
-        return `${year}`; 
-      } else if (month !== prevMonth) {
-        prevMonth = month;
-        return `${monthNames[month]}`;
-      } else {
-        return '';
-      }
-    }
+        <div class="flex flex-col items-center mx-8">
+          <div className="mb-4 mx-8 justify-center">
+            <Popover
+  id={id}
+  open={open}
+  anchorEl={anchorEl}
+  onClose={handleClose}
+  anchorOrigin={{
+    vertical: "bottom",
+    horizontal: "center",
   }}
-  style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
-  tickValues={tickValues}
-  label="DATE"
-  axisLabelComponent={
-    <VictoryLabel
-      dy={70}
-      style={[{ fill: "#FFFFFF", fontSize: 30 }]}
-    />
-  }
-/>
+  transformOrigin={{
+    vertical: "top",
+    horizontal: "center",
+  }}
+>
+  <DatePicker
+    selected={startDate}
+    onChange={onDatesChange}
+    startDate={startDate}
+    endDate={endDate}
+    shouldUnregister={true}
+    selectsRange
+    inline
+    calendarStartDay={1}
+    portalId="root-portal"
+    filterDate={(date) =>
+      startDate && !endDate ? isSunday(date) : isMonday(date)
+    }
+    className="bg-white p-2 rounded text-black"
+  />
+</Popover>
+<div className="mb-4">
+  <ButtonGroup
+    variant="contained"
+    color="text-black"
+    aria-label="contained text-black button group"
+  >
+    <Button
+      variant={activeButton === "custom" ? "contained" : "outlined"}
+      onClick={handleClick}
+      startIcon={<DateRangeIcon />}
+      style={{ 
+        transition: "background 0.3s ease",
+        background: activeButton === "custom" ? "black" : "white", 
+        color: activeButton === "custom" ? "white" : "black",
+      }}
+    ></Button>
+    <Button
+      variant={activeButton === "1m" ? "contained" : "outlined"}
+      onClick={setLastMonth}
+      style={{ 
+        transition: "background 0.3s ease",
+        background: activeButton === "1m" ? "black" : "white", 
+        color: activeButton === "1m" ? "white" : "black",
+      }}
+    >
+      1m
+    </Button>
+    <Button
+      variant={activeButton === "6m" ? "contained" : "outlined"}
+      onClick={setLastHalfYear}
+      style={{ 
+        transition: "background 0.3s ease",
+        background: activeButton === "6m" ? "black" : "white", 
+        color: activeButton === "6m" ? "white" : "black",
+      }}
+    >
+      6m
+    </Button>
+    <Button
+      variant={activeButton === "1y" ? "contained" : "outlined"}
+      onClick={setLastYear}
+      style={{ 
+        transition: "background 0.3s ease",
+        background: activeButton === "1y" ? "black" : "white", 
+        color: activeButton === "1y" ? "white" : "black",
+      }}
+    >
+      1y
+    </Button>
+  </ButtonGroup>
+</div>
+          </div>
+          <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
+            <VictoryChart
+              height={600}
+              width={600}
+              padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
+              minDomain={{ y: 0 }}
+              maxDomain={{ y: 25 }}
+              containerComponent={
+                <VictoryVoronoiContainer voronoiDimension="x" />
+              }
+            >
+              <VictoryScatter
+                data={points1}
+                size={({ active }) => (active ? 3 : 1)}
+                style={{
+                  data: { fill: "white" },
+                  labels: { fill: "white" },
+                }}
+                labelComponent={
+                  <VictoryTooltip
+                    dy={-35}
+                    cornerRadius={0} // Отключить закругление углов
+                    style={{ fill: "white", fontSize: 15, fontFamily: "Arial" }}
+                    flyoutStyle={{ fill: "#2d2d2d", stroke: "transparent" }}
+                    pointerLength={0} // Отключить стрелку
+                    pointerWidth={0} // Отключить стрелку
+                  />
+                }
+              />
 
-          </VictoryChart>
+              <VictoryScatter
+                data={points2}
+                size={({ active }) => (active ? 3 : 1)}
+                style={{
+                  data: { fill: "white" },
+                }}
+              />
+
+              <VictoryLegend
+                x={60}
+                y={530}
+                orientation="horizontal"
+                gutter={15}
+                style={{ labels: { fontSize: 15 } }}
+                data={[
+                  {
+                    name: "Average Сensorship Latency",
+                    symbol: { fill: "#1e90ff" },
+                    labels: { fill: "#FFFFFF" },
+                  },
+                  {
+                    name: "Average Censorship Latency if Lido was\n completely non-censoring",
+                    symbol: { fill: "#c43a31" },
+                    labels: { fill: "#FFFFFF" },
+                  },
+                ]}
+              />
+              <VictoryLine
+                alignment="middle"
+                style={{ data: { stroke: "#c43a31" } }}
+                data={latencyState}
+                x="range_date"
+                y="overall_censorship_latency_without_lido_censorship"
+                //     labels={({ datum }) =>
+                //   `latency: ${datum.overall_censorship_latency.toFixed(4)}`
+                // }
+                labelComponent={<VictoryTooltip />}
+              />
+              <VictoryLine
+                alignment="middle"
+                style={{ data: { stroke: "#1e90ff" } }}
+                // labels={({ datum }) => datum.y}
+                data={latencyState}
+                x="range_date"
+                y="overall_censorship_latency"
+                //     labels={({ datum }) =>
+                //   `without_latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`
+                // }
+                labelComponent={<VictoryTooltip />}
+              />
+
+              <VictoryAxis
+                dependentAxis
+                // tickFormat={(t) => `${t}%`}
+                style={{
+                  tickLabels: { fontSize: 15, fill: "#FFFFFF" },
+                  axisLabel: { padding: 30 },
+                }}
+                label="LATENCY"
+                // axisLabelComponent={<VictoryLabel dy={20} />}
+                tickFormat={(t) => `${t}s`}
+                axisLabelComponent={
+                  <VictoryLabel
+                    style={[{ fill: "#FFFFFF", fontSize: 13 }]}
+                    dy={-220}
+                    // padding={100}
+                    angle={360}
+                  />
+                }
+              />
+              <VictoryAxis
+                tickFormat={(t, index, ticks) => {
+                  if (ticks.length <= 8) {
+                    return t;
+                  } else {
+                    const date = getDateOnStr(t);
+                    const month = date.getMonth();
+                    console.log(month);
+                    const year = date.getFullYear();
+                    const monthNames = [
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "May",
+                      "Jun",
+                      "Jul",
+                      "Aug",
+                      "Sep",
+                      "Oct",
+                      "Nov",
+                      "Dec",
+                    ];
+                    if (index === 0 || index === ticks.length - 1) {
+                      return `${year}`;
+                    } else if (month !== prevMonth) {
+                      prevMonth = month;
+                      return `${monthNames[month]}`;
+                    } else {
+                      return "";
+                    }
+                  }
+                }}
+                style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
+                tickValues={tickValues}
+                label="DATE"
+                axisLabelComponent={
+                  <VictoryLabel
+                    dy={-10}
+                    dx={250}
+                    style={[{ fill: "#FFFFFF", fontSize: 15 }]}
+                  />
+                }
+              />
+            </VictoryChart>
+          </div>
         </div>
         <div class="desktop:w-[500px] laptop:max-w-[500px] laptop:min-w-[300px] ">
           <p class="desktop:text-xl uwdesktop:text-2xl">
