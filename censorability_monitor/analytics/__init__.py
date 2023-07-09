@@ -176,7 +176,7 @@ class CensorshipMonitor:
         n_behind = w3.eth.blockNumber - block_number
         while n_behind < 10:
             logger.info(f"Waiting for block confirmations, now have {n_behind}")
-            asyncio.sleep(12)
+            await asyncio.sleep(12)
             n_behind = w3.eth.blockNumber - block_number
         logger.info(f'processing {block_number}, {n_behind} behind ETH')
         # Update validators and ofac list
