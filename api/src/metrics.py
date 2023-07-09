@@ -11,26 +11,19 @@ def get_lido_validators_metrics(
 
     Args:
         collection  -   Mongo collection of metrics
-        period      -   Time period for which censorship metrics need to be calculated (last_week or last_month)
+        period      -   Time period for which censorship metrics need to be calculated
         calc_ratio  -   Calculate "ratio metric" or not
 
     Returns:
         List of dicts with metrics for each Lido validator
     """
-    if period == "last_week" and calc_ratio:
-        data = collection.find_one(
-            {"metrics": "last_week_validators_censorship_resistance_index"}
-        )
-    elif period == "last_week" and not calc_ratio:
-        data = collection.find_one({"metrics": "last_week_validators_compliance_ratio"})
-    elif period == "last_month" and calc_ratio:
-        data = collection.find_one(
-            {"metrics": "last_month_validators_censorship_resistance_index"}
-        )
-    elif period == "last_month" and not calc_ratio:
-        data = collection.find_one(
-            {"metrics": "last_month_validators_compliance_ratio"}
-        )
+    if period in ['last_week','last_month','last_half_year','last_year']:
+        if calc_ratio:
+            data = collection.find_one(
+                {"metrics": f"{period}_validators_censorship_resistance_index"}
+            )
+        else:
+            data = collection.find_one({"metrics": f"{period}_validators_compliance_ratio"})
     else:
         raise ValueError("Wrong period")
 
@@ -43,18 +36,14 @@ def get_lido_vs_rest(collection: Collection, period: str) -> List[dict]:
 
     Args:
         collection  -   Mongo collection of metrics
-        period      -   Time period for which censorship metrics need to be calculated (last_week or last_month)
+        period      -   Time period for which censorship metrics need to be calculated
 
     Returns:
         List of dicts with metrics for Lido and other pools
     """
-    if period == "last_week":
+    if period in ['last_week','last_month','last_half_year','last_year']:
         data = collection.find_one(
-            {"metrics": "last_week_lido_vs_rest_censorship_resistance_index"}
-        )
-    elif period == "last_month":
-        data = collection.find_one(
-            {"metrics": "last_month_lido_vs_rest_censorship_resistance_index"}
+            {"metrics": f"{period}_lido_vs_rest_censorship_resistance_index"}
         )
     else:
         raise ValueError("Wrong period")
