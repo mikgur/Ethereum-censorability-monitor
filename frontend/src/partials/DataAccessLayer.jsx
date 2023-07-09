@@ -23,10 +23,10 @@ export const getLatency = async () => {
     return data
 }
 
-export const getMedian = async (period) => {
+export const getCensoredLatency = async (period) => {
     const data = await axios.get(`https://eth.neutralitywatch.com/metrics/censored_latency/average`)
     for (let i = 0; i < data.data.length; i++) {
-        data.data[i]['start_date'] = data.data[i]['start_date'] + '\n — \n' + data.data[i]['end_date']
+        data.data[i]['range_date'] = data.data[i]['start_date'] + '\n — \n' + data.data[i]['end_date']
     }
     return data
 }
