@@ -10,40 +10,87 @@ import {
   VictoryTooltip,
 } from "victory";
 
+import { Transition } from "react-transition-group";
+
 import { getAllPool } from "./DataAccessLayer";
 
+const PERIODS = [
+  { value: 'last_week', label: 'Last week', buttonLabel: '1w' },
+  { value: 'last_month', label: 'Last month', buttonLabel: '1m' },
+  { value: 'last_half_year', label: 'Last six months', buttonLabel: '6m' },
+  { value: 'last_year', label: 'Last year', buttonLabel: '1y' },
+]
+
+function Button({ period, currentPeriod, setPeriod }) {
+  return (
+    <Transition 
+      in={period.value === currentPeriod}
+      timeout={200}
+      unmountOnExit
+    >
+      {state => (
+        <button
+          onClick={() => setPeriod(period.value)}
+          className={`
+            px-4 py-2 font-extrabold rounded-none 
+            transition-all ease-in-out duration-200 transform
+            ${period.value === currentPeriod ? 'bg-cyan-600' : 'bg-sky-500 hover:bg-cyan-600'}
+            ${state === 'entering' ? 'animate-pulse' : ''}
+          `}
+        >
+          {period.buttonLabel}
+        </button>
+      )}
+    </Transition>
+  );
+}
+
 function PoolChart() {
-  const [poolStateWeek, setPoolStateWeek] = useState();
-  const [poolStateMonth, setPoolStateMonth] = useState();
+  const [poolState, setPoolState] = useState();
+  const [currentPeriod, setCurrentPeriod] = useState('last_week');
+
 
   useEffect(() => {
-    getPoolDataWeek("last_week");
-    getPoolDataMonth("last_month");
+    getPoolData("last_week");
   }, []);
 
-  const getPoolDataWeek = async (period) => {
+  useEffect(() => {
+    getPoolData(currentPeriod);
+  }, [currentPeriod]);
+
+  const getPoolData = async (period) => {
     const data = await getAllPool(period);
-    setPoolStateWeek(data.data);
+
+    const filteredAndSortedData = data.data
+      .filter(d => d.ratio> 0) // фильтрация
+      .sort((a, b) => a.ratio - b.ratio); // сортировка
+
+    setPoolState(filteredAndSortedData);
   };
 
-  const getPoolDataMonth = async (period) => {
-    const data = await getAllPool(period);
-    setPoolStateMonth(data.data);
-  };
 
   return (
     <div>
       <div class="h3 text-center">
         <h4>
-        Lido/Non-Lido Censorship Resistance Index
+        Lido/Non-Lido Censorship Resistance Index({PERIODS.find(p => p.value === currentPeriod).label})
         </h4>
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[600px] laptop:w-[900px] laptop:h-[700px]">
+        <div class="flex justify-center overflow-hidden text-center mb-4">
+            {PERIODS.map(period => (
+              <Button
+                period={period}
+                currentPeriod={currentPeriod}
+                setPeriod={setCurrentPeriod}
+              />
+            ))}
+          </div>
           <VictoryChart
-            height={1200}
-            width={800}
+            height={600}
+            width={700}
             padding={{ bottom: 50, left: 100, right: 100, top: 50 }}
             label="Lido vs rest ratio"
             containerComponent={
@@ -75,16 +122,15 @@ function PoolChart() {
                 },
               ]}
             />
-            <VictoryGroup offset={12} colorScale={["#1e90ff", "#15bf6d"]}>
               <VictoryBar
                 horizontal
-                barWidth={10}
+                barWidth={8}
                 alignment="middle"
-                data={poolStateWeek}
+                data={poolState}
                 x="pool"
                 y="ratio"
                 labels={({ datum }) => `ratio: ${datum.ratio.toFixed(4)}`}
-                style={{ labels: { fill: "white" } }}
+                style={{ labels: { fill: "white" }, data: { fill: "#1e90ff" } }}
                 labelComponent={
                   <VictoryTooltip
                     dy={0}
@@ -93,24 +139,6 @@ function PoolChart() {
                   />
                 }
               />
-              <VictoryBar
-                horizontal
-                barWidth={10}
-                alignment="middle"
-                data={poolStateMonth}
-                x="pool"
-                y="ratio"
-                labels={({ datum }) => `ratio: ${datum.ratio.toFixed(4)}`}
-                style={{ labels: { fill: "white" } }}
-                labelComponent={
-                  <VictoryTooltip
-                    dy={0}
-                    style={{ fill: "black" }}
-                    flyoutWidth={100}
-                  />
-                }
-              />
-            </VictoryGroup>
             <VictoryAxis
               dependentAxis
               // tickFormat={(t) => `${t}%`}

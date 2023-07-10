@@ -3,26 +3,35 @@ import {
   VictoryBar,
   VictoryChart,
   VictoryLabel,
-  VictoryGroup,
   VictoryAxis,
   VictoryContainer,
-  VictoryLegend,
   VictoryTooltip,
-  VictoryZoomContainer,
 } from "victory";
-
 import { getRatioByPeriod } from "./DataAccessLayer";
+
+const PERIODS = [
+  { value: 'last_week', label: 'Last week', buttonLabel: '1w' },
+  { value: 'last_month', label: 'Last month', buttonLabel: '1m' },
+  { value: 'last_half_year', label: 'Last six months', buttonLabel: '6m' },
+  { value: 'last_year', label: 'Last year', buttonLabel: '1y' },
+]
+
+function Button({ period, currentPeriod, setPeriod }) {
+  return (
+    <button
+      onClick={() => setPeriod(period.value)}
+      className={`px-4 py-2 font-extrabold rounded-none ${
+        period.value === currentPeriod ? 'bg-cyan-600' : 'bg-sky-500 hover:bg-cyan-600'
+      }`}
+    >
+      {period.buttonLabel}
+    </button>
+  );
+}
 
 function RatioChart() {
   const [ratioState, setRatioState] = useState();
-  const [ratioPeriodState, setRatioPeriodState] = useState(false);
-
-  const [buttonRatioState, setButtonRatioState] = useState(
-    "Switch to last month"
-  );
-
-  const [buttonTitleRatioState, setButtonTitleRatioState] =
-    useState("last 7 days");
+  const [currentPeriod, setCurrentPeriod] = useState('last_week');
 
   useEffect(() => {
     getRatioData("last_week");
@@ -30,29 +39,34 @@ function RatioChart() {
 
   const getRatioData = async (period) => {
     const data = await getRatioByPeriod(period);
-    setRatioState(data.data);
+
+    const filteredAndSortedData = data.data
+      .filter(d => d.ratio> 0) // фильтрация
+      .sort((a, b) => a.ratio - b.ratio); // сортировка
+
+    setRatioState(filteredAndSortedData);
   };
 
-  const handleClick = () => {
-    setRatioPeriodState((ratioPeriodState) => !ratioPeriodState);
-    if (ratioPeriodState == false) {
-      getRatioData("last_month");
-      setButtonRatioState("Switch to last week");
-      setButtonTitleRatioState("last 30 days");
-    } else {
-      getRatioData("last_week");
-      setButtonRatioState("Switch to last month");
-      setButtonTitleRatioState("last 7 days");
-    }
-  };
+  useEffect(() => {
+    getRatioData(currentPeriod);
+  }, [currentPeriod]);
 
   return (
     <div>
       <div class="h3 text-center">
-        <h3>Censorship Resistance Index ({buttonTitleRatioState})</h3>
+        <h3>Censorship Resistance Index ({PERIODS.find(p => p.value === currentPeriod).label})</h3>
       </div>
-      <div class="flex flex-wrap space-x-0 justify-center mx-8 space-y-16">
+      <div class="flex flex-wrap space-x-0 justify-center mx-8 space-y-16 my-4">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[600px] laptop:w-[900px] laptop:h-[700px]">
+          <div class="flex justify-center overflow-hidden text-center mb-4">
+            {PERIODS.map(period => (
+              <Button
+                period={period}
+                currentPeriod={currentPeriod}
+                setPeriod={setCurrentPeriod}
+              />
+            ))}
+          </div>
           <VictoryChart
             height={800}
             width={600}
@@ -60,7 +74,6 @@ function RatioChart() {
             containerComponent={
               <VictoryContainer
                 style={{
-                  // pointerEvents: "auto",
                   userSelect: "auto",
                   touchAction: "auto",
                 }}
@@ -86,7 +99,6 @@ function RatioChart() {
             />
             <VictoryAxis
               dependentAxis
-              // tickFormat={(t) => `${t}%`}
               style={{ tickLabels: { fontSize: 12, fill: "#FFFFFF" } }}
               label="RATIO"
               axisLabelComponent={
@@ -107,16 +119,6 @@ function RatioChart() {
               }
             />
           </VictoryChart>
-
-          <div class="h5 text-white text-center bg-center font-extrabold rounded-full">
-            <button
-              type="button"
-              onClick={handleClick}
-              class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3"
-            >
-              {buttonRatioState}
-            </button>
-          </div>
         </div>
         <br></br>
         <br></br>

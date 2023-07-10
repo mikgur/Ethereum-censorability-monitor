@@ -19,6 +19,7 @@
     "react-icons": "^4.8.0",
     "react-query": "^3.39.3",
     "react-router-dom": "^6.8.1",
+    "react-spring": "^9.7.2",
     "react-transition-group": "^4.4.5",
     "victory": "^36.6.8"
   },

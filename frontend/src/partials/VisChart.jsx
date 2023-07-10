@@ -1,4 +1,3 @@
-// import plotData from "./data.json"
 import React, { useEffect, useState } from "react";
 import {
   VictoryBar,
@@ -8,61 +7,70 @@ import {
   VictoryAxis,
   VictoryContainer,
   VictoryLegend,
-  VictoryTheme,
   VictoryTooltip,
-  VictoryZoomContainer,
 } from "victory";
-
-import axios from "axios";
 
 import { getOfacByPeriod } from "./DataAccessLayer";
 
+const PERIODS = [
+  { value: 'last_week', label: 'Last week', buttonLabel: '1w' },
+  { value: 'last_month', label: 'Last month', buttonLabel: '1m' },
+  { value: 'last_half_year', label: 'Last six months', buttonLabel: '6m' },
+  { value: 'last_year', label: 'Last year', buttonLabel: '1y' },
+];
+
+function Button({ period, currentPeriod, setPeriod }) {
+  return (
+    <button
+      onClick={() => setPeriod(period.value)}
+      className={`px-4 py-2 font-extrabold rounded-none ${
+        period.value === currentPeriod ? 'bg-cyan-600' : 'bg-sky-500 hover:bg-cyan-600'
+      }`}
+    >
+      {period.buttonLabel}
+    </button>
+  );
+}
+
 function VisChart() {
   const [appState, setAppState] = useState();
-  const [periodState, setPeriodState] = useState(false);
-  const [buttonLidoState, setButtonLidoState] = useState(
-    "Switch to last month"
-  );
-  const [buttonTitleLidoState, setButtonTitleLidoState] =
-    useState("last 7 days");
-
-  useEffect(() => {
-    getData("last_week");
-    console.log(appState);
-  }, []);
+  const [currentPeriod, setCurrentPeriod] = useState('last_week');
 
   const getData = async (period) => {
     const data = await getOfacByPeriod(period);
-    setAppState(data.data);
+    const filteredAndSortedData = data.data
+      // .filter(d => d.ofac_compliant_share > 0) // фильтрация
+      .sort((a, b) => a.ofac_non_compliant_share - b.ofac_non_compliant_share); // сортировка
+    setAppState(filteredAndSortedData);
   };
 
-  const handleClick = () => {
-    setPeriodState((periodState) => !periodState);
-    if (periodState == false) {
-      getData("last_month");
-      setButtonLidoState("Switch to last week");
-      setButtonTitleLidoState("last 30 days");
-    } else {
-      getData("last_week");
-      setButtonLidoState("Switch to last month");
-      setButtonTitleLidoState("last 7 days");
-    }
-  };
+  useEffect(() => {
+    getData(currentPeriod);
+  }, [currentPeriod]);
 
   return (
     <div>
       <div class="h3 text-center">
         <h3>
-          Non-OFAC and OFAC Compliance Ratio Metrics ({buttonTitleLidoState})
+          Non-OFAC and OFAC Compliance Ratio Metrics ({PERIODS.find(p => p.value === currentPeriod).label})
         </h3>
       </div>
-      <br></br>
+      <br/>
       <div class="flex flex-wrap space-x-0 space-y-16 justify-center">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[900px] laptop:h-[700px]">
+          <div class="flex border border-sky-500 rounded-md overflow-hidden text-center mb-4">
+            {PERIODS.map(period => (
+              <Button
+                period={period}
+                currentPeriod={currentPeriod}
+                setPeriod={setCurrentPeriod}
+              />
+            ))}
+          </div>
           <VictoryChart
             height={800}
             width={600}
-            padding={{left: 150, bottom: 50, top: 50, right: 10}}
+            padding={{ left: 150, bottom: 50, top: 50, right: 10 }}
             label="Share of Lido transactions (OFAC - NON OFAC compliant transactions)"
             containerComponent={
               <VictoryContainer
@@ -162,42 +170,43 @@ function VisChart() {
               }
             />
           </VictoryChart>
-
-          <div class="h5 mb-4  px-6 py-3 text-white text-center bg-center font-extrabold rounded-full">
-            <button
-              type="button"
-              onClick={handleClick}
-              class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3"
-            >
-              {buttonLidoState}
-            </button>
-          </div>
         </div>
         <div class=" desktop:w-[600px] tablet:w-[400px] tablet:h-[300px] laptop:w-[300px]  mr-48">
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b>For each validator we calculate:</b>
           </p>
-          <br></br>
+          <br/>
           <ol class="list-disc list-inside">
             <li class="desktop:text-xg uwdesktop:text-xl">
             The Non-OFAC Compliance Ratio is the percentage of transactions that are not compliant with OFAC regulations and are included in blocks proposed by a validator.
-
             </li>
             <li class="desktop:text-xg uwdesktop:text-xl">
             The OFAC Compliance Ratio is the percentage of transactions that are compliant with OFAC regulations and are included in blocks proposed by a validator.
-
             </li>
           </ol>
-          <br></br>
+          <br/>
           <p class="desktop:text-xg uwdesktop:text-xl">
           Example of metric calculation:
           </p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-          Let's say that for the period, there were a total of 100,000 compliant transactions and 1,000 non-compliant transactions on the Ethereum network. Our validator included 500 compliant transactions and 2 non-compliant transactions in their blocks.
+          
+          <ul class="list-disc list-inside">
+            <li class="desktop:text-xg uwdesktop:text-xl">
+              The validator proposed 100 blocks.
+            </li>
+            <li class="desktop:text-xg uwdesktop:text-xl">
+              There are 1000 transactions included in these blocks.
+            </li>
+            <li class="desktop:text-xg uwdesktop:text-xl">
+              800 transactions are OFAC compliant.
+            </li>
+            <li class="desktop:text-xg uwdesktop:text-xl">
+              200 transactions are not OFAC compliant.
+            </li>
+          </ul>
+          <br/>
+          <p class="desktop:text-xg uwdesktop:text-xl">
+            Therefore, the OFAC Compliance Ratio for this validator is 80%, and the Non-OFAC Compliance Ratio is 20%.
           </p>
-          <br></br>
-          <p>Validator’s OFAC Compliance Ratio -  500 / 100,000 = 0.5%</p>
-          <p>Validator’s Non-OFAC Compliance Ratio -  2 / 1,000 = 0.2%</p>
         </div>
       </div>
     </div>
