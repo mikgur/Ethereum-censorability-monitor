@@ -18,6 +18,7 @@ import Popover from '@material-ui/core/Popover';
 import DateRangeIcon from '@material-ui/icons/DateRange';
 import { IconButton, ButtonGroup, Button } from '@material-ui/core';
 import '../css/latency.css'
+import { startOfWeek } from "date-fns";
 
 import { getLatency } from "./DataAccessLayer";
 
@@ -29,33 +30,20 @@ function LatencyChart() {
   const [anchorEl, setAnchorEl] = useState(null);
   const buttonRef = useRef(null);
   const [activeButton, setActiveButton] = useState('');
-  const VoronoiCursorContainer = createContainer("voronoi", "cursor");
 
 
   // const [filteredData, setFilteredData] = useState();
-  const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
-    <button className="bg-gray-600 p-2 rounded text-white ml-4" onClick={onClick} ref={ref}>
-      <FiCalendar/> {value}
-    </button>
-  ));
+
   
 
   useEffect(() => {
     getLatencyData();
   }, [startDate, endDate]);
 
-  
+  const getMonday = (date) => startOfWeek(date, { weekStartsOn: 1 });
+
   const getLatencyData = async () => {
     const data = await getLatency();
-    console.log("anime1")
-    console.log(data.data.end_date)
-    console.log(data.data.map(d => {
-      var dateString = d.end_date;
-      var parts = dateString.split("-");
-      var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
-      const date = new Date(formattedDateString);
-      return date;
-    }))
     // Фильтруем данные на основе выбранных дат
     const filteredData = data.data.filter(d => {
       var dateString = d.end_date;
@@ -66,10 +54,6 @@ function LatencyChart() {
     });
 
     setLatencyState(filteredData);
-    console.log("anime")
-    console.log(filteredData)
-    console.log(startDate)
-    console.log(endDate)
   };
 
   const generateTickValues = () => {
@@ -79,6 +63,7 @@ function LatencyChart() {
       return latencyState.map(data => data.range_date);
     }
   };
+
   const [tickValues, setTickValues] = useState(generateTickValues());
   useEffect(() => {
     setTickValues(generateTickValues());
