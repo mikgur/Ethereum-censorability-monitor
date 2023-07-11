@@ -18,11 +18,10 @@ import Popover from '@material-ui/core/Popover';
 import DateRangeIcon from '@material-ui/icons/DateRange';
 import { IconButton, ButtonGroup, Button } from '@material-ui/core';
 import '../css/latency.css'
-import { startOfWeek } from "date-fns";
 
-import { getLatency } from "./DataAccessLayer";
+import { getCensoredLatency } from "./DataAccessLayer";
 
-function LatencyChart() {
+function CensoredLatencyChart() {
   const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -30,20 +29,33 @@ function LatencyChart() {
   const [anchorEl, setAnchorEl] = useState(null);
   const buttonRef = useRef(null);
   const [activeButton, setActiveButton] = useState('');
+  const VoronoiCursorContainer = createContainer("voronoi", "cursor");
 
 
   // const [filteredData, setFilteredData] = useState();
-
+  const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
+    <button className="bg-gray-600 p-2 rounded text-white ml-4" onClick={onClick} ref={ref}>
+      <FiCalendar/> {value}
+    </button>
+  ));
   
 
   useEffect(() => {
     getLatencyData();
   }, [startDate, endDate]);
 
-  const getMonday = (date) => startOfWeek(date, { weekStartsOn: 1 });
-
+  
   const getLatencyData = async () => {
-    const data = await getLatency();
+    const data = await getCensoredLatency();
+    console.log("anime1")
+    console.log(data.data.end_date)
+    console.log(data.data.map(d => {
+      var dateString = d.end_date;
+      var parts = dateString.split("-");
+      var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
+      const date = new Date(formattedDateString);
+      return date;
+    }))
     // Фильтруем данные на основе выбранных дат
     const filteredData = data.data.filter(d => {
       var dateString = d.end_date;
@@ -54,6 +66,10 @@ function LatencyChart() {
     });
 
     setLatencyState(filteredData);
+    console.log("anime")
+    console.log(filteredData)
+    console.log(startDate)
+    console.log(endDate)
   };
 
   const generateTickValues = () => {
@@ -63,7 +79,6 @@ function LatencyChart() {
       return latencyState.map(data => data.range_date);
     }
   };
-
   const [tickValues, setTickValues] = useState(generateTickValues());
   useEffect(() => {
     setTickValues(generateTickValues());
@@ -126,19 +141,22 @@ function LatencyChart() {
     const date = new Date(formattedDateString);
     return date;
   }
-  const getTooltipLabel = (datum) =>
-  `${datum.range_date.replace(/[\n]/g, '')}\n \n ${datum.overall_censorship_latency.toFixed(4)}\n ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`;
+  const getTooltipLabel = (datum) => {
+    console.log("range_date")
+    console.log(datum)
+    return `${datum.range_date.replace(/[\n]/g, '')}\n \n ${datum.average_censorship_latency.toFixed(4)}\n ${datum.average_censorship_latency_without_lido_censorship.toFixed(4)}`;
+  }
 
 // Создайте два массива точек: один для каждого из ваших наборов данных
 const points1 = latencyState.map(item => ({
   x: item.range_date,
-  y: item.overall_censorship_latency,
+  y: item.average_censorship_latency,
   label: getTooltipLabel(item),
 }));
 
 const points2 = latencyState.map(item => ({
   x: item.range_date,
-  y: item.overall_censorship_latency_without_lido_censorship,
+  y: item.average_censorship_latency_without_lido_censorship,
 }));
 
   const open = Boolean(anchorEl);
@@ -148,7 +166,7 @@ const points2 = latencyState.map(item => ({
   return (
     <div>
       <div class="h3 text-center">
-        <h3>Average Censorship Latency</h3>
+        <h3>Average Censorship Latency for censored transactions</h3>
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
@@ -241,8 +259,8 @@ const points2 = latencyState.map(item => ({
               height={600}
               width={600}
               padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
-              minDomain={{ y: 0 }}
-              maxDomain={{ y: 25 }}
+              minDomain={{ y: 5 }}
+              maxDomain={{ y: 35 }}
               containerComponent={
                 <VictoryVoronoiContainer voronoiDimension="x" />
               }
@@ -298,9 +316,9 @@ const points2 = latencyState.map(item => ({
                 style={{ data: { stroke: "#c43a31" } }}
                 data={latencyState}
                 x="range_date"
-                y="overall_censorship_latency_without_lido_censorship"
+                y="average_censorship_latency_without_lido_censorship"
                 //     labels={({ datum }) =>
-                //   `latency: ${datum.overall_censorship_latency.toFixed(4)}`
+                //   `latency: ${datum.average_censorship_latency.toFixed(4)}`
                 // }
                 labelComponent={<VictoryTooltip />}
               />
@@ -310,9 +328,9 @@ const points2 = latencyState.map(item => ({
                 // labels={({ datum }) => datum.y}
                 data={latencyState}
                 x="range_date"
-                y="overall_censorship_latency"
+                y="average_censorship_latency"
                 //     labels={({ datum }) =>
-                //   `without_latency: ${datum.overall_censorship_latency_without_lido_censorship.toFixed(4)}`
+                //   `without_latency: ${datum.average_censorship_latency_without_lido_censorship.toFixed(4)}`
                 // }
                 labelComponent={<VictoryTooltip />}
               />
@@ -385,67 +403,47 @@ const points2 = latencyState.map(item => ({
         </div>
         <div class="desktop:w-[500px] laptop:max-w-[500px] laptop:min-w-[300px] ">
           <p class="desktop:text-xl uwdesktop:text-2xl">
-            <b> Censorship Latency</b>
+            <b>Average Censorship Latency for censored transactions</b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            The Censorship Latency metric measures the difference in average
-            waiting time for transactions with similar features, except for
-            their OFAC compliance status. We use a binary classifier with high
-            accuracy to predict the number of blocks for which non-OFAC
-            compliant transactions were not included due to censorship. This
-            number is then multiplied by 12 to calculate the Censorship Latency
-            metric.
+            The Average Censorship Latency metric is calculated as the median
+            waiting time for non-OFAC compliant transactions{" "}
+            <b class="text-red-600">that were censored before being included in a block.</b> We use a
+            binary classifier to predict the number of blocks for which non-OFAC
+            compliant transactions were not included due to censorship, and then
+            calculate the average waiting time for these transactions.
           </p>
           <br></br>
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b>
-              Average Censorship Latency if Lido was completely non-censoring
+            Average Censorship Latency for censored transactions if Lido was completely non-censoring 
             </b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            We also compute a modified version of the Censorship Latency metric
-            by assuming that the Lido validators were completely non-censoring.
-            This adjusted metric helps to understand the impact of censorship by
-            other validators on the overall network.
+            This metric is a modified version of the Average Censorship Latency
+            metric, which assumes that Lido validators were completely
+            non-censoring. This metric measures the average waiting time for
+            non-OFAC compliant{" "}
+            <b class="text-red-600">
+              transactions that were censored before being included in a block.
+            </b>{" "}
+            Similar to the Average Censorship Latency metric, we use a binary
+            classifier to predict the number of blocks for which non-OFAC
+            compliant transactions were not included due to censorship, and then
+            calculate the average waiting time for these transactions.
           </p>
           <br></br>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            Example of metric calculation:
+            For both of these metrics, the waiting time is measured in the
+            number of blocks that the transaction was censored before being
+            included in a block, multiplied by 12 seconds (the average time it
+            takes to mine a block on the Ethereum network).
           </p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            A transaction was twice censored by other validators and then once
-            by Lido before being included in a block by another validator:
-          </p>
-          <br></br>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            Block #1 - Censored by Non Lido validator
-          </p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            Block #2 - Censored by Non Lido validator
-          </p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            Block #3 - Censored by Lido validator
-          </p>
-          <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-            Block #4 - Included in a block by Non Lido validator
-          </p>
-          <br></br>
-          <p>For this case:</p>
-          <ul class="list-disc list-inside">
-            <li>
-              Censorship Latency will be calculated as 3 blocks (Block #1, #2,
-              and #3) multiplied by 12 seconds = 36 seconds.
-            </li>
-            <li>
-              Lido-adjusted Censorship Latency will be calculated as 2 blocks
-              (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we
-              expect the Lido validator to include the transaction in Block #3.
-            </li>
-          </ul>
+          
         </div>
       </div>
-    </div>
+      </div>
   );
 }
 
-export default LatencyChart;
+export default CensoredLatencyChart;
