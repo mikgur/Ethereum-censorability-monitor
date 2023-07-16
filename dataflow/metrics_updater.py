@@ -621,8 +621,8 @@ def _prepare_share_df(df: pd.DataFrame, dates: List[str]) -> pd.DataFrame:
     compliant_count = _df.ofac_compliant_count.sum()
     non_compliant_count = _df.ofac_non_compliant_count.sum()
 
-    _df["ofac_compliant_share"] = _df.ofac_compliant_count / compliant_count
-    _df["ofac_non_compliant_share"] = _df.ofac_non_compliant_count / non_compliant_count
+    _df["ofac_compliant_share"] = 100 * _df.ofac_compliant_count / compliant_count
+    _df["ofac_non_compliant_share"] = 100 * _df.ofac_non_compliant_count / non_compliant_count
 
     # Select only needed colunms
     _df = _df[
@@ -787,16 +787,23 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
         metrics_df.ofac_non_compliant_count.sum()
     )
     
+    total_count = total_ofac_compliant_count + total_ofac_non_compliant_count
+    metrics_df['total_share'] = 100 * (
+        (metrics_df.ofac_compliant_count + metrics_df.ofac_non_compliant_count) / total_count
+    )
+    
+    metrics_df.loc[metrics_df.pool == 'Other', 'total_share'] = 0
+    
     metrics_df.ofac_compliant_count /= total_ofac_compliant_count
     metrics_df.ofac_non_compliant_count /= total_ofac_non_compliant_count
     
     metrics_df['ratio'] = (
         metrics_df.ofac_non_compliant_count / metrics_df.ofac_compliant_count
     )
-
+    
     metrics_df.ratio = metrics_df.ratio.fillna(1)
     
-    lido_vs_rest = metrics_df[['pool','ratio']].to_dict(orient = 'records')
+    lido_vs_rest = metrics_df[['pool','ratio','total_share']].to_dict(orient = 'records')
 
     return lido_vs_rest
 
