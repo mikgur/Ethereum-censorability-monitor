@@ -3,26 +3,40 @@ import {
   VictoryBar,
   VictoryChart,
   VictoryLabel,
-  VictoryGroup,
   VictoryAxis,
   VictoryContainer,
-  VictoryLegend,
   VictoryTooltip,
-  VictoryZoomContainer,
+  VictoryLine
 } from "victory";
-
 import { getRatioByPeriod } from "./DataAccessLayer";
+
+const PERIODS = [
+  { value: 'last_week', label: 'Last week', buttonLabel: '1w' },
+  { value: 'last_month', label: 'Last month', buttonLabel: '1m' },
+  { value: 'last_half_year', label: 'Last six months', buttonLabel: '6m' },
+  { value: 'last_year', label: 'Last year', buttonLabel: '1y' },
+]
+
+function Button({ period, currentPeriod, setPeriod }) {
+  return (
+    <button
+      onClick={() => setPeriod(period.value)}
+      style={{
+        transition: "background 0.3s ease",
+        background: period.value === currentPeriod ? "#319795" : "#6b7280",
+        color: period.value === currentPeriod ? "white" : "#d1d5db",
+        // borderRadius: "5px",
+        padding: "5px 15px",
+      }}
+    >
+      {period.buttonLabel}
+    </button>
+  );
+}
 
 function RatioChart() {
   const [ratioState, setRatioState] = useState();
-  const [ratioPeriodState, setRatioPeriodState] = useState(false);
-
-  const [buttonRatioState, setButtonRatioState] = useState(
-    "Switch to last month"
-  );
-
-  const [buttonTitleRatioState, setButtonTitleRatioState] =
-    useState("last 7 days");
+  const [currentPeriod, setCurrentPeriod] = useState('last_week');
 
   useEffect(() => {
     getRatioData("last_week");
@@ -30,37 +44,44 @@ function RatioChart() {
 
   const getRatioData = async (period) => {
     const data = await getRatioByPeriod(period);
-    setRatioState(data.data);
+
+    const filteredAndSortedData = data.data
+      // .filter(d => d.ratio> 0) // фильтрация
+      .sort((a, b) => a.ratio - b.ratio); // сортировка
+
+    setRatioState(filteredAndSortedData);
   };
 
-  const handleClick = () => {
-    setRatioPeriodState((ratioPeriodState) => !ratioPeriodState);
-    if (ratioPeriodState == false) {
-      getRatioData("last_month");
-      setButtonRatioState("Switch to last week");
-      setButtonTitleRatioState("last 30 days");
-    } else {
-      getRatioData("last_week");
-      setButtonRatioState("Switch to last month");
-      setButtonTitleRatioState("last 7 days");
-    }
-  };
+  useEffect(() => {
+    getRatioData(currentPeriod);
+  }, [currentPeriod]);
 
   return (
     <div>
       <div class="h3 text-center">
-        <h3>Censorship Resistance Index ({buttonTitleRatioState})</h3>
+        <h3>
+          Censorship Resistance Index for Lido validators (
+          {PERIODS.find((p) => p.value === currentPeriod).label})
+        </h3>
       </div>
-      <div class="flex flex-wrap space-x-0 justify-center mx-8 space-y-16">
+      <div class="flex flex-wrap space-x-0 justify-center mx-8 space-y-16 my-4">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[600px] laptop:w-[900px] laptop:h-[700px]">
+          <div class="flex justify-center overflow-hidden text-center mb-4">
+            {PERIODS.map((period) => (
+              <Button
+                period={period}
+                currentPeriod={currentPeriod}
+                setPeriod={setCurrentPeriod}
+              />
+            ))}
+          </div>
           <VictoryChart
             height={800}
             width={600}
-            padding={{left: 150, bottom: 50, top: 50, right: 10}}
+            padding={{ left: 150, bottom: 50, top: 50, right: 10 }}
             containerComponent={
               <VictoryContainer
                 style={{
-                  // pointerEvents: "auto",
                   userSelect: "auto",
                   touchAction: "auto",
                 }}
@@ -69,7 +90,7 @@ function RatioChart() {
           >
             <VictoryBar
               horizontal
-              barWidth={8}
+              barWidth={10}
               alignment="middle"
               data={ratioState}
               x="name"
@@ -78,15 +99,20 @@ function RatioChart() {
               style={{ labels: { fill: "white" }, data: { fill: "#1e90ff" } }}
               labelComponent={
                 <VictoryTooltip
-                  dy={0}
-                  style={{ fill: "black" }}
-                  flyoutWidth={100}
+                  cornerRadius={0} // Отключить закругление углов
+                  style={{ fill: "white", fontSize: 17, fontFamily: "Arial" }}
+                  flyoutStyle={{ fill: "#2d2d2d", stroke: "transparent" }}
+                  pointerLength={0} // Отключить стрелку
+                  pointerWidth={0} // Отключить стрелку
                 />
               }
             />
+            <VictoryLine
+              style={{ data: { stroke: "red", strokeWidth: 2 } }}
+              y={() => 1}
+            />
             <VictoryAxis
               dependentAxis
-              // tickFormat={(t) => `${t}%`}
               style={{ tickLabels: { fontSize: 12, fill: "#FFFFFF" } }}
               label="RATIO"
               axisLabelComponent={
@@ -97,7 +123,7 @@ function RatioChart() {
               }
             />
             <VictoryAxis
-              style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
+              style={{ tickLabels: { fontSize: 14, fill: "#FFFFFF" } }}
               label="LIDO VALIDATOR"
               axisLabelComponent={
                 <VictoryLabel
@@ -107,28 +133,29 @@ function RatioChart() {
               }
             />
           </VictoryChart>
-
-          <div class="h5 text-white text-center bg-center font-extrabold rounded-full">
-            <button
-              type="button"
-              onClick={handleClick}
-              class="bg-sky-500 hover:bg-cyan-600 bg-center font-extrabold rounded-full px-6 py-3"
-            >
-              {buttonRatioState}
-            </button>
-          </div>
         </div>
         <br></br>
         <br></br>
         <br></br>
         <div class="desktop:w-[300px] laptop:w-[300px] ">
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-          The metric is the ratio of the share of non-OFAC compliant transactions included by a validator to the share of OFAC compliant transactions included by the same validator. This metric provides insight into whether a particular validator is more likely to include non-compliant transactions in blocks compared to compliant transactions.
-
+            The metric is the ratio of the share of non-OFAC compliant
+            transactions included by a validator to the share of OFAC compliant
+            transactions included by the same validator. This metric provides
+            insight into whether a particular validator is more likely to
+            include non-compliant transactions in blocks compared to compliant
+            transactions.
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
-          The possible values of this index range from zero to infinity. An index of 1.0 means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than 1.0 means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than 1.0 indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
-
+            The possible values of this index range from zero to infinity. An
+            index of 1.0 means that the validator includes non-compliant and
+            compliant transactions at the same rate. An index greater than 1.0
+            means that the validator includes non-compliant transactions more
+            often than compliant transactions. Conversely, an index less than
+            1.0 indicates that the validator includes non-compliant transactions
+            less frequently than compliant transactions. Overall, a low
+            Censorship Resistance Index could be an indication of potential
+            censorship by a validator.
           </p>
         </div>
       </div>

@@ -19,12 +19,17 @@ import DateRangeIcon from '@material-ui/icons/DateRange';
 import { IconButton, ButtonGroup, Button } from '@material-ui/core';
 import '../css/latency.css'
 
+import { startOfWeek, endOfWeek } from "date-fns";
+
 import { getCensoredLatency } from "./DataAccessLayer";
 
 function CensoredLatencyChart() {
+  const getMonday = (date) => startOfWeek(date, { weekStartsOn: 1 });
+  const getSunday = (date) => endOfWeek(date, { weekStartsOn: 1 });
+
   const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(getSunday(new Date()));
   const [isOpen, setIsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const buttonRef = useRef(null);
@@ -44,33 +49,28 @@ function CensoredLatencyChart() {
     getLatencyData();
   }, [startDate, endDate]);
 
+  useEffect(() => {
+    setLastHalfYear();
+  }, []);
+
+  
+
   
   const getLatencyData = async () => {
-    const data = await getCensoredLatency();
-    console.log("anime1")
-    console.log(data.data.end_date)
-    console.log(data.data.map(d => {
-      var dateString = d.end_date;
-      var parts = dateString.split("-");
-      var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
-      const date = new Date(formattedDateString);
-      return date;
-    }))
-    // Фильтруем данные на основе выбранных дат
-    const filteredData = data.data.filter(d => {
-      var dateString = d.end_date;
-      var parts = dateString.split("-");
-      var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
-      const date = new Date(formattedDateString);
-      return date >= new Date(startDate) && date <= new Date(endDate);
-    });
+  const data = await getCensoredLatency();
+  // Фильтруем данные на основе выбранных дат
+  const filteredData = data.data.filter(d => {
+    var dateString = d.end_date;
+    var parts = dateString.split("-");
+    var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
+    const date = new Date(formattedDateString);
+    const endDatePlusOneWeek = new Date(endDate.getTime());
+    endDatePlusOneWeek.setDate(endDatePlusOneWeek.getDate() + 7);
+    return date >= new Date(startDate) && date < endDatePlusOneWeek;
+  });
 
-    setLatencyState(filteredData);
-    console.log("anime")
-    console.log(filteredData)
-    console.log(startDate)
-    console.log(endDate)
-  };
+  setLatencyState(filteredData);
+};
 
   const generateTickValues = () => {
     if (latencyState.length > 7) {
@@ -104,7 +104,7 @@ function CensoredLatencyChart() {
     const now = new Date();
     const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
     setStartDate(oneMonthAgo);
-    setEndDate(new Date());
+    setEndDate(new Date())
     setActiveButton('1m');
   };
 
@@ -112,7 +112,7 @@ function CensoredLatencyChart() {
     const now = new Date();
     const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
     setStartDate(sixMonthsAgo);
-    setEndDate(new Date());
+    setEndDate(new Date())
     setActiveButton('6m');
   };
 
@@ -120,7 +120,7 @@ function CensoredLatencyChart() {
     const now = new Date();
     const oneYearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
     setStartDate(oneYearAgo);
-    setEndDate(new Date());
+    setEndDate(new Date())
     setActiveButton('1y');
   };
 
@@ -142,8 +142,6 @@ function CensoredLatencyChart() {
     return date;
   }
   const getTooltipLabel = (datum) => {
-    console.log("range_date")
-    console.log(datum)
     return `${datum.range_date.replace(/[\n]/g, '')}\n \n ${datum.average_censorship_latency.toFixed(4)}\n ${datum.average_censorship_latency_without_lido_censorship.toFixed(4)}`;
   }
 
@@ -173,94 +171,98 @@ const points2 = latencyState.map(item => ({
         <div class="flex flex-col items-center mx-8">
           <div className="mb-4 mx-8 justify-center">
             <Popover
-  id={id}
-  open={open}
-  anchorEl={anchorEl}
-  onClose={handleClose}
-  anchorOrigin={{
-    vertical: "bottom",
-    horizontal: "center",
-  }}
-  transformOrigin={{
-    vertical: "top",
-    horizontal: "center",
-  }}
->
-  <DatePicker
-    selected={startDate}
-    onChange={onDatesChange}
-    startDate={startDate}
-    endDate={endDate}
-    shouldUnregister={true}
-    selectsRange
-    inline
-    calendarStartDay={1}
-    portalId="root-portal"
-    filterDate={(date) =>
-      startDate && !endDate ? isSunday(date) : isMonday(date)
-    }
-    className="bg-white p-2 rounded text-black"
-  />
-</Popover>
-<div className="mb-4">
-  <ButtonGroup
-    variant="contained"
-    color="text-black"
-    aria-label="contained text-black button group"
-  >
-    <Button
-      variant={activeButton === "custom" ? "contained" : "outlined"}
-      onClick={handleClick}
-      startIcon={<DateRangeIcon />}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "custom" ? "black" : "white", 
-        color: activeButton === "custom" ? "white" : "black",
-      }}
-    ></Button>
-    <Button
-      variant={activeButton === "1m" ? "contained" : "outlined"}
-      onClick={setLastMonth}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "1m" ? "black" : "white", 
-        color: activeButton === "1m" ? "white" : "black",
-      }}
-    >
-      1m
-    </Button>
-    <Button
-      variant={activeButton === "6m" ? "contained" : "outlined"}
-      onClick={setLastHalfYear}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "6m" ? "black" : "white", 
-        color: activeButton === "6m" ? "white" : "black",
-      }}
-    >
-      6m
-    </Button>
-    <Button
-      variant={activeButton === "1y" ? "contained" : "outlined"}
-      onClick={setLastYear}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "1y" ? "black" : "white", 
-        color: activeButton === "1y" ? "white" : "black",
-      }}
-    >
-      1y
-    </Button>
-  </ButtonGroup>
-</div>
+              id={id}
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
+            >
+              <DatePicker
+                selected={startDate}
+                onChange={onDatesChange}
+                startDate={getMonday(startDate)}
+                endDate={endDate}
+                shouldUnregister={true}
+                selectsRange
+                inline
+                calendarStartDay={1}
+                portalId="root-portal"
+                filterDate={(date) =>
+                  startDate && !endDate
+                    ? isSunday(date) &&
+                      date.getTime() >=
+                        startOfWeek(startDate, { weekStartsOn: 1 }).getTime()
+                    : isMonday(date)
+                }
+                className="bg-white p-2 rounded text-black"
+              />
+            </Popover>
+            <div className="mb-4">
+              <ButtonGroup
+              // variant="contained"
+              // aria-label="contained button group"
+              >
+                <Button
+                  variant={activeButton === "custom" ? "contained" : "outlined"}
+                  onClick={handleClick}
+                  startIcon={<DateRangeIcon />}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background:
+                      activeButton === "custom" ? "#319795" : "#6b7280",
+                    color: activeButton === "custom" ? "white" : "#d1d5db",
+                  }}
+                ></Button>
+                <Button
+                  variant={activeButton === "1m" ? "contained" : "outlined"}
+                  onClick={setLastMonth}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background: activeButton === "1m" ? "#319795" : "#6b7280",
+                    color: activeButton === "1m" ? "white" : "#d1d5db",
+                  }}
+                >
+                  1m
+                </Button>
+                <Button
+                  variant={activeButton === "6m" ? "contained" : "outlined"}
+                  onClick={setLastHalfYear}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background: activeButton === "6m" ? "#319795" : "#6b7280",
+                    color: activeButton === "6m" ? "white" : "#d1d5db",
+                  }}
+                >
+                  6m
+                </Button>
+                <Button
+                  variant={activeButton === "1y" ? "contained" : "outlined"}
+                  onClick={setLastYear}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background: activeButton === "1y" ? "#319795" : "#6b7280",
+                    color: activeButton === "1y" ? "white" : "#d1d5db",
+                  }}
+                >
+                  1y
+                </Button>
+              </ButtonGroup>
+            </div>
           </div>
-          <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
+          <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[600px]  laptop:h-[700px]">
             <VictoryChart
               height={600}
               width={600}
               padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
-              minDomain={{ y: 5 }}
-              maxDomain={{ y: 35 }}
+              minDomain={{ y: 0 }}
+              maxDomain={{ y: 40 }}
               containerComponent={
                 <VictoryVoronoiContainer voronoiDimension="x" />
               }
@@ -361,7 +363,6 @@ const points2 = latencyState.map(item => ({
                   } else {
                     const date = getDateOnStr(t);
                     const month = date.getMonth();
-                    console.log(month);
                     const year = date.getFullYear();
                     const monthNames = [
                       "Jan",
@@ -408,15 +409,18 @@ const points2 = latencyState.map(item => ({
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
             The Average Censorship Latency metric is calculated as the median
             waiting time for non-OFAC compliant transactions{" "}
-            <b class="text-red-600">that were censored before being included in a block.</b> We use a
-            binary classifier to predict the number of blocks for which non-OFAC
-            compliant transactions were not included due to censorship, and then
-            calculate the average waiting time for these transactions.
+            <b class="text-red-600">
+              that were censored before being included in a block.
+            </b>{" "}
+            We use a binary classifier to predict the number of blocks for which
+            non-OFAC compliant transactions were not included due to censorship,
+            and then calculate the average waiting time for these transactions.
           </p>
           <br></br>
           <p class="desktop:text-xl uwdesktop:text-2xl">
             <b>
-            Average Censorship Latency for censored transactions if Lido was completely non-censoring 
+              Average Censorship Latency for censored transactions if Lido was
+              completely non-censoring
             </b>
           </p>
           <p class="desktop:text-xg uwdesktop:text-xl indent-8">
@@ -439,10 +443,9 @@ const points2 = latencyState.map(item => ({
             included in a block, multiplied by 12 seconds (the average time it
             takes to mine a block on the Ethereum network).
           </p>
-          
         </div>
       </div>
-      </div>
+    </div>
   );
 }
 

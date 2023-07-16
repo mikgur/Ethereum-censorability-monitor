@@ -1,56 +1,56 @@
 .react-datepicker__day--selected {
-    background-color: #470585;
-    border-color: #34D399;
+  background-color: #f50057; /* bright pink for selection */
+  border-color: #f50057;
 }
 
 .react-datepicker {
-    background-color: #677a82f6; /* или любой другой темный цвет */
+  background-color: #282c34; /* dark greyish background */
 }
 
 .react-datepicker__header {
-    background-color: #545e74;
+  background-color: #282c34; /* same dark greyish color for the header */
 }
 
 .react-datepicker__current-month,
 .react-datepicker__day-name,
 .react-datepicker__day,
 .react-datepicker__time-name {
-    color: #F3F4F6;
+  color: #ffffff; /* white text for contrast against dark background */
 }
 
 .react-datepicker__day--disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .react-datepicker__day--outside-month {
-    color: transparent !important;
-    pointer-events: none;
-  }
+  color: transparent !important;
+  pointer-events: none;
+}
 
 .react-datepicker__day--highlighted-custom:first-of-type {
-    color: #e20f0f;
-  }
+  color: #f50057; /* bright pink for highlighted days */
+}
 
 .react-datepicker__day--in-range {
-    background-color: rgb(0, 0, 0); /* Замените на желаемый цвет */
-    color: white; /* Замените на желаемый цвет текста */
-  }
+  background-color: #3a3f45; /* slightly lighter grey for in-range days */
+  color: #ffffff; /* white text */
+}
 
 .selected {
-background-color: lightblue;
+  background-color: #f50057; /* bright pink for selected items */
 }
 
 .react-datepicker__day--range-start {
-    border-top-left-radius: 50%;
-    border-bottom-left-radius: 50%;
-  }
-  
-  .react-datepicker__day--range-end {
-    border-top-right-radius: 50%;
-    border-bottom-right-radius: 50%;
-  }
+  border-top-left-radius: 50%;
+  border-bottom-left-radius: 50%;
+}
 
-  .VictoryContainer-cursor-crosshair {
-    stroke: red !important; 
+.react-datepicker__day--range-end {
+  border-top-right-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+.VictoryContainer-cursor-crosshair {
+  stroke: #f50057 !important; /* bright pink for crosshair */
 }

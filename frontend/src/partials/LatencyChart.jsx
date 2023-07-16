@@ -18,29 +18,31 @@ import Popover from '@material-ui/core/Popover';
 import DateRangeIcon from '@material-ui/icons/DateRange';
 import { IconButton, ButtonGroup, Button } from '@material-ui/core';
 import '../css/latency.css'
-import { startOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek } from "date-fns";
 
 import { getLatency } from "./DataAccessLayer";
 
 function LatencyChart() {
+  const getMonday = (date) => startOfWeek(date, { weekStartsOn: 1 });
+  const getSunday = (date) => endOfWeek(date, { weekStartsOn: 1 });
+
   const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(getSunday(new Date()));
   const [isOpen, setIsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const buttonRef = useRef(null);
   const [activeButton, setActiveButton] = useState('');
 
-
-  // const [filteredData, setFilteredData] = useState();
-
-  
-
   useEffect(() => {
     getLatencyData();
   }, [startDate, endDate]);
 
-  const getMonday = (date) => startOfWeek(date, { weekStartsOn: 1 });
+  useEffect(() => {
+    setLastHalfYear();
+  }, []);
+
+  
 
   const getLatencyData = async () => {
     const data = await getLatency();
@@ -50,9 +52,11 @@ function LatencyChart() {
       var parts = dateString.split("-");
       var formattedDateString = "20" + parts[2] + "-" + parts[1] + "-" + parts[0];
       const date = new Date(formattedDateString);
-      return date >= new Date(startDate) && date <= new Date(endDate);
+      const endDatePlusOneWeek = new Date(endDate.getTime());
+      endDatePlusOneWeek.setDate(endDatePlusOneWeek.getDate() + 7);
+      return date >= new Date(startDate) && date < endDatePlusOneWeek;
     });
-
+  
     setLatencyState(filteredData);
   };
 
@@ -89,7 +93,7 @@ function LatencyChart() {
     const now = new Date();
     const oneMonthAgo = new Date(now.setMonth(now.getMonth() - 1));
     setStartDate(oneMonthAgo);
-    setEndDate(new Date());
+    setEndDate(new Date())
     setActiveButton('1m');
   };
 
@@ -97,7 +101,7 @@ function LatencyChart() {
     const now = new Date();
     const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
     setStartDate(sixMonthsAgo);
-    setEndDate(new Date());
+    setEndDate(new Date())
     setActiveButton('6m');
   };
 
@@ -105,7 +109,7 @@ function LatencyChart() {
     const now = new Date();
     const oneYearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
     setStartDate(oneYearAgo);
-    setEndDate(new Date());
+    setEndDate(new Date())
     setActiveButton('1y');
   };
 
@@ -155,88 +159,97 @@ const points2 = latencyState.map(item => ({
         <div class="flex flex-col items-center mx-8">
           <div className="mb-4 mx-8 justify-center">
             <Popover
-  id={id}
-  open={open}
-  anchorEl={anchorEl}
-  onClose={handleClose}
-  anchorOrigin={{
-    vertical: "bottom",
-    horizontal: "center",
-  }}
-  transformOrigin={{
-    vertical: "top",
-    horizontal: "center",
-  }}
->
-  <DatePicker
-    selected={startDate}
-    onChange={onDatesChange}
-    startDate={startDate}
-    endDate={endDate}
-    shouldUnregister={true}
-    selectsRange
-    inline
-    calendarStartDay={1}
-    portalId="root-portal"
-    filterDate={(date) =>
-      startDate && !endDate ? isSunday(date) : isMonday(date)
-    }
-    className="bg-white p-2 rounded text-black"
-  />
-</Popover>
-<div className="mb-4">
-  <ButtonGroup
-    variant="contained"
-    color="text-black"
-    aria-label="contained text-black button group"
-  >
-    <Button
-      variant={activeButton === "custom" ? "contained" : "outlined"}
-      onClick={handleClick}
-      startIcon={<DateRangeIcon />}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "custom" ? "black" : "white", 
-        color: activeButton === "custom" ? "white" : "black",
-      }}
-    ></Button>
-    <Button
-      variant={activeButton === "1m" ? "contained" : "outlined"}
-      onClick={setLastMonth}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "1m" ? "black" : "white", 
-        color: activeButton === "1m" ? "white" : "black",
-      }}
-    >
-      1m
-    </Button>
-    <Button
-      variant={activeButton === "6m" ? "contained" : "outlined"}
-      onClick={setLastHalfYear}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "6m" ? "black" : "white", 
-        color: activeButton === "6m" ? "white" : "black",
-      }}
-    >
-      6m
-    </Button>
-    <Button
-      variant={activeButton === "1y" ? "contained" : "outlined"}
-      onClick={setLastYear}
-      style={{ 
-        transition: "background 0.3s ease",
-        background: activeButton === "1y" ? "black" : "white", 
-        color: activeButton === "1y" ? "white" : "black",
-      }}
-    >
-      1y
-    </Button>
-  </ButtonGroup>
-</div>
+              id={id}
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
+            >
+              <DatePicker
+                selected={startDate}
+                onChange={onDatesChange}
+                // startDate={getMonday(startDate)}
+                startDate={getMonday(startDate)}
+                endDate={endDate}
+                shouldUnregister={true}
+                selectsRange
+                inline
+                calendarStartDay={1}
+                portalId="root-portal"
+                filterDate={(date) =>
+                  startDate && !endDate
+                    ? isSunday(date) &&
+                      date.getTime() >=
+                        startOfWeek(startDate, { weekStartsOn: 1 }).getTime()
+                    : isMonday(date)
+                }
+                className="bg-white p-2 rounded text-black"
+              />
+            </Popover>
+            <div className="mb-4">
+              <ButtonGroup
+              // variant="contained"
+              // aria-label="contained button group"
+              >
+                <Button
+                  variant={activeButton === "custom" ? "contained" : "outlined"}
+                  onClick={handleClick}
+                  startIcon={<DateRangeIcon />}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background:
+                      activeButton === "custom" ? "#319795" : "#6b7280",
+                    margin: "0px",
+                    color: activeButton === "custom" ? "white" : "#d1d5db",
+                  }}
+                ></Button>
+                <Button
+                  variant={activeButton === "1m" ? "contained" : "outlined"}
+                  onClick={setLastMonth}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background: activeButton === "1m" ? "#319795" : "#6b7280",
+                    margin: "0px",
+                    color: activeButton === "1m" ? "white" : "#d1d5db",
+                  }}
+                >
+                  1m
+                </Button>
+                <Button
+                  variant={activeButton === "6m" ? "contained" : "outlined"}
+                  onClick={setLastHalfYear}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background: activeButton === "6m" ? "#319795" : "#6b7280",
+                    margin: "0px",
+                    color: activeButton === "6m" ? "white" : "#d1d5db",
+                  }}
+                >
+                  6m
+                </Button>
+                <Button
+                  variant={activeButton === "1y" ? "contained" : "outlined"}
+                  onClick={setLastYear}
+                  style={{
+                    transition: "background 0.3s ease",
+                    background: activeButton === "1y" ? "#319795" : "#6b7280",
+                    margin: "0px",
+                    color: activeButton === "1y" ? "white" : "#d1d5db",
+                  }}
+                >
+                  1y
+                </Button>
+              </ButtonGroup>
+            </div>
           </div>
-          <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[700px]  laptop:h-[700px]">
+          <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] laptop:w-[600px]  laptop:h-[700px]">
             <VictoryChart
               height={600}
               width={600}
@@ -343,7 +356,6 @@ const points2 = latencyState.map(item => ({
                   } else {
                     const date = getDateOnStr(t);
                     const month = date.getMonth();
-                    console.log(month);
                     const year = date.getFullYear();
                     const monthNames = [
                       "Jan",
