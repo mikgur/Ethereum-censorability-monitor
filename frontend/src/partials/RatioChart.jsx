@@ -36,10 +36,10 @@ function Button({ period, currentPeriod, setPeriod }) {
 
 function RatioChart() {
   const [ratioState, setRatioState] = useState();
-  const [currentPeriod, setCurrentPeriod] = useState('last_week');
+  const [currentPeriod, setCurrentPeriod] = useState('last_half_year');
 
   useEffect(() => {
-    getRatioData("last_week");
+    getRatioData("last_half_year");
   }, []);
 
   const getRatioData = async (period) => {

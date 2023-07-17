@@ -42,11 +42,11 @@ function Button({ period, currentPeriod, setPeriod }) {
 
 function PoolChart() {
   const [poolState, setPoolState] = useState();
-  const [currentPeriod, setCurrentPeriod] = useState('last_week');
+  const [currentPeriod, setCurrentPeriod] = useState('last_half_year');
 
 
   useEffect(() => {
-    getPoolData("last_week");
+    getPoolData("last_half_year");
   }, []);
 
   useEffect(() => {

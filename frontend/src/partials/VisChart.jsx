@@ -38,7 +38,7 @@ function Button({ period, currentPeriod, setPeriod }) {
 
 function VisChart() {
   const [appState, setAppState] = useState();
-  const [currentPeriod, setCurrentPeriod] = useState('last_week');
+  const [currentPeriod, setCurrentPeriod] = useState('last_half_year');
 
   const getData = async (period) => {
     const data = await getOfacByPeriod(period);
