@@ -147,16 +147,17 @@ def get_transactions_for_gas_estimation(db, block_number, w3):
     t_current = time.time()
     addresses = set()
     for _, tx in tx_details.items():
-        addresses.add(tx['from'])
-
-    accounts_collection = db['addresses_info']
+        addresses.add(tx["from"])
+    # TODO CHANGE ADDRESS_INFO HERE
+    accounts_collection = db["addresses_status"]
     accounts_details_db = accounts_collection.find(
-        {'address': {'$in': list(addresses)}})
+        {"address": {"$in": list(addresses)},
+         "block_number": {"$eq": block_number - 1}})
 
     block_accounts_info = {
-        a['address']: {
-                        'eth': a[str(block_number - 1)]['eth'],
-                        'n_txs': a[str(block_number - 1)]['n_txs']
+        a["address"]: {
+                        "eth": a["eth"],
+                        "n_txs": a["n_txs"]
                        }
         for a in accounts_details_db
         if str(block_number - 1) in a}
