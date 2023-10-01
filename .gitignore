@@ -18,3 +18,6 @@ api/env
 classifier_retraining/
 dataflow/env
 historical_data
+data_for_clickhouse
+censored_transactions
+historical_data_blocks
