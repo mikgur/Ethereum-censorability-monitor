@@ -3,12 +3,9 @@ import {
   VictoryBar,
   VictoryChart,
   VictoryLabel,
-  VictoryGroup,
   VictoryAxis,
   VictoryContainer,
-  VictoryLegend,
   VictoryTooltip,
-  VictoryLine
 } from "victory";
 
 import { getAllPool } from "./DataAccessLayer";
@@ -40,7 +37,7 @@ function Button({ period, currentPeriod, setPeriod }) {
 
 
 
-function PoolChart() {
+function VolumeChart() {
   const [poolState, setPoolState] = useState();
   const [currentPeriod, setCurrentPeriod] = useState('last_half_year');
 
@@ -53,36 +50,32 @@ function PoolChart() {
     getPoolData(currentPeriod);
   }, [currentPeriod]);
 
-
   const getPoolData = async (period) => {
     const data = await getAllPool(period);
   
     let outherTotalShare = 0;
-    let outherTotalRatio = 0;
-    let outherCount = 0; // для подсчета количества пулов в "Other"
   
     const filteredData = [];
-  
+    let sum_percent = 0
     data.data.forEach(d => {
       if (d.total_share < 0.5) {
         outherTotalShare += d.total_share;
-        outherTotalRatio += d.ratio;  // Увеличиваем сумму ratio для "Other"
-        outherCount++;
       } else if (d.total_share > 0.5) {
         filteredData.push(d);
       }
+      sum_percent = sum_percent + d.total_share
     });
-  
+    
+    console.log(sum_percent)
     const sortedData = filteredData.sort((a, b) => a.total_share - b.total_share);
-  
+
     if (outherTotalShare > 0) {
-      const averageOutherRatio = outherTotalRatio / outherCount; // считаем среднее значение
-      sortedData.unshift({ pool: "Other", total_share: outherTotalShare, ratio: averageOutherRatio });
+      sortedData.unshift({ pool: "Other", total_share: outherTotalShare });
     }
   
     setPoolState(sortedData);
   };
-  
+
   let chartWidth = 
   window.innerWidth < 640 ? window.innerWidth - 40 : 
   window.innerWidth < 1024 ? window.innerWidth - 80 : 
@@ -91,18 +84,17 @@ function PoolChart() {
   chartWidth = chartWidth * 1.1;
   const chartHeight = chartWidth * 0.7; 
 
-
   return (
     <div>
       <div class="h3 text-center">
         <h4>
-          Lido/Non-Lido Censorship Resistance Index(
+          Volume Lido/Non-Lido(
           {PERIODS.find((p) => p.value === currentPeriod).label})
         </h4>
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-        <div class="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 h-auto">
+      <div className="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 h-auto">
           <div class="flex justify-center overflow-hidden text-center mb-4">
             {PERIODS.map((period) => (
               <Button
@@ -113,8 +105,8 @@ function PoolChart() {
             ))}
           </div>
           <VictoryChart
-            height={chartHeight}
-            width={chartWidth}
+             height={chartHeight}
+             width={chartWidth}
             padding={{ bottom: 100, left: 100, right: 100, top: 50 }}
             label="Lido vs rest ratio"
             containerComponent={
@@ -128,35 +120,30 @@ function PoolChart() {
             }
           >
             <VictoryBar
-              horizontal
-              barWidth={10}
-              alignment="middle"
-              data={poolState}
-              x="pool"
-              y="ratio"
-              labels={({ datum }) =>
-                `Resistance index: ${datum.ratio.toFixed(4)}`
-              }
-              style={{ labels: { fill: "white" }, data: { fill: "#1e90ff" } }}
-              labelComponent={
-                <VictoryTooltip
-                  cornerRadius={0} // Отключить закругление углов
-                  style={{ fill: "white", fontSize: 17, fontFamily: "Arial" }}
-                  flyoutStyle={{ fill: "#2d2d2d", stroke: "transparent" }}
-                  pointerLength={0} // Отключить стрелку
-                  pointerWidth={0} // Отключить стрелку
-                />
-              }
-            />
-            <VictoryLine
-              style={{ data: { stroke: "red", strokeWidth: 2 } }}
-              y={() => 1}
-            />
+                horizontal
+                barWidth={10}
+                alignment="middle"
+                data={poolState}
+                x="pool"
+                y="total_share"
+                labels={({ datum }) => `Total share: ${datum.total_share.toFixed(4)}`}
+                style={{ labels: { fill: "white" }, data: { fill: "#1e90ff" } }}
+                labelComponent={
+                  <VictoryTooltip
+                    cornerRadius={0}
+                    style={{ fill: "white", fontSize: 17, fontFamily: "Arial" }}
+                    flyoutStyle={{ fill: "#2d2d2d", stroke: "transparent" }}
+                    pointerLength={0}
+                    pointerWidth={0}
+                  />
+                }
+              />
+            {/* </VictoryGroup> */}
             <VictoryAxis
               dependentAxis
               // tickFormat={(t) => `${t}%`}
               style={{ tickLabels: { fontSize: 11, fill: "#FFFFFF" } }}
-              label="Resistance index"
+              label="Volume"
               axisLabelComponent={
                 <VictoryLabel
                   style={[{ fill: "#FFFFFF", fontSize: 17 }]}
@@ -167,7 +154,6 @@ function PoolChart() {
             <VictoryAxis
               style={{ tickLabels: { fontSize: 15, fill: "#FFFFFF" } }}
               label="POOL"
-              // tickFormat={(t) => `${t.charAt(0).toUpperCase() + t.slice(1)}`}
               axisLabelComponent={
                 <VictoryLabel
                   dy={-60}
@@ -197,4 +183,4 @@ function PoolChart() {
   );
 }
 
-export default PoolChart;
+export default VolumeChart;

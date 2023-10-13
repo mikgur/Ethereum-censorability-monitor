@@ -9,7 +9,8 @@ import PoolChart from '../partials/PoolChart';
 import LatencyChart from '../partials/LatencyChart';
 import CensoredLatencyChart from '../partials/CensoredLatencyChart';
 import Percent from '../partials/Percent';
-// import MedianChart from '../partials/MedianChart'
+import VolumeChart from '../partials/VolumeChart';
+import Description from '../partials/Description';
 
 function Home() {
   return (
@@ -33,13 +34,11 @@ function Home() {
         <div style={{height: 300, weight: 200}}></div>
         <RatioChart />
         <div style={{height: 300, weight: 200}}></div>
+        <VolumeChart />
+        <div style={{height: 300, weight: 200}}></div>
         <PoolChart />
         <div style={{height: 100, weight: 200}}></div>
-        <div class="flex flex-wrap justify-center">
-        <a href="https://github.com/mikgur/Ethereum-censorability-monitor">
-          <img src="src/images/github.png" width="100" height="100"></img>
-        </a>
-        </div>
+        <Description />
       </main>
     </div>
   );
