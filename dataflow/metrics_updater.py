@@ -573,9 +573,12 @@ def _get_ofac_compliant_count(row: pd.Series, dates: List[str]) -> int:
     for day in dates:
         if day in row.keys():
             if isinstance(row[day], dict):
-                count += row[day].get("num_ofac_compliant_txs", 0)
+                count += (
+                    row[day].get("num_txs",0) - len(row[day].get("non_ofac_compliant_txs", []))
+                )
 
     return count
+
 
 
 def _get_ofac_non_compliant_count(row: pd.Series, dates: List[str]) -> int:
@@ -792,7 +795,7 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
         (metrics_df.ofac_compliant_count + metrics_df.ofac_non_compliant_count) / total_count
     )
     
-    metrics_df.loc[metrics_df.pool == 'Other', 'total_share'] = 0
+    # metrics_df.loc[metrics_df.pool == 'Other', 'total_share'] = 0
     
     metrics_df.ofac_compliant_count /= total_ofac_compliant_count
     metrics_df.ofac_non_compliant_count /= total_ofac_non_compliant_count
@@ -960,6 +963,7 @@ def get_censored_latency(
         )
         # Drop all non censored transactions
         shifted_df.dropna(axis=0, subset=["censored"], inplace=True)
+        shifted_df = shifted_df[shifted_df['censored'].apply(lambda x: len(x) > 0)]
 
         # Сalculate censorship metrics
         shifted_df["censorship_latency"] = (
