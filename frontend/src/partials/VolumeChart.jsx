@@ -76,13 +76,18 @@ function VolumeChart() {
     setPoolState(sortedData);
   };
 
-  let chartWidth = 
-  window.innerWidth < 640 ? window.innerWidth - 40 : 
-  window.innerWidth < 1024 ? window.innerWidth - 80 : 
-  window.innerWidth < 1280 ? 600 : 800;
-
-  chartWidth = chartWidth * 1.1;
-  const chartHeight = chartWidth * 0.7; 
+  const getChartWidth = () => {
+    const windowWidth = window.innerWidth;
+  
+    if (windowWidth < 640) return windowWidth - 40;
+    if (windowWidth < 768) return windowWidth - 40; // same as sm for better transition
+    if (windowWidth < 1024) return windowWidth - 40;
+    if (windowWidth < 1280) return 600;
+    return 800;
+  };
+  
+  const chartWidth = getChartWidth() * 1.2;
+  const chartHeight = chartWidth * 0.7;
 
   return (
     <div>
@@ -94,7 +99,7 @@ function VolumeChart() {
       </div>
       <br></br>
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
-      <div className="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 h-auto">
+        <div class="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 h-auto">
           <div class="flex justify-center overflow-hidden text-center mb-4">
             {PERIODS.map((period) => (
               <Button
@@ -164,7 +169,7 @@ function VolumeChart() {
           </VictoryChart>
         </div>
 
-        <div class="desktop:w-[400px] mr-48">
+        <div class=" desktop:w-[600px] tablet:w-[400px] tablet:h-[300px] laptop:w-[300px]  mr-48">
           <p class="desktop:text-xl desktop:text-xl indent-8">
             We calculate Censorship Resistance Index for Lido at all and compare
             it to all other known pools in total.

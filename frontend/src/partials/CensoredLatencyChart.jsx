@@ -358,36 +358,64 @@ const points2 = latencyState.map(item => ({
               />
               <VictoryAxis
                 tickFormat={(t, index, ticks) => {
+                  const getStartDateFromStr = (str) => {
+                    const [startStr] = str.split("\n — \n");
+                    const [day, month, year] = startStr.split('-').map(Number);
+                    return new Date(year + 2000, month - 1, day); 
+                };
+                
+                const getEndDateFromStr = (str) => {
+                    const [, endStr] = str.split("\n — \n");
+                    const [day, month, year] = endStr.split('-').map(Number);
+                    return new Date(year + 2000, month - 1, day); 
+                };
+
+                const weeksOfTheMonth = (monthIndex, year) => {
+                  return ticks.filter(tick => {
+                      const startDate = getStartDateFromStr(tick);
+                      const endDate = getEndDateFromStr(tick);
+                      return (startDate.getMonth() === monthIndex || endDate.getMonth() === monthIndex) && startDate.getFullYear() === year;
+                  }).length;
+              };
+              
                   if (ticks.length <= 8) {
-                    return t;
+                      return t;
                   } else {
-                    const date = getDateOnStr(t);
-                    const month = date.getMonth();
-                    const year = date.getFullYear();
-                    const monthNames = [
-                      "Jan",
-                      "Feb",
-                      "Mar",
-                      "Apr",
-                      "May",
-                      "Jun",
-                      "Jul",
-                      "Aug",
-                      "Sep",
-                      "Oct",
-                      "Nov",
-                      "Dec",
-                    ];
-                    if (index === 0 || index === ticks.length - 1) {
-                      return `${year}`;
-                    } else if (month !== prevMonth) {
-                      prevMonth = month;
-                      return `${monthNames[month]}`;
-                    } else {
+                      const date = getStartDateFromStr(t);
+                      const year = date.getFullYear();
+                    
+                      const monthNames = [
+                          "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+                      ];
+
+              
+                      if (index === 0 || index === ticks.length - 1) {
+                          return `${year}`;
+                      } else {
+                          // Collect month change indices
+                          const monthChangeIndices = [];
+                          for (let i = 1; i < ticks.length; i++) {
+                              const prevTickDate = getStartDateFromStr(ticks[i - 1]);
+                              const currentTickDate = getStartDateFromStr(ticks[i]);
+                              if (prevTickDate.getMonth() !== currentTickDate.getMonth()) {
+                                  monthChangeIndices.push(i);
+                              }
+                          }
+              
+                          // Determine the midpoint for displaying the month
+                          for (let i = 0; i < monthChangeIndices.length; i++) {
+                              const startIdx = monthChangeIndices[i - 1] || 0;
+                              const endIdx = monthChangeIndices[i];
+                              const midIdx = startIdx + Math.floor((endIdx - startIdx) / 2);
+                              if (index === midIdx && weeksOfTheMonth(date.getMonth(), year) >= 4) {
+                                  return `${monthNames[date.getMonth()]}`;
+                              }
+                          }
+                      }
                       return "";
-                    }
                   }
-                }}
+              }}
                 style={{ tickLabels: { fontSize: 10, fill: "#FFFFFF" } }}
                 tickValues={tickValues}
                 label="DATE"

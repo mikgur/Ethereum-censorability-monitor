@@ -178,7 +178,7 @@ function PoolChart() {
           </VictoryChart>
         </div>
 
-        <div class="desktop:w-[400px] mr-48">
+        <div class=" desktop:w-[600px] tablet:w-[400px] tablet:h-[300px] laptop:w-[300px]  mr-48">
           <p class="desktop:text-xl desktop:text-xl indent-8">
             We calculate Censorship Resistance Index for Lido at all and compare
             it to all other known pools in total.
