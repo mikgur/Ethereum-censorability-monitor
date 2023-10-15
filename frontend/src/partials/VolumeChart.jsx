@@ -171,17 +171,9 @@ function VolumeChart() {
 
         <div class=" desktop:w-[600px] tablet:w-[400px] tablet:h-[300px] laptop:w-[300px]  mr-48">
           <p class="desktop:text-xl desktop:text-xl indent-8">
-            We calculate Censorship Resistance Index for Lido at all and compare
-            it to all other known pools in total.
+          We display validators with a share greater than 0.5% here. 
+          All remaining validators, including unknown ones, are categorized under 'Others'.
           </p>
-          <br></br>
-          <p>Example of metric calculation:</p>
-          <br></br>
-          <p>A = OFAC Compliance Ratio calculated for pool N in total</p>
-          <p>
-            B = NON-OFAC Compliance Ratio calculated for the pool N in total
-          </p>
-          <p>Censorship Resistance Index for pool N = B / A</p>
         </div>
       </div>
     </div>

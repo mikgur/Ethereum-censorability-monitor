@@ -191,6 +191,9 @@ function PoolChart() {
             B = NON-OFAC Compliance Ratio calculated for the pool N in total
           </p>
           <p>Censorship Resistance Index for pool N = B / A</p>
+          <br></br>
+          <p>We display validators with a share greater than 0.5% here. 
+            All remaining validators, including unknown ones, are categorized under 'Others'.</p>
         </div>
       </div>
     </div>
