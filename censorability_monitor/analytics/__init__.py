@@ -174,6 +174,10 @@ class CensorshipMonitor:
         logger = logging.getLogger(self.name)
         w3 = self.get_web3_client()
         n_behind = w3.eth.blockNumber - block_number
+        while n_behind < 10:
+            logger.info(f"Waiting for block confirmations, now have {n_behind}")
+            await asyncio.sleep(12)
+            n_behind = w3.eth.blockNumber - block_number
         logger.info(f'processing {block_number}, {n_behind} behind ETH')
         # Update validators and ofac list
         mongo_client = self.get_mongo_analytics_client()
@@ -250,8 +254,10 @@ class CensorshipMonitor:
                      f' (memopool: {len(mempool_txs)})'))
         # txs in block which were not found in mempool
         not_found_in_db_txs = set(block_txs) - set(mempool_txs)
+        logger.info(f"not found in mempool txs: {len(not_found_in_db_txs)}")
 
         block_txs_addresses = await self.get_txs_addresses(block_txs, w3)
+        logger.info(f"Got addresses: {len(block_txs_addresses)}")
         # check
         if len(block_txs_addresses) != len(block['transactions']):
             logger.error((f'Block {block_number}: len of block_txs_addresses '
@@ -260,6 +266,7 @@ class CensorshipMonitor:
         # without mempool constrains
         found_in_db = self.find_txs_in_db(not_found_in_db_txs, db)
         not_found_in_db_txs = not_found_in_db_txs - set(found_in_db)
+        logger.info(f"not found in db txs: {len(not_found_in_db_txs)}")
 
         # Еще осталась часть не найденных not_found_in_db_txs,
         # а также могли быть транзакции без деталей в BD
@@ -267,12 +274,14 @@ class CensorshipMonitor:
         txs_details_from_db = self.get_txs_details_from_db(
             all_txs_found_in_db, db)
         txs_details_hashes = set(txs_details_from_db.keys())
+        logger.info(f"Found txs in db and mempool: {len(txs_details_hashes)}")
         # Транзакции из БД, для которых нет деталей:
         db_txs_without_details = all_txs_found_in_db - txs_details_hashes
         # Достанем детали из блокчейна для "транзакций, напрямую попавших в
         # блок" и "транзакции, найденные в БД, но без деталей"
         txs_no_details = db_txs_without_details.union(not_found_in_db_txs)
         additional_details = self.get_txs_details_from_w3(txs_no_details, w3)
+        logger.info(f"Additional details found {len(additional_details)}")
         # Соберем потребление газа для транзакций
         gas_consumption = self.gather_gas_estimation(
             txs_details=txs_details_from_db,
@@ -286,6 +295,7 @@ class CensorshipMonitor:
                          f'equal number of all txs {len(all_transactions)}'))
 
         # Собираем фичи в датафрейм
+        logger.info("Creating df")
         df = self.create_txs_dataframe(
             block_ts=block_ts,
             transactions=all_transactions,
@@ -294,6 +304,7 @@ class CensorshipMonitor:
             gas_consumption=gas_consumption,
             db=db
         )
+        logger.info("Adding features")
         df = self.add_features_for_classification(
             df=df,
             block_txs=block_txs,
@@ -491,6 +502,7 @@ class CensorshipMonitor:
                                 transactions: List[str],
                                 w3: Web3) -> Dict[str, List[str]]:
         ''' Get addressess touched by transactions from receipts'''
+        logger = logging.getLogger(self.name)
         while True:
             try:
                 block_txs_addresses = {}
@@ -500,6 +512,10 @@ class CensorshipMonitor:
                     block_txs_addresses[tx] = addresses
                 return block_txs_addresses
             except TransactionNotFound:
+                logger.info(f"Transaction not found {tx} - {time.time():0.2f}")
+                await asyncio.sleep(1)
+            except Exception as e:
+                logger.info(f"Exception {e} - {tx} - {time.time():0.2f}")
                 await asyncio.sleep(1)
 
     def find_txs_in_db(self, hashes_list: List[str], db: Database):

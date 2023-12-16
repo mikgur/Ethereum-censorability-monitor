@@ -6,25 +6,46 @@ services:
     build:
         context: .
         dockerfile: mempool_collector.Dockerfile
+    restart: always
     ports:
       - 8000:8000
     tty: true
-  
+    networks:
+      - neutrality_watch_network
+    volumes:
+      - type : bind
+        source : /home/mgurevich/eth_node/data
+        target : /eth_data
+
   block_collector:
     build:
         context: .
         dockerfile: block_collector.Dockerfile
+    restart: always
     ports:
       - 8001:8000
     tty: true
+    networks:
+      - neutrality_watch_network
+    volumes:
+      - type : bind
+        source : /home/mgurevich/eth_node/data
+        target : /eth_data
 
   mempool_gas_estimator:
     build:
         context: .
         dockerfile: mempool_gas_estimator.Dockerfile
+    restart: always
     ports:
       - 8002:8000
     tty: true
+    networks:
+      - neutrality_watch_network
+    volumes:
+      - type : bind
+        source : /home/mgurevich/eth_node/data
+        target : /eth_data
 
   censorship_analytics:
     build:
@@ -33,3 +54,13 @@ services:
     ports:
       - 8003:8000
     tty: true
+    networks:
+      - neutrality_watch_network
+    volumes:
+      - type : bind
+        source : /home/mgurevich/eth_node/data
+        target : /eth_data
+
+networks:
+  neutrality_watch_network:
+    external: true

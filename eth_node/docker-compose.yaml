@@ -13,12 +13,14 @@ services:
       - "30303:30303/udp"
     volumes:
       - type : bind
-        source : /media/Warehouse/Warehouse/Ethereum/data
+        source : /home/nw/eth_node/data
         target : /root
     command:
+      - --cache=6144
       - --ws
       - --ws.addr=0.0.0.0
       - --http
+      - --http.api=eth,net,web3,txpool
       - --http.addr=0.0.0.0
 #     - --http.corsdomain=[read below]
       - --authrpc.addr=0.0.0.0
@@ -32,13 +34,14 @@ services:
     ports:
       - "9000:9000/tcp"
       - "9000:9000/udp"
-      - "127.0.0.1:5052:5052"
+#      - "127.0.0.1:5052:5052"
+      - "5052:5052"
     volumes:
       - type : bind
-        source : /media/Warehouse/Warehouse/Ethereum/lighthouse
+        source : /home/nw/eth_node/lighthouse
         target : /root/.lighthouse
       - type : bind
-        source : /media/Warehouse/Warehouse/Ethereum/data
+        source : /home/nw/eth_node/data
         target : /geth/
         read_only: true
     command:
