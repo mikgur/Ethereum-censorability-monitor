@@ -13,9 +13,10 @@ services:
       - "30303:30303/udp"
     volumes:
       - type : bind
-        source : /mnt/volume_fra1_01/ethereum/data
+        source : /home/nw/eth_node/data
         target : /root
     command:
+      - --cache=6144
       - --ws
       - --ws.addr=0.0.0.0
       - --http
@@ -37,10 +38,10 @@ services:
       - "5052:5052"
     volumes:
       - type : bind
-        source : /mnt/volume_fra1_01/ethereum/lighthouse
+        source : /home/nw/eth_node/lighthouse
         target : /root/.lighthouse
       - type : bind
-        source : /mnt/volume_fra1_01/ethereum/data
+        source : /home/nw/eth_node/data
         target : /geth/
         read_only: true
     command:
