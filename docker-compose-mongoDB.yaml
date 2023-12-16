@@ -8,13 +8,15 @@ services:
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: test_pass
+      MONGO_INITDB_ROOT_PASSWORD: test_pass # change this to your password
     ports:
       - 27017:27017
     volumes:
       - type : bind
-        source : /path_to_mongo_data
+        source : /path_to_mongo_data # change this to your local path
         target : /data/db
+    networks:
+      - neutrality_watch_network
 
   mongo-express:
     image: mongo-express
@@ -23,7 +25,13 @@ services:
       - 8081:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: test_pass
-      ME_CONFIG_MONGODB_URL: mongodb://root:test_pass@mongo:27017/
+      ME_CONFIG_MONGODB_ADMINPASSWORD: test_pass # change this to your password
+      ME_CONFIG_MONGODB_URL: mongodb://root:test_pass@mongo:27017/ # change this
       ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: mongo_express_pass
+      ME_CONFIG_BASICAUTH_PASSWORD: mongo_express_pass # change this to your password
+    networks:
+      - neutrality_watch_network
+
+networks:
+  neutrality_watch_network:
+    external: true
