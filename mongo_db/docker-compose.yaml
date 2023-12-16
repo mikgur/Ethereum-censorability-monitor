@@ -34,4 +34,3 @@ services:
 
 networks:
   neutrality_watch_network:
-    external: true
