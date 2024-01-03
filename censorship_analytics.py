@@ -54,7 +54,7 @@ def main():
                 beacon_url=beacon_url,
                 model_path=model_path,
                 interval=0.5,
-                start_block=18240662,  # the earlies block possible to start
+                start_block=18798280,  # the earlies block possible to start
                 verbose=False,
                 classifier_dataset_path=classifier_dataset_path)
 

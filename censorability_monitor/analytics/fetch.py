@@ -7,8 +7,9 @@ from pymongo.database import Database
 from web3.auto import Web3
 
 
-def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
+def load_mempool_state(db: Database, block_number: int, w3: Web3, logger) -> List[str]:
     first_seen_collection = db['tx_first_seen_ts']
+    first_seen_collection.create_index([('block_number', 1), ('timestamp', 1), ('maxFeePerGas', 1)])
     # first_seen_collection.create_index('timestamp')
     # first_seen_collection.create_index('block_number')
     tx_details_collection = db['tx_details']
@@ -27,8 +28,9 @@ def load_mempool_state(db: Database, block_number: int, w3: Web3) -> List[str]:
                      {'maxFeePerGas': {'$gte': block["baseFeePerGas"]}}
                      ]}
             ]
-         })
+         }).hint([('block_number', 1), ('timestamp', 1), ('maxFeePerGas', 1)])
     mempool_txs = set([tx['hash'] for tx in transactions])
+    logger.info("Got transactions from first_seen")
 
     # Get details
     tx_details_collection = db['tx_details']

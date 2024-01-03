@@ -243,7 +243,8 @@ class CensorshipMonitor:
         block_txs = [b.hex() for b in block['transactions']]
         db = mongo_client[self.collector_db_name]
         try:
-            mempool_txs = load_mempool_state(db, block_number, w3)
+            mempool_txs = load_mempool_state(db, block_number, w3, logger)
+            logger.info(f"Got mempool state")
         except Exception as e:
             logger.error(f'Mempool error {block_number} {type(e)} {e}')
 
