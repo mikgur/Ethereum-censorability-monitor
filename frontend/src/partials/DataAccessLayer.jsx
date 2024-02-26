@@ -7,6 +7,20 @@ export const getOfacByPeriod = async (period) => {
 
 export const getRatioByPeriod = async (period) => {
     const data = await axios.get(`https://eth.neutralitywatch.com:443/metrics/lido_validators_ratio/${period}`)
+    
+    let skillzRatio = 0;
+
+    data.data = data.data.reduce((acc, cur) => {
+        if (cur.name === "SkillZ") {
+            skillzRatio = cur.ratio; 
+        } else {
+            if (cur.name === "Kiln") {
+                cur.ratio += skillzRatio;
+            }
+            acc.push(cur);
+        }
+        return acc;
+    }, []);
     return data
 }
 
