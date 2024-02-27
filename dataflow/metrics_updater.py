@@ -657,6 +657,7 @@ def _prepare_ratio_df(share_df: pd.DataFrame) -> pd.DataFrame:
 
     _df["ratio"] = _df.ofac_non_compliant_share / _df.ofac_compliant_share
     _df.ratio = _df.ratio.replace(np.inf, 1)
+    _df.ratio = _df.ratio.replace(np.nan, 1)
 
     _df = _df[["name", "ratio"]]
 
