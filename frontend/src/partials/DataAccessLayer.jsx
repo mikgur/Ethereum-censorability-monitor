@@ -2,6 +2,22 @@ import axios from "axios";
 
 export const getOfacByPeriod = async (period) => {
     const data = await axios.get(`https://eth.neutralitywatch.com:443/metrics/lido_validators_share/${period}`)
+
+    let chainLayerCompliantShare = 0;
+    let chainLayerNonCompliantShare = 0;
+
+    const chainLayerIndex = data.data.findIndex(element => element.name === "SkillZ");
+    if (chainLayerIndex !== -1) {
+    chainLayerCompliantShare = data.data[chainLayerIndex].ofac_compliant_share;
+    chainLayerNonCompliantShare = data.data[chainLayerIndex].ofac_non_compliant_share;
+    data.data.splice(chainLayerIndex, 1);
+    }
+
+    const targetElementIndex = data.data.findIndex(element => element.name === "Kiln");
+    if (targetElementIndex !== -1) {
+        data.data[targetElementIndex].ofac_compliant_share += chainLayerCompliantShare;
+        data.data[targetElementIndex].ofac_non_compliant_share += chainLayerNonCompliantShare;
+    }
     return data
 }
 
@@ -9,18 +25,16 @@ export const getRatioByPeriod = async (period) => {
     const data = await axios.get(`https://eth.neutralitywatch.com:443/metrics/lido_validators_ratio/${period}`)
     
     let skillzRatio = 0;
+    const skillzIndex = data.data.findIndex(element => element.name === "SkillZ");
+    if (skillzIndex !== -1) {
+        skillzRatio = data.data[skillzIndex].ratio;
+        data.data.splice(skillzIndex, 1);
+    }
 
-    data.data = data.data.reduce((acc, cur) => {
-        if (cur.name === "SkillZ") {
-            skillzRatio = cur.ratio; 
-        } else {
-            if (cur.name === "Kiln") {
-                cur.ratio += skillzRatio;
-            }
-            acc.push(cur);
-        }
-        return acc;
-    }, []);
+    const kilnIndex = data.data.findIndex(element => element.name === "Kiln");
+    if (kilnIndex !== -1) {
+        data.data[kilnIndex].ratio += skillzRatio;
+    }
     return data
 }
 
