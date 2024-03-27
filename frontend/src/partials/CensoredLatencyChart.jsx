@@ -262,7 +262,7 @@ const points2 = latencyState.map(item => ({
               width={600}
               padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
               minDomain={{ y: 0 }}
-              maxDomain={{ y: 40 }}
+              maxDomain={{ y: 45 }}
               containerComponent={
                 <VictoryVoronoiContainer voronoiDimension="x" />
               }
