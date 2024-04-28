@@ -13,6 +13,7 @@ import { getAllPool } from "./DataAccessLayer";
 const PERIODS = [
   { value: 'last_week', label: 'Last week', buttonLabel: '1w' },
   { value: 'last_month', label: 'Last month', buttonLabel: '1m' },
+  { value: 'last_3_months', label: 'Last three month', buttonLabel: '3m' },
   { value: 'last_half_year', label: 'Last six months', buttonLabel: '6m' },
   { value: 'last_year', label: 'Last year', buttonLabel: '1y' },
 ]
@@ -101,8 +102,9 @@ function VolumeChart() {
       <div class="flex flex-wrap space-x-0 justify-center mx-8">
         <div class="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 h-auto">
           <div class="flex justify-center overflow-hidden text-center mb-4">
-            {PERIODS.map((period) => (
+            {PERIODS.map((period, index) => (
               <Button
+                key={index}
                 period={period}
                 currentPeriod={currentPeriod}
                 setPeriod={setCurrentPeriod}

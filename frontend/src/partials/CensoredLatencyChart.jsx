@@ -30,21 +30,9 @@ function CensoredLatencyChart() {
   const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(getSunday(new Date()));
-  const [isOpen, setIsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const buttonRef = useRef(null);
   const [activeButton, setActiveButton] = useState('');
-  const VoronoiCursorContainer = createContainer("voronoi", "cursor");
-
-
-  // const [filteredData, setFilteredData] = useState();
-  const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
-    <button className="bg-gray-600 p-2 rounded text-white ml-4" onClick={onClick} ref={ref}>
-      <FiCalendar/> {value}
-    </button>
-  ));
   
-
   useEffect(() => {
     getLatencyData();
   }, [startDate, endDate]);
@@ -53,12 +41,9 @@ function CensoredLatencyChart() {
     setLastHalfYear();
   }, []);
 
-  
-
-  
   const getLatencyData = async () => {
   const data = await getCensoredLatency();
-  // Фильтруем данные на основе выбранных дат
+
   const filteredData = data.data.filter(d => {
     var dateString = d.end_date;
     var parts = dateString.split("-");
@@ -73,12 +58,9 @@ function CensoredLatencyChart() {
 };
 
   const generateTickValues = () => {
-    if (latencyState.length > 7) {
-      return [];
-    } else {
-      return latencyState.map(data => data.range_date);
-    }
+    return latencyState.map(data => data.range_date);
   };
+  
   const [tickValues, setTickValues] = useState(generateTickValues());
   useEffect(() => {
     setTickValues(generateTickValues());

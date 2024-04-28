@@ -13,6 +13,7 @@ import { getRatioByPeriod } from "./DataAccessLayer";
 const PERIODS = [
   { value: 'last_week', label: 'Last week', buttonLabel: '1w' },
   { value: 'last_month', label: 'Last month', buttonLabel: '1m' },
+  { value: 'last_3_months', label: 'Last three month', buttonLabel: '3m' },
   { value: 'last_half_year', label: 'Last six months', buttonLabel: '6m' },
   { value: 'last_year', label: 'Last year', buttonLabel: '1y' },
 ]
@@ -67,8 +68,9 @@ function RatioChart() {
       <div class="flex flex-wrap space-x-0 justify-center mx-8 space-y-16 my-4">
         <div class="desktop:w-[1200px] desktop:h-[700px] uwdesktop:w-[1600px] uwdesktop:h-[900px] tablet:w-[400px] tablet:h-[600px] laptop:w-[900px] laptop:h-[700px]">
           <div class="flex justify-center overflow-hidden text-center mb-4">
-            {PERIODS.map((period) => (
+            {PERIODS.map((period, index) => (
               <Button
+                key={index}
                 period={period}
                 currentPeriod={currentPeriod}
                 setPeriod={setCurrentPeriod}

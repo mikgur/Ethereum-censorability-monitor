@@ -29,9 +29,7 @@ function LatencyChart() {
   const [latencyState, setLatencyState] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(getSunday(new Date()));
-  const [isOpen, setIsOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const buttonRef = useRef(null);
   const [activeButton, setActiveButton] = useState('');
 
   useEffect(() => {
@@ -61,11 +59,7 @@ function LatencyChart() {
   };
 
   const generateTickValues = () => {
-    if (latencyState.length > 7) {
-      return [];
-    } else {
-      return latencyState.map(data => data.range_date);
-    }
+    return latencyState.map(data => data.range_date);
   };
 
   const [tickValues, setTickValues] = useState(generateTickValues());
@@ -370,7 +364,6 @@ const points2 = latencyState.map(item => ({
                       return (startDate.getMonth() === monthIndex || endDate.getMonth() === monthIndex) && startDate.getFullYear() === year;
                   }).length;
               };
-              
                   if (ticks.length <= 8) {
                       return t;
                   } else {
@@ -395,7 +388,7 @@ const points2 = latencyState.map(item => ({
                                   monthChangeIndices.push(i);
                               }
                           }
-              
+
                           // Determine the midpoint for displaying the month
                           for (let i = 0; i < monthChangeIndices.length; i++) {
                               const startIdx = monthChangeIndices[i - 1] || 0;
@@ -404,9 +397,12 @@ const points2 = latencyState.map(item => ({
                               if (index === midIdx && weeksOfTheMonth(date.getMonth(), year) >= 4) {
                                   return `${monthNames[date.getMonth()]}`;
                               }
+                              else {
+                                console.log('error')
+                              }
                           }
                       }
-                      return "";
+                      // return monthChangeIndices;
                   }
               }}
               
