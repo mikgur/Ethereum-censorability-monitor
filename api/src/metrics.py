@@ -17,7 +17,7 @@ def get_lido_validators_metrics(
     Returns:
         List of dicts with metrics for each Lido validator
     """
-    if period in ['last_week','last_month','last_half_year','last_year']:
+    if period in ['last_week','last_month','last_3_months','last_half_year','last_year']:
         if calc_ratio:
             data = collection.find_one(
                 {"metrics": f"{period}_validators_censorship_resistance_index"}
@@ -41,7 +41,7 @@ def get_lido_vs_rest(collection: Collection, period: str) -> List[dict]:
     Returns:
         List of dicts with metrics for Lido and other pools
     """
-    if period in ['last_week','last_month','last_half_year','last_year']:
+    if period in ['last_week','last_month','last_3_months','last_half_year','last_year']:
         data = collection.find_one(
             {"metrics": f"{period}_lido_vs_rest_censorship_resistance_index"}
         )

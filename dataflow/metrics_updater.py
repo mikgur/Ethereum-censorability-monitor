@@ -186,6 +186,18 @@ def update_lido_vs_rest_censorship_resistance_index(
     )
 
     logger.info(
+        "Calculating Lido vs Rest censorship resistance index over last 3 months"
+    )
+
+    l3m_resistance_index = get_lido_vs_rest(
+        metrics_collection, "last_3_months"
+    )
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last 3 months has been calculated"
+    )
+
+    logger.info(
         "Calculating Lido vs Rest censorship resistance index over last halfyear"
     )
 
@@ -217,6 +229,11 @@ def update_lido_vs_rest_censorship_resistance_index(
     lm_record = {
         "metrics": "last_month_lido_vs_rest_censorship_resistance_index",
         "values": lm_resistance_index,
+    }
+
+    l3m_record = {
+        "metrics": "last_3_months_lido_vs_rest_censorship_resistance_index",
+        "values": l3m_resistance_index,
     }
 
     lh_record = {
@@ -252,6 +269,19 @@ def update_lido_vs_rest_censorship_resistance_index(
 
     logger.info(
         "Lido vs Rest censorship resistance index over last month has been updated"
+    )
+
+    logger.info(
+        "Updating Lido vs Rest censorship resistance index over last 3 months"
+    )
+
+    target_collection.delete_one(
+        {"metrics": "last_3_months_lido_vs_rest_censorship_resistance_index"}
+    )
+    target_collection.insert_one(l3m_record)
+
+    logger.info(
+        "Lido vs Rest censorship resistance index over last 3 months has been updated"
     )
 
     logger.info(
@@ -319,6 +349,18 @@ def update_validators_censorship_resistance_index(
     )
 
     logger.info(
+        "Calculating validators censorship resistance index over last 3 months"
+    )
+
+    l3m_resistance_index = get_lido_validators_metrics(
+        metrics_collection, "last_3_months", True
+    )
+
+    logger.info(
+        "Validators censorship resistance index over last 3 months has been calculated"
+    )
+
+    logger.info(
         "Calculating validators censorship resistance index over last halfyear"
     )
 
@@ -350,6 +392,11 @@ def update_validators_censorship_resistance_index(
     lm_record = {
         "metrics": "last_month_validators_censorship_resistance_index",
         "values": lm_resistance_index,
+    }
+
+    l3m_record = {
+        "metrics": "last_3_months_validators_censorship_resistance_index",
+        "values": l3m_resistance_index,
     }
 
     lh_record = {
@@ -385,6 +432,19 @@ def update_validators_censorship_resistance_index(
 
     logger.info(
         "Validators censorship resistance index over last month has been updated"
+    )
+
+    logger.info(
+        "Updating validators censorship resistance index over last 3 months"
+    )
+
+    target_collection.delete_one(
+        {"metrics": "last_3_months_validators_censorship_resistance_index"}
+    )
+    target_collection.insert_one(l3m_record)
+
+    logger.info(
+        "Validators censorship resistance index over last 3 months has been updated"
     )
 
     logger.info(
@@ -447,6 +507,16 @@ def update_validators_compliance_ratio(
         "Validators compliance ratio over last month has been calculated"
     )
 
+    logger.info("Calculating validators compliance ratio over last 3 months")
+
+    l3m_ratio = get_lido_validators_metrics(
+        metrics_collection, "last_3_months", False
+    )
+
+    logger.info(
+        "Validators compliance ratio over last 3 months has been calculated"
+    )
+
     logger.info("Calculating validators compliance ratio over last halfyear")
 
     lh_ratio = get_lido_validators_metrics(
@@ -475,6 +545,11 @@ def update_validators_compliance_ratio(
     lm_record = {
         "metrics": "last_month_validators_compliance_ratio",
         "values": lm_ratio,
+    }
+
+    l3m_record = {
+        "metrics": "last_3_months_validators_compliance_ratio",
+        "values": l3m_ratio,
     }
 
     lh_record = {
@@ -506,6 +581,17 @@ def update_validators_compliance_ratio(
 
     logger.info(
         "Validators compliance ratio index over last month has been updated"
+    )
+
+    logger.info("Updating validators compliance ratio over last 3 months")
+
+    target_collection.delete_one(
+        {"metrics": "last_3_months_validators_compliance_ratio"}
+    )
+    target_collection.insert_one(l3m_record)
+
+    logger.info(
+        "Validators compliance ratio index over last 3 months has been updated"
     )
 
     logger.info("Updating validators compliance ratio over last halfyear")
@@ -728,6 +814,8 @@ def get_lido_validators_metrics(
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
+    elif period == "last_3_months":
+        dates = get_last_dates(0, 90)
     elif period ==  "last_half_year":
         dates = get_last_dates(0, 180)
     elif period ==  "last_year":
@@ -765,6 +853,8 @@ def get_lido_vs_rest(collection: Collection, period: str) -> str:
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
+    elif period == "last_3_months":
+        dates = get_last_dates(0, 90)
     elif period ==  "last_half_year":
         dates = get_last_dates(0, 180)
     elif period ==  "last_year":
@@ -1017,6 +1107,8 @@ def get_censored_percentage(
         dates = get_last_dates(0, 7)
     elif period == "last_month":
         dates = get_last_dates(0, 30)
+    elif period == "last_3_months":
+        dates = get_last_dates(0, 90)
     elif period ==  "last_half_year":
         dates = get_last_dates(0, 180)
     elif period ==  "last_year":
