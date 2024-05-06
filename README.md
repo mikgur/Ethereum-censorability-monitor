@@ -24,20 +24,20 @@
 <h4 align="center">
   <a href=#-problem> Problem </a> |
   <a href=#-lego-grant> LEGO grant </a> |
-  <a href=#-project_components> Project Components </a> |
+  <a href=#-project-components> Project Components </a> |
   <a href=#-metrics> Metrics </a> |
   <a href=#-installation> Installation </a> |
   <a href=#-quick-start> Quick Start </a> |
-  <a href=#-mongo_db_metrics_scheme> Mongo DB metrics scheme  </a> |
-  <a href=#-api-reference> API Reference </a> |
-  <a href=#-community> Community </a>
+  <a href=#-mongo-db-metrics-scheme> Mongo DB metrics scheme  </a> |
+  <a href=#-open-dataset> Open Dataset  </a> |
+  <a href=#-team> Team  </a> |
   <a href=#-acknowledgments> Acknowledgments </a>
 </h4>
 
 -----------------------------------------------
 ## &#128204; Problem
 
-  The problem of censorship for non compliant transactions on the Ethereum blockchain is that certain transactions may be blocked or censored by node operators or validators who comply with some lists of forbidden addresses.
+  The problem of censorship for non compliant transactions on the Ethereum blockchain is that certain transactions may be blocked or censored by node operators or validators who comply with OFAC sanctions list which contains 'forbidden' cryptowallet addresses.
 
 ## &#128204; LEGO grant
 
@@ -64,7 +64,8 @@ Our project meets the first grant criteria in the following ways:
 1. __Data collection service__ - includes _data_collector.py_ and _censorability_monitor_ module. This component collects data from the mempool and blockchain.
 2. __Analytics service__ - includes _censorship_analytics.py_ and _censorability_monitor_ module. This component gathers data from various sources, evaluates censorship, and calculates metrics.
 3. __Backend__ - serves as the bridge between the analytics module and the frontend. It exposes an API that the frontend can use to request data and metrics.
-4. __Frontend__
+4. __Frontend__ - serves as dashboard with provided cenbsorship metrics.
+5. __Monitoring__ - service module for monitoring the status of system components.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/mikgur/Ethereum-censorability-monitor/feature/documentation/img/structure.png" align="middle"  width="600" />
@@ -78,8 +79,8 @@ We proposed following metrics:
 
 For each validator we calculate:
 
-- The Non-OFAC Compliance Ratio is the percentage of transactions that are not compliant with OFAC regulations and are included in blocks proposed by a validator.
-- The OFAC Compliance Ratio is the percentage of transactions that are compliant with OFAC regulations and are included in blocks proposed by a validator.
+- The Non-OFAC Compliance Ratio is the percentage of transactions across the Ethereum blockchain that are not compliant with OFAC regulations and are included in blocks proposed by a validator.
+- The OFAC Compliance Ratio is the percentage of transactions across the Ethereum blockchain that are compliant with OFAC regulations and are included in blocks proposed by a validator.
 
 These metrics help us understand how likely a validator is to include transactions that violate OFAC regulations compared to those that comply with them.
 
@@ -98,10 +99,20 @@ The metric is the ratio of the share of non-OFAC compliant transactions included
 
 The possible values of this index range from zero to infinity. An index of 1.0 means that the validator includes non-compliant and compliant transactions at the same rate. An index greater than 1.0 means that the validator includes non-compliant transactions more often than compliant transactions. Conversely, an index less than 1.0 indicates that the validator includes non-compliant transactions less frequently than compliant transactions. Overall, a low Censorship Resistance Index could be an indication of potential censorship by a validator.
 
+_Example of metric calculation:_
+
+> A = OFAC Compliance Ratio calculated for given Lido validator (for example 1%)
+>
+> B = NON-OFAC Compliance Ratio calculated for given Lido validator (for example 0.5%)
+>
+> Censorship resistance index for this validator = B / A = 0.5 / 1 = 0.5
+> 
+> Based on the obtained value we can assume that this validator censors transactions
+
 
 ### <b>3) Lido Censorship Resistance Index and Non-Lido validators Censorship Resistance Index</b>
 
-Censorship Resistance Index is calculated for all Lido validators and compared to all Non-Lido validators in total.
+Censorship Resistance Index is calculated for all Lido validators and compared to all other known liquid staking pools in total.
 
 _Example of metric calculation:_
 
@@ -111,38 +122,63 @@ _Example of metric calculation:_
 >
 > Lido metric = B / A
 
-> C = OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+> C = OFAC Compliance Ratio calculated for all stakefish validators in total (as if they are one big validator)
 >
-> D = NON-OFAC Compliance Ratio calculated for all Non-Lido validators in total (as if they are one big validator)
+> D = NON-OFAC Compliance Ratio calculated for all stakefish validators in total (as if they are one big validator)
 >
-> Non-Lido validators metric = D / C
+> Stakefish validators metric = D / C
 
 
-### <b>4) Censorship Latency</b>
+### <b>4) Average Censorship Latency</b>
 
-The Censorship Latency metric measures the difference in average waiting time for transactions with similar features, except for their OFAC compliance status. We use a binary classifier with high accuracy to predict the number of blocks for which non-OFAC compliant transactions were not included due to censorship. This number is then multiplied by 12 to calculate the Censorship Latency metric.
-
-### <b>5) Censorship Latency if Lido was completely non-censoring</b>
-
-We also compute a modified version of the Censorship Latency metric by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+The Average Censorship Latency metric measures the difference in average waiting time for transactions with similar features, except for their OFAC compliance status. We use a binary classifier with high accuracy to predict the number of blocks for which non-OFAC compliant transactions were not included due to censorship. This number is then multiplied by 12 to calculate the Censorship Latency metric.
 
 _Example of metric calculation:_
 
-A transaction was twice censored by other validators and then once by Lido before being included in a block by another validator:
+> Suppose there are 3 transactions under the letters A-C and a list of blocks that they did not appear in due to censorship (the list can be empty, since not all transactions affecting addresses on the OFAC list are censored). For convenience, we present it in the form of a table.
 
-- Block #1 - Censored by Non Lido validator
-- Block #2 - Censored by Non Lido validator
-- Block #3 - Censored by Lido validator
-- Block #4 - Included in a block by Non Lido validator
+| Transaction | Blocks in which the transaction has been censored | Validators who validated the blocks |
+| --- | --- | --- |
+| A | 1, 2, 3, 4 | Non-Lido validator, Non-Lido validator, Lido validator, Non-Lido validator |
+| B | - | - |
+| A | 1, 3, 4, 5 | Non-Lido validator, Lido validator, Non-Lido validator, Lido Validator |
 
-For this case:
+> In total we have 8 censorship blocks for 3 transactions. Multiply the number of blocks by 12 and divide by the number of transactions.
+>
+> As a result, for these transactions, the Average Censorship Latency metric will have a value of 32 seconds.
 
-> Censorship Latency will be calculated as 3 blocks (Block #1, #2, and #3) multiplied by 12 seconds = 36 seconds.
+### <b>5) Average Censorship Latency if Lido was completely non-censoring</b>
 
-> Lido-adjusted Censorship Latency will be calculated as 2 blocks (Block #1 and #2) multiplied by 12 seconds = 24 seconds. Here, we expect the Lido validator to include the transaction in Block #3.
+We also compute a modified version of the Average Censorship Latency metric by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+
+_Example of metric calculation:_
+
+> Using the previous table, assume that Lido validators were to include transactions in the blocks they validate.
+>
+> In total, we have only 3 censorship blocks for 3 transactions. Multiply by 12 and we get the value of Average Censorship Latency if Lido was completely non-censoring equal to 12 seconds.
 
 
 Please find details in our [notion page](https://accidental-eyelash-d3a.notion.site/Transaction-analysis-and-metrics-calculation-991b4e30fbc146469398860073547016)
+
+### <b>6) Average Censorship Latency for censored transactions</b>
+
+The Average Censorship Latency for censored transactions differs from the previous metric in that it does not take into account those transactions involving addresses on OFAC's list that were not ultimately censored and entered the blockchain when they should have.
+
+_Example of metric calculation:_
+
+> Using the previous table, we will ignore transaction B since it has not been censored.
+>
+> As a result, we have 8 censorship blocks for 2 transactions. Multiply by 12 and we get the value of Average Censorship Latency for censored transactions equal to 48 seconds. 
+
+### <b>7) Average Censorship Latency for censored transactions if Lido was completely non-censoring</b>
+
+This metric is a modified version of theAverage Censorship Latency for censored transactions by assuming that the Lido validators were completely non-censoring. This adjusted metric helps to understand the impact of censorship by other validators on the overall network.
+
+_Example of metric calculation:_
+
+> Using the previous table, assume that Lido validators were to include transactions in the blocks they validate
+>
+> In total, we have only 3 censorship blocks for 2 transactions. Multiply by 12 and we get the value of Average Censorship Latency if Lido was completely non-censoring, equal to 18 seconds.
 
 ## &#128204; Installation
 
@@ -329,481 +365,21 @@ Example:
 }
 ```
 
-## &#128204; API Reference
+## &#128204; Open Dataset
 
-Thanks to the API, you can receive data without accessing the database and in a more convenient format
-
-<b>API endpoint</b>: `/data/validators`</br>
-<b>Parameters</b>: Api key - key string for api </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/validators?api_key=123`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'pubkey':'0x81b4ae61a898396903897f94bea0e062c3a6925ee93d30f4d4aee93b533b49551ac337da78ff2ab0cfbb0adb380cad94',
-        'pool_name': 'Lido',
-        'name': 'Staking Facilities',
-        'timestamp': 1676729376
-    },
-    {
-        'pubkey': '0x953805708367b0b5f6710d41608ccdd0d5a67938e10e68dd010890d4bfefdcde874370423b0af0d0a053b7b98ae2d6ed',
-        'pool_name': 'Lido',
-        'name': 'Staking Facilities',
-        'timestamp': 1676729376
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/metrics`</br>
-<b>Parameters</b>: Api key - key string for api </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics?api_key=123`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'name': 'Certus One',
-        '17-02-23': {
-            'num_blocks': 6,
-            'num_ofac_compliant_txs': 956,
-            'num_txs': 956
-        },
-        '18-02-23': {
-            'num_blocks': 14,
-            'num_ofac_compliant_txs': 1950,
-            'num_txs': 1950
-        }
-    },
-    {
-        'name': 'InfStones',
-        '17-02-23': {
-            'num_blocks': 20,
-            'num_ofac_compliant_txs': 3381,
-            'num_txs': 3381
-        },
-        '18-02-23': {
-            'num_blocks': 75,
-            'num_ofac_compliant_txs': 10153,
-            'num_txs': 10154,
-            'censored_block': [
-                16656151
-            ],
-            'non_censored_blocks': [
-                16656383
-            ],
-            'non_ofac_compliant_txs': [
-                '0x0e999d6fcfd15db925f1baf371eaa50f478205211b003c36a5cac23f36853413'
-            ]
-        }
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/metrics_by_day`</br>
-<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?api_key=123&date=18-02-23`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'name': 'Figment',
-        '18-02-23': {
-            'num_blocks': 85,
-            'num_ofac_compliant_txs': 12015,
-            'num_txs': 12015,
-            'censored_block': [
-                16652200,
-                16654567,
-                16655187, 
-                16655997
-            ]
-        }
-    },
-    {
-        'name': 'RockX',
-        '18-02-23': {
-            'num_blocks': 91,
-            'num_ofac_compliant_txs': 12273,
-            'num_txs': 12274,
-            'non_censored_blocks': [
-                16653366
-            ],
-            'non_ofac_compliant_txs': [
-                '0xe92207df0fa3d97fea2263f47186718b5212e0dd9d8e63422036669d7e2c00da'
-            ],
-            'censored_block': [
-                16657321
-            ]
-        }
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/metrics_by_validators`</br>
-<b>Parameters</b>: Api key - key string for api, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_day?api_key=123&names=stakefish&names=BridgeTower`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'name': 'stakefish',
-        '17-02-23': {
-            'num_blocks': 17,
-            'num_ofac_compliant_txs': 2753,
-            'num_txs': 2753},
-            '18-02-23': {
-                'num_blocks': 91,
-                'num_ofac_compliant_txs': 9505,
-                'num_txs': 9507,
-                'non_censored_blocks': [
-                    16653655, 
-                    16656982
-                ],
-                'non_ofac_compliant_txs': [
-                    '0x1e36ab8d3055f0b7f385d455a537b7885e1d874f620e0bcfb9478cc73aa377b0',
-                    '0x020ccc01520f8378e2928a1977159eb997f2206cf0de4b11428d1bdae55fbeaa'
-                ]
-            }
-        },
-    {
-        'name': 'BridgeTower',
-        '17-02-23': {
-            'num_blocks': 40,
-            'num_ofac_compliant_txs': 6373,
-            'num_txs': 6376,
-            'non_censored_blocks': [
-                16649944, 
-                16649973, 
-                16650400
-            ],
-            'non_ofac_compliant_txs': [
-                '0x698fc76f971c1470c8e70bfa52cc4c3f6525756747c8770dd634b05b1c8e60c0',
-                '0x52ee75fff1e152347482b6491334c2e1f3b18b88c5f353552c76d118da347302',
-                '0x66a773542290c15d68f2748678906aad79c8c025c94955166cea906c00ef674a'
-            ],
-            'censored_block': [
-                16651285
-            ]
-        },
-        '18-02-23': {
-            'num_blocks': 94,
-            'num_ofac_compliant_txs': 13370,
-            'num_txs': 13374,
-            'non_censored_blocks': [
-                16654535, 
-                16655950
-            ],
-            'non_ofac_compliant_txs': [
-                '0x44b9420c4a89e60eff7cbb6a9a10f087b2aa383fe9edecde8c73bf906034b903',
-                '0xe09559639b8cde02d25c3bbfcbe880faf98044e0ee6167b46dd0c08afa361dea',
-                '0x726034837fb82fc4323908a19273c05e5985b88ee70441e8e43c1bed18f30246',
-                '0xd601760596ac3cac7a2cd6bdd94026907bc35324ed5d4d25b9a36ec9f803fa8b'
-            ]
-        }
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/metrics_by_daterange`</br>
-<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_daterange?api_key=123&start_date=16-02-23&end_date=17-02-23`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'name': 'Blockdaemon',
-        '17-02-23': {
-            'num_blocks': 10,
-            'num_ofac_compliant_txs': 1506,
-            'num_txs': 1506
-        }
-    },
-    {
-        'name': 'Anyblock Analytics',
-        '17-02-23': {
-            'num_blocks': 15,
-            'num_ofac_compliant_txs': 2256,
-            'num_txs': 2256,
-            'censored_block': [
-                16651070
-            ]
-        }
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/metrics_by_validators_by_day`</br>
-<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_day?api_key=123&date=17-02-23&names=Sigma Prime&names=Stakin`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'name': 'Stakin',
-        '17-02-23': {
-            'num_blocks': 31,
-            'num_ofac_compliant_txs': 4707,
-            'num_txs': 4707
-        }
-    },
-    {
-        'name': 'Sigma Prime',
-        '17-02-23': {
-            'num_blocks': 21,
-            'num_ofac_compliant_txs': 3454,
-            'num_txs': 3454
-        }
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/metrics_by_validators_by_daterange`</br>
-<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format, Names - validators' names </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/metrics_by_validators_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23&names=Stakely&names=ChainLayer`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        'name': 'Stakin',
-        '17-02-23': {
-            'num_blocks': 31,
-            'num_ofac_compliant_txs': 4707,
-            'num_txs': 4707
-        },
-        '18-02-23': {
-            'num_blocks': 65,
-            'num_ofac_compliant_txs': 9631,
-            'num_txs': 9632,
-            'non_censored_blocks': [16656772],
-            'non_ofac_compliant_txs': [
-                '0x64d519bbdae8f54784fec9e113d903f839df63bc9b38332f699ebb688f2ed940'
-            ]
-        }
-    },
-    {
-        'name': 'Sigma Prime',
-        '17-02-23': {
-            'num_blocks': 21,
-            'num_ofac_compliant_txs': 3454,
-            'num_txs': 3454
-        },
-        '18-02-23': {
-            'num_blocks': 32,
-            'num_ofac_compliant_txs': 4468,
-            'num_txs': 4468
-        }
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/censored_transactions`</br>
-<b>Parameters</b>: Api key - key string for api </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions?api_key=123`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        "hash":"0x0a7eef822d16d7bfa45fe3387e4b7692311ab375ffa956582b17996a7062be3d",
-        "censored":[],
-        "first_seen":1676665298,
-        "block_number":16650761.0,
-        "block_ts":1676665307.0,
-        "date":"17-02-23",
-        "non_ofac_compliant":1.0,
-        "validator":"Other"
-    },
-    {
-        "hash":"0x1177c5dff2bd5d8abcdcc8cd72875675699b1c4543e1dccda8adaf3ccadb2650",
-        "censored":[
-            {
-                "block_number":16651065,
-                "validator":"Other"
-            },
-            {
-                "block_number":16651066,
-                "validator":"Other"
-            }
-        ],
-        "first_seen":1676669047,
-        "block_number":16651067.0,
-        "block_ts":1676669075.0,
-        "date":"17-02-23",
-        "non_ofac_compliant":1.0,
-        "validator":"Other"
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/censored_transactions_by_day`</br>
-<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_day?api_key=123&date=17-02-23`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        "hash":"0x0a7eef822d16d7bfa45fe3387e4b7692311ab375ffa956582b17996a7062be3d",
-        "censored":[],
-        "first_seen":1676665298,
-        "block_number":16650761.0,
-        "block_ts":1676665307.0,
-        "date":"17-02-23",
-        "non_ofac_compliant":1.0,
-        "validator":"Other"
-    },
-    {
-        "hash":"0x1177c5dff2bd5d8abcdcc8cd72875675699b1c4543e1dccda8adaf3ccadb2650",
-        "censored":[
-            {
-                "block_number":16651065,
-                "validator":"Other"
-            },
-            {
-                "block_number":16651066,
-                "validator":"Other"
-            }
-        ],
-        "first_seen":1676669047,
-        "block_number":16651067.0,
-        "block_ts":1676669075.0,
-        "date":"17-02-23",
-        "non_ofac_compliant":1.0,
-        "validator":"Other"
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/censored_transactions_by_daterange`</br>
-<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/censored_transactions_by_daterange?api_key=123&start_date=17-02-23&end_date=19-02-23`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        "hash":"0x0a7eef822d16d7bfa45fe3387e4b7692311ab375ffa956582b17996a7062be3d",
-        "censored":[],
-        "first_seen":1676665298,
-        "block_number":16650761.0,
-        "block_ts":1676665307.0,
-        "date":"17-02-23",
-        "non_ofac_compliant":1.0,
-        "validator":"Other"
-    },
-    {
-        "hash":"0x1177c5dff2bd5d8abcdcc8cd72875675699b1c4543e1dccda8adaf3ccadb2650",
-        "censored":[
-            {
-                "block_number":16651065,
-                "validator":"Other"
-            },
-            {
-                "block_number":16651066,
-                "validator":"Other"
-            }
-        ],
-        "first_seen":1676669047,
-        "block_number":16651067.0,
-        "block_ts":1676669075.0,
-        "date":"17-02-23",
-        "non_ofac_compliant":1.0,
-        "validator":"Other"
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/ofac_addresses`</br>
-<b>Parameters</b>: Api key - key string for api </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses?api_key=123`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        "timestamp":1676623295,
-        "addresses":[
-            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
-            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
-            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
-            "0x09193888b3f38C82dEdfda55259A82C0E7De875E",
-            ...
-            "0xaf4c0B70B2Ea9FB7487C7CbB37aDa259579fe040",
-            "0xD21be7248e0197Ee08E0c20D4a96DEBdaC3D20Af",
-            "0xd47438C816c9E7f2E2888E060936a499Af9582b3",
-            "0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b",
-            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
-            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
-        ]
-    },
-    {
-        "timestamp":1676709695,
-        "addresses":[
-            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
-            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
-            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
-            "0x09193888b3f38C82dEdfda55259A82C0E7De875E",
-            "0xdf231d99Ff8b6c6CBF4E9B9a945CBAcEF9339178",
-            ...
-            "0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b",
-            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
-            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
-        ]
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/ofac_addresses_by_day`</br>
-<b>Parameters</b>: Api key - key string for api, Date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_day?api_key=123&date=18-02-23`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        "timestamp":1676709695,
-        "addresses":[
-            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
-            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
-            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
-            ...
-            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
-            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
-        ]
-    }
-]
-```
-
-<b>API endpoint</b>: `/data/ofac_addresses_by_daterange`</br>
-<b>Parameters</b>: Api key - key string for api, Start date - date in dd-mm-yy format, End date - date in dd-mm-yy format </br>
-<b>Query example</b>: `http://<your_domain>:<your_port>/data/ofac_addresses_by_daterange?api_key=123&start_date=18-02-23&end_date=20-02-23`</br>
-<b>Response example</b>: 
-```
-[
-    {
-        "timestamp":1676709695,
-        "addresses":[
-            "0xf4B067dD14e95Bab89Be928c07Cb22E3c94E0DAA",
-            "0xCC84179FFD19A1627E79F8648d09e095252Bc418",
-            "0xA160cdAB225685dA1d56aa342Ad8841c3b53f291",
-            ...
-            "0x901bb9583b24d97e995513c6778dc6888ab6870e",
-            "0x0E3A09dDA6B20aFbB34aC7cD4A6881493f3E7bf7"
-        ]
-    }
-]
-```
+Here is a [dataset of Ethereum transactions](https://www.kaggle.com/datasets/mgurevich/ethereum-transactions-with-first-seen-timestamp) that includes compliance statuses, validators (all the information we could gather), and the timestamp of when they were first seen in the mempool.
 
 ## &#128204; Team
-
-
 
 | <img src = "https://sun7.userapi.com/sun7-9/s/v1/ig2/nlmpctb21vUqfPkpUrX8aRmqhhQMyfYAwDrsXrVlduxzPmvyI8SW3luH2SR4fsUpLHPZCKdH_-QXEYtT5E3DqFUc.jpg?size=810x1080&quality=96&type=album" height = "300px"> | <img src = "https://sun7.userapi.com/sun7-9/s/v1/ig2/dQ01qNaBz_9WlD49Xdas0Q5N-G8y4AlaWKXHcPVA39WQWgALU6KD7OOaIVI1L1jivaIwVUcH1fEYP7_53KzPEDrX.jpg?size=810x1080&quality=96&type=album" height = "300px"> | <img src = "https://sun7.userapi.com/sun7-14/s/v1/ig2/eP7ic4XAgFhfGJO5ccrKfn63OS_fGrHEk-zL3G2Cw11pAy1Bs5gkZ1kx23gzQTYnlOMVLw9uYp562-RfTNoS4AAR.jpg?size=810x1080&quality=96&type=album" height = "300px"> |
 |:---:|:---:|:---:|
 | [Mikhail Gurevich](https://github.com/mikgur) | [Petr Korchagin](https://github.com/PetrovitchSharp) | [Evgenii Bezmen](https://github.com/flashlight101) | 
 | tg: [@gurev](https://t.me/gurev) | tg: [@petrovitch_sharp](https://t.me/petrovitch_sharp) | tg: [@flashlight101](https://t.me/flashlight101) |
 
-## &#128204; Community 
-
-
-
 ## &#128204; Acknowledgments
 
 - Folks from [DRPC.org](https://drpc.org/) were kind enough to give us access to their archive node, which has been a huge help for our project!
+- Folks from [Blocknative](https://www.blocknative.com) provided us a historical mempool data
 
 ## License
 
