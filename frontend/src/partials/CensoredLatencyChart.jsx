@@ -142,7 +142,11 @@ const points2 = latencyState.map(item => ({
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
   
+  function findMaxY(data) {
+    return data.reduce((max, obj) => (obj.y > max ? obj.y : max), -Infinity);
+  }  
 
+  const maxY = findMaxY(points1) + 5;
   return (
     <div>
       <div class="h3 text-center">
@@ -244,7 +248,7 @@ const points2 = latencyState.map(item => ({
               width={600}
               padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
               minDomain={{ y: 0 }}
-              maxDomain={{ y: 45 }}
+              maxDomain={{ y: maxY }}
               containerComponent={
                 <VictoryVoronoiContainer voronoiDimension="x" />
               }

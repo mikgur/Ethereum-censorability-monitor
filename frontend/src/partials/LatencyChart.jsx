@@ -7,7 +7,6 @@ import {
   VictoryLine,
   VictoryScatter,
   VictoryTooltip,
-  createContainer, 
   VictoryVoronoiContainer,
 } from "victory";
 
@@ -39,8 +38,6 @@ function LatencyChart() {
   useEffect(() => {
     setLastHalfYear();
   }, []);
-
-  
 
   const getLatencyData = async () => {
     const data = await getLatency();
@@ -133,7 +130,6 @@ const points1 = latencyState.map(item => ({
   y: item.overall_censorship_latency,
   label: getTooltipLabel(item),
 }));
-
 const points2 = latencyState.map(item => ({
   x: item.range_date,
   y: item.overall_censorship_latency_without_lido_censorship,
@@ -142,7 +138,11 @@ const points2 = latencyState.map(item => ({
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
   
+  function findMaxY(data) {
+    return data.reduce((max, obj) => (obj.y > max ? obj.y : max), -Infinity);
+  }  
 
+  const maxY = findMaxY(points1) + 5;
   return (
     <div>
       <div class="h3 text-center">
@@ -249,7 +249,7 @@ const points2 = latencyState.map(item => ({
               width={600}
               padding={{ bottom: 130, left: 100, right: 100, top: 50 }}
               minDomain={{ y: 0 }}
-              maxDomain={{ y: 30 }}
+              maxDomain={{ y: maxY }}
               containerComponent={
                 <VictoryVoronoiContainer voronoiDimension="x" />
               }

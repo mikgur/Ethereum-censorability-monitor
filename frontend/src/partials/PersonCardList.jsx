@@ -56,12 +56,12 @@ const PersonCardList = () => {
       telegramLink: 'https://t.me/flashlight101',
       linkedinLink: 'https://www.linkedin.com/in/evgeny-bezmen-a89714191/'
     },
-    {
-      name: 'Anatoly Krestenko',
-      photoUrl: 'https://i.ibb.co/z2FXZhY/image.jpg/400x400',
-      telegramLink: 'https://t.me/likeblood',
-      linkedinLink: 'https://www.linkedin.com/in/anatoly-krestenko-463664224/'
-    }
+    // {
+    //   name: 'Anatoly Krestenko',
+    //   photoUrl: 'https://i.ibb.co/z2FXZhY/image.jpg/400x400',
+    //   telegramLink: 'https://t.me/likeblood',
+    //   linkedinLink: 'https://www.linkedin.com/in/anatoly-krestenko-463664224/'
+    // }
   ];
 
   return (
